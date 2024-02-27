@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "torchseal"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Rayhan Kinan Muhannad", email="rayhankinan@gmail.com" },
 ]
@@ -13,7 +13,9 @@ readme = "README.md"
 requires-python = ">=3.6, <3.10"
 dependencies = [
   "tenseal",
-  "numpy"
+  "numpy",
+  "torch",
+  "torchvision",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

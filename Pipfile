@@ -7,6 +7,8 @@ name = "pypi"
 torchseal = {file = "."}
 numpy = "*"
 tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git"}
+torch = "*"
+torchvision = "*"
 
 [dev-packages]
 
