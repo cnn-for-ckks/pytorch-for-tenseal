@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torchseal"
+version = "0.0.1"
+authors = [
+  { name="Rayhan Kinan Muhannad", email="rayhankinan@gmail.com" },
+]
+description = "PyTorch extension to enable training and testing using homomorphic encryption"
+readme = "README.md"
+requires-python = ">=3.6, <=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/cnn-for-ckks/pytorch-for-tenseal"
+Issues = "https://github.com/cnn-for-ckks/pytorch-for-tenseal/issues"
