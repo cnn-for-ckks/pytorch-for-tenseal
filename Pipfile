@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git#egg=tenseal"}
+torchseal = {file = "."}
 
 [dev-packages]
 

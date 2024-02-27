@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a36a5392bb1e8bbc06bfaa0761e52593cf2d83b486696bf54667ba8da616c839"
+            "sha256": "a1b0c4a8809172bb939e5327319f0440bf5afd40d348e34a56a9d015466315cf"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -15,6 +15,14 @@
             }
         ]
     },
-    "default": {},
+    "default": {
+        "tenseal": {
+            "git": "git+https://github.com/OpenMined/TenSEAL.git#egg=tenseal",
+            "ref": "13486592953f82ca60502fd196016f815891e25a"
+        },
+        "torchseal": {
+            "file": "."
+        }
+    },
     "develop": {}
 }

@@ -1,2 +1,5 @@
-def add_one(number: int) -> int:
-    return number + 1
+import tenseal as ts
+
+
+def get_tenseal_version() -> str:
+    return ts.__version__
