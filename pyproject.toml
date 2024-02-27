@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "torchseal"
-version = "0.0.2"
+version = "0.0.4"
 authors = [
   { name="Rayhan Kinan Muhannad", email="rayhankinan@gmail.com" },
 ]
@@ -12,7 +12,8 @@ description = "PyTorch extension to enable training and testing using homomorphi
 readme = "README.md"
 requires-python = ">=3.6, <3.10"
 dependencies = [
-  "tenseal"
+  "tenseal",
+  "numpy"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
