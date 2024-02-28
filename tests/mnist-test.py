@@ -215,15 +215,14 @@ if __name__ == "__main__":
     batch_size = 64
 
     # Create the samplers
-    train_sampler = RandomSampler(train_data)
-    test_sampler = RandomSampler(test_data, num_samples=50)
+    sampler = RandomSampler(test_data, num_samples=50)
 
     # Create the data loaders
     train_loader = DataLoader(
-        train_data, batch_size=batch_size, sampler=train_sampler
+        train_data, batch_size=batch_size, shuffle=True
     )
     test_loader = DataLoader(
-        test_data, batch_size=batch_size, sampler=test_sampler
+        test_data, batch_size=batch_size, sampler=sampler
     )
 
     # Create the model, criterion, and optimizer
@@ -256,7 +255,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Create the data loaders for encrypted evaluation
-    enc_test_loader = DataLoader(test_data, batch_size=1, sampler=test_sampler)
+    enc_test_loader = DataLoader(test_data, batch_size=1, sampler=sampler)
 
     # Create the encrypted model
     enc_model = EncConvNet(model)
