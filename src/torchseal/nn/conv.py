@@ -1,23 +1,41 @@
-from typing import Tuple
+from typing import List, Tuple
 from torch.nn import Module
 from tenseal import CKKSVector, PlainTensor
 import torch
 import tenseal as ts
 
 
-class Conv2d(Module):  # TODO: Add support for channels and bias
-    kernel: PlainTensor
+class Conv2d(Module):  # TODO: Add support for in_channels
+    weight: PlainTensor
+    bias: PlainTensor
 
-    def __init__(self, kernel_n_rows: int, kernel_n_cols: int) -> None:
+    def __init__(self, out_channels: int, kernel_size: Tuple[int, int]) -> None:
         super(Conv2d, self).__init__()
 
-        self.kernel = ts.plain_tensor(
-            torch.rand(kernel_n_rows, kernel_n_cols).tolist(),
-            [kernel_n_rows, kernel_n_cols]
+        # Unpack the kernel size
+        kernel_n_rows, kernel_n_cols = kernel_size
+
+        # Create the weight and bias
+        self.weight = ts.plain_tensor(
+            torch.rand(
+                out_channels,
+                kernel_n_rows,
+                kernel_n_cols
+            ).tolist(),
+            [out_channels, kernel_n_rows, kernel_n_cols]
+        )
+        self.bias = ts.plain_tensor(
+            torch.rand(out_channels).tolist(),
+            [out_channels]
         )
 
-    def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
-        return enc_x.conv2d_im2col(self.kernel, windows_nb)
+    def forward(self, enc_x: CKKSVector, windows_nb: int):
+        list_of_weight: List[List[List[float]]] = self.weight.tolist()
+        list_of_bias: List[float] = self.bias.tolist()
+
+        return CKKSVector.pack_vectors([
+            enc_x.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(list_of_weight, list_of_bias)
+        ])
 
 
 if __name__ == "__main__":
@@ -25,6 +43,7 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     # Define the parameter
+    out_channels = 4
     kernel_n_rows = 2
     kernel_n_cols = 2
     stride = 2
@@ -43,7 +62,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Create a model
-    model = Conv2d(kernel_n_rows, kernel_n_cols)
+    model = Conv2d(out_channels, (kernel_n_rows, kernel_n_cols))
 
     # Create a CKKSVector from an image
     result: Tuple[CKKSVector, int] = ts.im2col_encoding(
