@@ -45,7 +45,7 @@ if __name__ == "__main__":
     model = Linear(3, 2)
 
     # Create a CKKSVector
-    enc_vec = ts.ckks_vector(context, [1, 2, 3])
+    enc_vec = ts.ckks_vector(context, torch.rand(3).tolist())
 
     # Get the output
     output = model.forward(enc_vec)
