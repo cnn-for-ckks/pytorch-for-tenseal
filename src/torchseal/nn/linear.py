@@ -1,6 +1,6 @@
 from torch.nn import Module
 from tenseal import CKKSVector, PlainTensor
-import numpy as np
+import torch
 import tenseal as ts
 
 
@@ -12,11 +12,12 @@ class Linear(Module):
         super(Linear, self).__init__()
 
         self.weight = ts.plain_tensor(
-            [np.random.random_sample() for _ in range(num_input * num_output)],
+            torch.rand(num_input, num_output).tolist(),
             [num_input, num_output]
         )
         self.bias = ts.plain_tensor(
-            [np.random.random_sample() for _ in range(num_output)], [num_output]
+            torch.rand(num_output).tolist(),
+            [num_output]
         )
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
@@ -25,7 +26,7 @@ class Linear(Module):
 
 if __name__ == "__main__":
     # Seed random number generator
-    np.random.seed(0)
+    torch.manual_seed(0)
 
     # Create TenSEAL context
     context = ts.context(
