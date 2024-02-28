@@ -5,7 +5,7 @@ import torch
 import tenseal as ts
 
 
-class Conv2d(Module):
+class Conv2d(Module):  # TODO: Add support for channels and bias
     kernel: PlainTensor
 
     def __init__(self, kernel_n_rows: int, kernel_n_cols: int) -> None:

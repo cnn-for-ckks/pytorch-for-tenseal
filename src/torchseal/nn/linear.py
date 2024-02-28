@@ -8,16 +8,16 @@ class Linear(Module):
     weight: PlainTensor
     bias: PlainTensor
 
-    def __init__(self, num_input: int, num_output: int):
+    def __init__(self, in_features: int, out_features: int):
         super(Linear, self).__init__()
 
         self.weight = ts.plain_tensor(
-            torch.rand(num_input, num_output).tolist(),
-            [num_input, num_output]
+            torch.rand(in_features, out_features).tolist(),
+            [in_features, out_features]
         )
         self.bias = ts.plain_tensor(
-            torch.rand(num_output).tolist(),
-            [num_output]
+            torch.rand(out_features).tolist(),
+            [out_features]
         )
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
