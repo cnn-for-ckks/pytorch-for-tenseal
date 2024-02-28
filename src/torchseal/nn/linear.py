@@ -13,11 +13,7 @@ class LinearFunction(Function):
     def forward(ctx: FunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
         # TODO: Save the ctx for the backward method
 
-        # Unpack the weight and bias
-        plain_weight = ts.plain_tensor(weight.tolist(), weight.shape)
-        plain_bias = ts.plain_tensor(bias.tolist(), bias.shape)
-
-        return enc_x.matmul(plain_weight).add(plain_bias)
+        return enc_x.matmul(weight.tolist()).add(bias.tolist())
 
     @staticmethod
     def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
@@ -45,33 +41,3 @@ class Linear(Module):
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
         return LinearFunction.apply(enc_x, self.weight, self.bias)
-
-
-if __name__ == "__main__":
-    # Seed random number generator
-    torch.manual_seed(0)
-
-    # Create TenSEAL context
-    context = ts.context(
-        ts.SCHEME_TYPE.CKKS,
-        poly_modulus_degree=8192,
-        coeff_mod_bit_sizes=[31, 26, 26, 26, 26, 26, 26, 31]
-    )
-
-    # Set the scale
-    context.global_scale = pow(2, 26)
-
-    # Galois keys are required to do ciphertext rotations
-    context.generate_galois_keys()
-
-    # Create a model
-    model = Linear(3, 2)
-
-    # Create a CKKSVector
-    enc_vec = ts.ckks_vector(context, torch.rand(3).tolist())
-
-    # Get the output
-    output = model.forward(enc_vec)
-
-    # Decrypt the output
-    print(output.decrypt())
