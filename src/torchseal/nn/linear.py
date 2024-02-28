@@ -1,9 +1,36 @@
 from torch import Tensor
 from torch.nn import Module, Parameter
+from torch.autograd import Function
+from torch.autograd.function import FunctionCtx
 from tenseal import CKKSVector
 
 import torch
 import tenseal as ts
+
+
+class LinearFunction(Function):
+    @staticmethod
+    def forward(ctx: FunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
+        # TODO: Save the ctx for the backward method
+
+        # Unpack the weight and bias
+        plain_weight = ts.plain_tensor(weight.tolist(), weight.shape)
+        plain_bias = ts.plain_tensor(bias.tolist(), bias.shape)
+
+        return enc_x.matmul(plain_weight).add(plain_bias)
+
+    @staticmethod
+    def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
+        result = super(LinearFunction, LinearFunction).apply(
+            enc_x, weight, bias
+        )
+
+        if type(result) != CKKSVector:
+            raise TypeError("The result should be a CKKSVector")
+
+        return result
+
+    # TODO: Define the backward method to enable training
 
 
 class Linear(Module):
@@ -17,12 +44,7 @@ class Linear(Module):
         self.bias = Parameter(torch.empty(out_features))
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
-        weight = ts.plain_tensor(self.weight.tolist(), self.weight.shape)
-        bias = ts.plain_tensor(self.bias.tolist(), self.bias.shape)
-
-        return enc_x.matmul(weight).add(bias)
-
-    # TODO: Add the backward method to enable training
+        return LinearFunction.apply(enc_x, self.weight, self.bias)
 
 
 if __name__ == "__main__":
