@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 from torch import Tensor
 from torch.nn import Module, Parameter
 from torch.autograd import Function

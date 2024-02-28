@@ -5,7 +5,6 @@ from torch.autograd.function import FunctionCtx
 from tenseal import CKKSVector
 
 import torch
-import tenseal as ts
 
 
 class LinearFunction(Function):
