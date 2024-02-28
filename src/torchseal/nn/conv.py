@@ -1,13 +1,15 @@
 from typing import List, Tuple
-from torch.nn import Module
-from tenseal import CKKSVector, PlainTensor
+from torch import Tensor
+from torch.nn import Module, Parameter
+from tenseal import CKKSVector
+
 import torch
 import tenseal as ts
 
 
-class Conv2d(Module):  # TODO: Add support for in_channels
-    weight: PlainTensor
-    bias: PlainTensor
+class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
+    weight: Tensor
+    bias: Tensor
 
     def __init__(self, out_channels: int, kernel_size: Tuple[int, int]) -> None:
         super(Conv2d, self).__init__()
@@ -16,26 +18,23 @@ class Conv2d(Module):  # TODO: Add support for in_channels
         kernel_n_rows, kernel_n_cols = kernel_size
 
         # Create the weight and bias
-        self.weight = ts.plain_tensor(
-            torch.rand(
-                out_channels,
-                kernel_n_rows,
-                kernel_n_cols
-            ).tolist(),
-            [out_channels, kernel_n_rows, kernel_n_cols]
+        self.weight = Parameter(
+            torch.empty(
+                out_channels, kernel_n_rows, kernel_n_cols
+            )
         )
-        self.bias = ts.plain_tensor(
-            torch.rand(out_channels).tolist(),
-            [out_channels]
-        )
+        self.bias = Parameter(torch.empty(out_channels))
 
     def forward(self, enc_x: CKKSVector, windows_nb: int):
         list_of_weight: List[List[List[float]]] = self.weight.tolist()
         list_of_bias: List[float] = self.bias.tolist()
 
+        # TODO: Move pack_vectors to the "Flatten" layer
         return CKKSVector.pack_vectors([
             enc_x.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(list_of_weight, list_of_bias)
         ])
+
+    # TODO: Add the backward method to enable training
 
 
 if __name__ == "__main__":

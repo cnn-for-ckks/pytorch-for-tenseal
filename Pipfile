@@ -4,11 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-torchseal = {file = "."}
 numpy = "*"
 tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git"}
 torch = "*"
 torchvision = "*"
+torchseal = {file = "."}
 
 [dev-packages]
 

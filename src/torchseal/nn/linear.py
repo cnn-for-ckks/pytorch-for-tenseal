@@ -1,27 +1,28 @@
-from torch.nn import Module
-from tenseal import CKKSVector, PlainTensor
+from torch import Tensor
+from torch.nn import Module, Parameter
+from tenseal import CKKSVector
+
 import torch
 import tenseal as ts
 
 
 class Linear(Module):
-    weight: PlainTensor
-    bias: PlainTensor
+    weight: Tensor
+    bias: Tensor
 
     def __init__(self, in_features: int, out_features: int):
         super(Linear, self).__init__()
 
-        self.weight = ts.plain_tensor(
-            torch.rand(in_features, out_features).tolist(),
-            [in_features, out_features]
-        )
-        self.bias = ts.plain_tensor(
-            torch.rand(out_features).tolist(),
-            [out_features]
-        )
+        self.weight = Parameter(torch.empty(in_features, out_features))
+        self.bias = Parameter(torch.empty(out_features))
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
-        return enc_x.matmul(self.weight).add(self.bias)
+        weight = ts.plain_tensor(self.weight.tolist(), self.weight.shape)
+        bias = ts.plain_tensor(self.bias.tolist(), self.bias.shape)
+
+        return enc_x.matmul(weight).add(bias)
+
+    # TODO: Add the backward method to enable training
 
 
 if __name__ == "__main__":
