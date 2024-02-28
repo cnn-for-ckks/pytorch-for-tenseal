@@ -1,24 +1,23 @@
-from typing import List
 from torch.nn import Module
-from tenseal import CKKSVector
+from tenseal import CKKSVector, PlainTensor
 import numpy as np
 import tenseal as ts
 
 
 class Linear(Module):
-    weight: List[List[float]]
-    bias: List[float]
+    weight: PlainTensor
+    bias: PlainTensor
 
     def __init__(self, num_input: int, num_output: int):
         super(Linear, self).__init__()
 
-        self.weight = [
-            [
-                np.random.random_sample() for _ in range(num_output)
-            ]
-            for _ in range(num_input)
-        ]
-        self.bias = [np.random.random_sample() for _ in range(num_output)]
+        self.weight = ts.plain_tensor(
+            [np.random.random_sample() for _ in range(num_input * num_output)],
+            [num_input, num_output]
+        )
+        self.bias = ts.plain_tensor(
+            [np.random.random_sample() for _ in range(num_output)], [num_output]
+        )
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
         return enc_x.matmul(self.weight).add(self.bias)
