@@ -1,19 +1,30 @@
-from typing import Union
+from typing import Tuple, Union
 from torch import Tensor
 from torch.nn import Module, Parameter
 from torch.autograd import Function
-from torch.autograd.function import FunctionCtx
+from torch.autograd.function import NestedIOFunction
 from tenseal import CKKSVector
 
 import torch
 
 
+class LinearFunctionCtx(NestedIOFunction):
+    enc_x: CKKSVector
+
+
 class LinearFunction(Function):
     @staticmethod
-    def forward(ctx: FunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
-        # TODO: Save the ctx for the backward method
+    def forward(ctx: LinearFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
+        # Save the ctx for the backward method
+        ctx.save_for_backward(weight, bias)
+        ctx.enc_x = enc_x
 
         return enc_x.matmul(weight.tolist()).add(bias.tolist())
+
+    # TODO: Define the backward method to enable training
+    @staticmethod
+    def backward(ctx: LinearFunctionCtx, enc_grad_output: CKKSVector):
+        return super(LinearFunction, LinearFunction).backward(ctx, enc_grad_output)
 
     @staticmethod
     def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
@@ -37,10 +48,10 @@ class Linear(Module):
         super(Linear, self).__init__()
 
         self.weight = Parameter(
-            torch.empty(in_features, out_features)
+            torch.empty(in_features, out_features, requires_grad=True)
         ) if weight is None else weight
         self.bias = Parameter(
-            torch.empty(out_features)
+            torch.empty(out_features, requires_grad=True)
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:

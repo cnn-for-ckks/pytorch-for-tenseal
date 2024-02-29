@@ -2,21 +2,32 @@ from typing import Tuple, Union
 from torch import Tensor
 from torch.nn import Module, Parameter
 from torch.autograd import Function
-from torch.autograd.function import FunctionCtx
+from torch.autograd.function import NestedIOFunction
 from tenseal import CKKSVector
 
 import torch
 
 
+class Conv2dFunctionCtx(NestedIOFunction):
+    enc_x: CKKSVector
+
+
 class Conv2dFunction(Function):
     @staticmethod
-    def forward(ctx: FunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
-        # TODO: Save the ctx for the backward method
+    def forward(ctx: Conv2dFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
+        # Save the ctx for the backward method
+        ctx.save_for_backward(weight, bias)
+        ctx.enc_x = enc_x
 
         # TODO: Move pack_vectors to the "Flatten" layer
         return CKKSVector.pack_vectors([
             enc_x.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(weight.tolist(), bias.tolist())
         ])
+
+    # TODO: Define the backward method to enable training
+    @staticmethod
+    def backward(ctx: Conv2dFunctionCtx, enc_grad_output: CKKSVector):
+        return super(Conv2dFunction, Conv2dFunction).backward(ctx, enc_grad_output)
 
     @staticmethod
     def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
@@ -28,8 +39,6 @@ class Conv2dFunction(Function):
             raise TypeError("The result should be a CKKSVector")
 
         return result
-
-    # TODO: Define the backward method to enable training
 
 
 class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
@@ -45,11 +54,11 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         # Create the weight and bias
         self.weight = Parameter(
             torch.empty(
-                out_channels, kernel_n_rows, kernel_n_cols
+                out_channels, kernel_n_rows, kernel_n_cols, requires_grad=True
             )
         ) if weight is None else weight
         self.bias = Parameter(
-            torch.empty(out_channels)
+            torch.empty(out_channels, requires_grad=True)
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSVector, windows_nb: int):
