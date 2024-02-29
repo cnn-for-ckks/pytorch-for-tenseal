@@ -1,11 +1,8 @@
-from typing import Tuple
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from tenseal import CKKSVector
 
 import numpy as np
 import torch
-import torchseal
 import tenseal as ts
 
 
