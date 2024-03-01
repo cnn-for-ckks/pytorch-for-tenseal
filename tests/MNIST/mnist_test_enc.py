@@ -2,8 +2,10 @@ from typing import Tuple
 from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
+from torchseal.utils import seed_worker
 from mnist_train import ConvNet
 from mnist_train_enc import EncConvNet
+
 
 import numpy as np
 import torch
@@ -110,11 +112,6 @@ if __name__ == "__main__":
     # Create the samplers
     sampler = RandomSampler(test_data, num_samples=50)
 
-    # Create the data loaders
-    test_loader = DataLoader(
-        test_data, batch_size=batch_size, sampler=sampler
-    )
-
     # Load the model
     model = ConvNet()
     model.load_state_dict(torch.load("./parameters/MNIST/model.pth"))
@@ -123,7 +120,9 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
 
     # Create the data loaders for encrypted evaluation
-    enc_test_loader = DataLoader(test_data, batch_size=1, sampler=sampler)
+    enc_test_loader = DataLoader(
+        test_data, batch_size=1, sampler=sampler, worker_init_fn=seed_worker
+    )
 
     # Create the encrypted model
     enc_model = EncConvNet(model)

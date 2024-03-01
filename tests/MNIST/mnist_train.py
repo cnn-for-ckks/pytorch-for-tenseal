@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from torchseal.utils import seed_worker
 
 import numpy as np
 import torch
@@ -70,7 +71,7 @@ if __name__ == "__main__":
 
     # Create the data loaders
     train_loader = DataLoader(
-        train_data, batch_size=batch_size, shuffle=True
+        train_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer

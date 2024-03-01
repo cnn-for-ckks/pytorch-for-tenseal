@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
+from torchseal.utils import seed_worker
 from mnist_train import ConvNet
 
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
     # Create the data loaders
     test_loader = DataLoader(
-        test_data, batch_size=batch_size, sampler=sampler
+        test_data, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
     )
 
     # Load the model

@@ -2,6 +2,7 @@ from typing import Tuple, Optional
 from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
+from torchseal.utils import seed_worker
 from mnist_train import ConvNet
 
 import torch
@@ -129,7 +130,7 @@ if __name__ == "__main__":
 
     # Create the data loaders
     train_loader = DataLoader(
-        train_data, batch_size=batch_size, sampler=sampler
+        train_data, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer

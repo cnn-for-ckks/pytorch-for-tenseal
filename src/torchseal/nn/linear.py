@@ -47,7 +47,7 @@ class LinearFunction(Function):
 
         # Compute the gradients
         if result[0]:
-            grad_input = grad_output.mm(weight)
+            grad_input = grad_output.mm(weight.t())
         if result[1]:
             grad_weight = grad_output.t().mm(x)
         if result[2]:
