@@ -8,10 +8,12 @@ from tenseal import CKKSVector
 import torch
 
 
+# NOTE: Unused at the moment
 class Conv2dFunctionCtx(NestedIOFunction):
     enc_x: CKKSVector
 
 
+# NOTE: Unused at the moment
 class Conv2dFunction(Function):
     @staticmethod
     def forward(ctx: Conv2dFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
@@ -24,10 +26,34 @@ class Conv2dFunction(Function):
             enc_x.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(weight.tolist(), bias.tolist())
         ])
 
-    # TODO: Define the backward method to enable training
+    # TODO: Test the backward method
+    # NOTE: This method requires private key access
     @staticmethod
-    def backward(ctx: Conv2dFunctionCtx, enc_grad_output: CKKSVector):
-        return super(Conv2dFunction, Conv2dFunction).backward(ctx, enc_grad_output)
+    def backward(ctx: Conv2dFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+        # Get the saved tensors
+        weight, bias = ctx.saved_tensors
+        enc_x = ctx.enc_x
+
+        # Check if the weight and bias have the right type
+        if type(weight) != torch.Tensor or type(bias) != torch.Tensor:
+            raise TypeError("The weight and bias should be tensors")
+
+        # Get the input gradient
+        result: Tuple[bool, bool, bool] = ctx.needs_input_grad  # type: ignore
+
+        # Decrypt the encrypted input and gradient
+        x = torch.tensor(enc_x.decrypt(), requires_grad=True)
+        grad_output = torch.tensor(
+            enc_grad_output.decrypt(),
+            requires_grad=True
+        )
+
+        # Initialize the gradients
+        grad_input = grad_weight = grad_bias = None
+
+        # TODO: Compute the gradients
+
+        return grad_input, grad_weight, grad_bias
 
     @staticmethod
     def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
@@ -45,7 +71,7 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
     weight: Tensor
     bias: Tensor
 
-    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Optional[Tensor], bias: Optional[Tensor]) -> None:
+    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Unpack the kernel size
@@ -53,13 +79,15 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
 
         # Create the weight and bias
         self.weight = Parameter(
-            torch.empty(
-                out_channels, kernel_n_rows, kernel_n_cols, requires_grad=True
-            )
+            torch.rand(
+                out_channels, kernel_n_rows, kernel_n_cols
+            ),
+            requires_grad=True
         ) if weight is None else weight
         self.bias = Parameter(
-            torch.empty(out_channels, requires_grad=True)
+            torch.rand(out_channels),
+            requires_grad=True
         ) if bias is None else bias
 
-    def forward(self, enc_x: CKKSVector, windows_nb: int):
+    def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
         return Conv2dFunction.apply(enc_x, self.weight, self.bias, windows_nb)
