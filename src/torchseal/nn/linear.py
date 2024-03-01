@@ -8,12 +8,10 @@ from tenseal import CKKSVector
 import torch
 
 
-# NOTE: Unused at the moment
 class LinearFunctionCtx(NestedIOFunction):
     enc_x: CKKSVector
 
 
-# NOTE: Unused at the moment
 class LinearFunction(Function):
     @staticmethod
     def forward(ctx: LinearFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
