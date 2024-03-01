@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Optional
 from torch import Tensor
 from torch.nn import Module, Parameter
 from torch.autograd import Function
@@ -45,7 +45,7 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
     weight: Tensor
     bias: Tensor
 
-    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Union[Tensor, None] = None, bias: Union[Tensor, None] = None) -> None:
+    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Optional[Tensor], bias: Optional[Tensor]) -> None:
         super(Conv2d, self).__init__()
 
         # Unpack the kernel size

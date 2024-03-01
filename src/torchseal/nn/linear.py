@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Optional
 from torch import Tensor
 from torch.nn import Module, Parameter
 from torch.autograd import Function
@@ -44,7 +44,7 @@ class Linear(Module):
     weight: Tensor
     bias: Tensor
 
-    def __init__(self, in_features: int, out_features: int, weight: Union[Tensor, None] = None, bias: Union[Tensor, None] = None):
+    def __init__(self, in_features: int, out_features: int, weight: Optional[Tensor], bias: Optional[Tensor]):
         super(Linear, self).__init__()
 
         self.weight = Parameter(
