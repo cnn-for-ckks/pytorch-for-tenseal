@@ -30,7 +30,7 @@ class ConvNet(torch.nn.Module):
 
 
 def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, n_epochs=10):
-    # model in training mode
+    # Model in training mode
     model.train()
     for epoch in range(1, n_epochs+1):
 
@@ -43,13 +43,14 @@ def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEnt
             optimizer.step()
             train_loss += loss.item()
 
-        # calculate average losses
+        # Calculate average losses
         train_loss = train_loss / len(train_loader)
 
         print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch, train_loss))
 
-    # model in evaluation mode
+    # Model in evaluation mode
     model.eval()
+
     return model
 
 

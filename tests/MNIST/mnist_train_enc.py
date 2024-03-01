@@ -61,11 +61,14 @@ class EncConvNet(torch.nn.Module):
 
 
 def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, n_epochs=10):
-    # model in training mode
+    # Model in training mode
     enc_model.train()
 
-    # unpack the kernel shape
+    # Unpack the kernel shape
     kernel_shape_h, kernel_shape_w = kernel_shape
+
+    # Copy the context for server inference (secret key included)
+    server_context = context.copy()
 
     for epoch in range(1, n_epochs+1):
         train_loss = 0.0
@@ -74,7 +77,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Encoding and encryption
             result: Tuple[CKKSVector, int] = ts.im2col_encoding(
-                context,
+                server_context,
                 data.view(28, 28).tolist(),
                 kernel_shape_h,
                 kernel_shape_w,
@@ -96,13 +99,14 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             optimizer.step()
             train_loss += loss.item()
 
-        # calculate average losses
+        # Calculate average losses
         train_loss = train_loss / len(train_loader)
 
         print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch, train_loss))
 
-    # model in evaluation mode
+    # Model in evaluation mode
     enc_model.eval()
+
     return enc_model
 
 

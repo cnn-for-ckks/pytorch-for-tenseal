@@ -12,18 +12,22 @@ import random
 
 
 def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int):
-    # initialize lists to monitor test loss and accuracy
+    # Initialize lists to monitor test loss and accuracy
     test_loss = 0.0
     class_correct = list(0. for _ in range(10))
     class_total = list(0. for _ in range(10))
 
-    # unpack the kernel shape
+    # Unpack the kernel shape
     kernel_shape_h, kernel_shape_w = kernel_shape
+
+    # Drop the secret key for server inference
+    server_context = context.copy()
+    server_context.make_context_public()
 
     for data, target in test_loader:
         # Encoding and encryption
         result: Tuple[CKKSVector, int] = ts.im2col_encoding(
-            context,
+            server_context,
             data.view(28, 28).tolist(),
             kernel_shape_h,
             kernel_shape_w,
@@ -36,8 +40,8 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         # Encrypted evaluation
         enc_output = enc_model.forward(x_enc, windows_nb)
 
-        # Decryption of result
-        output = enc_output.decrypt()
+        # Decryption of result using client secret key
+        output = enc_output.decrypt(context.secret_key())
         output = torch.tensor(output).view(1, -1)
 
         # compute loss

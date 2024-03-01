@@ -9,29 +9,32 @@ import random
 
 
 def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss):
-    # initialize lists to monitor test loss and accuracy
+    # Initialize lists to monitor test loss and accuracy
     test_loss = 0.0
     class_correct = list(0. for _ in range(10))
     class_total = list(0. for _ in range(10))
 
-    # model in evaluation mode
+    # Model in evaluation mode
     model.eval()
 
     for data, target in test_loader:
         output = model.forward(data)
         loss = criterion.forward(output, target)
         test_loss += loss.item()
-        # convert output probabilities to predicted class
+
+        # Convert output probabilities to predicted class
         _, pred = torch.max(output, 1)
-        # compare predictions to true label
+
+        # Compare predictions to true label
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
-        # calculate test accuracy for each object class
+
+        # Calculate test accuracy for each object class
         for i in range(len(target)):
             label = target.data[i]
             class_correct[label] += correct[i].item()
             class_total[label] += 1
 
-    # calculate and print avg test loss
+    # Calculate and print avg test loss
     test_loss = test_loss/len(test_loader)
     print(f"Test Loss: {test_loss:.6f}\n")
 
