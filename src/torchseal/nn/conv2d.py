@@ -26,7 +26,6 @@ class Conv2dFunction(Function):
             enc_x.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(weight.tolist(), bias.tolist())
         ])
 
-    # TODO: Test the backward method
     # NOTE: This method requires private key access
     @staticmethod
     def backward(ctx: Conv2dFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:

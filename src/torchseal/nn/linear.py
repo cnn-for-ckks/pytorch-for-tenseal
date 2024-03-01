@@ -23,7 +23,6 @@ class LinearFunction(Function):
 
         return enc_x.matmul(weight.tolist()).add(bias.tolist())
 
-    # TODO: Test the backward method
     # NOTE: This method requires private key access
     @staticmethod
     def backward(ctx: LinearFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:

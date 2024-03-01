@@ -1,5 +1,5 @@
 from typing import Tuple, Optional
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
 from mnist_train import ConvNet
@@ -87,7 +87,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Decryption of result
             output = enc_output.decrypt()
-            output = torch.tensor(output).view(1, -1)
+            output = torch.tensor(output, requires_grad=True).view(1, -1)
 
             loss = criterion.forward(output, target)
             loss.backward()
@@ -116,9 +116,12 @@ if __name__ == "__main__":
     # Set the batch size
     batch_size = 1
 
+    # Create the samplers
+    sampler = RandomSampler(train_data, num_samples=10)
+
     # Create the data loaders
     train_loader = DataLoader(
-        train_data, batch_size=batch_size, shuffle=True
+        train_data, batch_size=batch_size, sampler=sampler
     )
 
     # Create the model, criterion, and optimizer

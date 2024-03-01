@@ -59,7 +59,7 @@ if __name__ == "__main__":
     batch_size = 64
 
     # Create the samplers
-    sampler = RandomSampler(test_data, num_samples=50, replacement=True)
+    sampler = RandomSampler(test_data, num_samples=50)
 
     # Create the data loaders
     test_loader = DataLoader(
