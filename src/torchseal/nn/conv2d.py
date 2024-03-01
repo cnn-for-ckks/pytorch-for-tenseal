@@ -80,12 +80,10 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         self.weight = Parameter(
             torch.rand(
                 out_channels, kernel_n_rows, kernel_n_cols
-            ),
-            requires_grad=True
+            )
         ) if weight is None else weight
         self.bias = Parameter(
-            torch.rand(out_channels),
-            requires_grad=True
+            torch.rand(out_channels)
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:

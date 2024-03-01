@@ -7,6 +7,8 @@ from mnist_train import ConvNet
 import torch
 import torchseal
 import tenseal as ts
+import numpy as np
+import random
 
 
 class EncConvNet(torch.nn.Module):
@@ -107,6 +109,8 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 if __name__ == "__main__":
     # Set the seed for reproducibility
     torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
 
     # Load the data
     train_data = datasets.MNIST(

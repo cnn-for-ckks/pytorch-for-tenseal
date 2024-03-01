@@ -3,6 +3,7 @@ from torchvision import datasets, transforms
 
 import numpy as np
 import torch
+import random
 
 
 class ConvNet(torch.nn.Module):
@@ -55,6 +56,8 @@ def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEnt
 if __name__ == "__main__":
     # Set the seed for reproducibility
     torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
 
     # Load the data
     train_data = datasets.MNIST(

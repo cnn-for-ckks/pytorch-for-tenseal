@@ -5,6 +5,7 @@ from mnist_train import ConvNet
 
 import numpy as np
 import torch
+import random
 
 
 def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss):
@@ -49,6 +50,8 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
 if __name__ == "__main__":
     # Set the seed for reproducibility
     torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
 
     # Load the data
     test_data = datasets.MNIST(

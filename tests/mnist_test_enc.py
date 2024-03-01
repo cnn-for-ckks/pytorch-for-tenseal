@@ -8,6 +8,7 @@ from mnist_train_enc import EncConvNet
 import numpy as np
 import torch
 import tenseal as ts
+import random
 
 
 def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int):
@@ -73,6 +74,8 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 if __name__ == "__main__":
     # Set the seed for reproducibility
     torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
 
     # Controls precision of the fractional part
     bits_scale = 26
