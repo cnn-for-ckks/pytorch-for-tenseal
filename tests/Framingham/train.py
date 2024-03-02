@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from torchseal.utils import seed_worker
 from dataloader import FraminghamDataset
 
@@ -56,12 +56,16 @@ if __name__ == "__main__":
     # Load the data
     dataset = FraminghamDataset(csv_file="./data/framingham.csv")
 
+    # Split the data into training and testing
+    generator = torch.Generator().manual_seed(73)
+    train_dataset, _ = random_split(dataset, [0.9, 0.1], generator=generator)
+
     # Set the batch size
     batch_size = 64
 
     # Create the data loader
     train_loader = DataLoader(
-        dataset=dataset, batch_size=batch_size, worker_init_fn=seed_worker
+        dataset=train_dataset, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Get the number of features

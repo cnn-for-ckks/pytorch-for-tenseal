@@ -46,22 +46,22 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         output = enc_output.decrypt(context.secret_key())
         output = torch.tensor(output).view(1, -1)
 
-        # compute loss
+        # Compute loss
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
-        # convert output probabilities to predicted class
+        # Convert output probabilities to predicted class
         _, pred = torch.max(output, 1)
 
-        # compare predictions to true label
+        # Compare predictions to true label
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
 
-        # calculate test accuracy for each object class
+        # Calculate test accuracy for each object class
         label = target.data[0]
         class_correct[label] += correct.item()
         class_total[label] += 1
 
-    # calculate and print avg test loss
+    # Calculate and print avg test loss
     test_loss = test_loss / sum(class_total)
     print(f"Test Loss for Encrypted Data: {test_loss:.6f}\n")
 
