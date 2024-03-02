@@ -68,9 +68,6 @@ class LinearFunction(Function):
 
 
 class Linear(Module):
-    weight: Tensor
-    bias: Tensor
-
     def __init__(self, in_features: int, out_features: int, weight: Optional[Tensor] = None, bias: Optional[Tensor] = None):
         super(Linear, self).__init__()
 

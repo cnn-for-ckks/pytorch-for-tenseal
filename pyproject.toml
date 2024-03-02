@@ -15,7 +15,6 @@ dependencies = [
   "tenseal",
   "numpy",
   "torch",
-  "torchvision",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

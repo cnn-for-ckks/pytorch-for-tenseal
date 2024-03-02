@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from torchseal.utils import seed_worker
-from mnist_train import ConvNet
+from train import ConvNet
 
 
 import numpy as np
@@ -9,7 +9,7 @@ import torch
 import random
 
 
-def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss):
+def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.0
     class_correct = list(0. for _ in range(10))
@@ -62,11 +62,14 @@ if __name__ == "__main__":
         "data", train=False, download=True, transform=transforms.ToTensor()
     )
 
-    # Set the batch size
-    batch_size = 64
+    # Set the number of samples
+    num_samples = 100
 
     # Create the samplers
-    sampler = RandomSampler(test_data, num_samples=50)
+    sampler = RandomSampler(test_data, num_samples=num_samples)
+
+    # Set the batch size
+    batch_size = 64
 
     # Create the data loaders
     test_loader = DataLoader(

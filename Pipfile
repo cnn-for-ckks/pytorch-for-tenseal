@@ -9,6 +9,7 @@ tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git"}
 torch = "*"
 torchvision = "*"
 torchseal = {file = "."}
+pandas = "*"
 
 [dev-packages]
 

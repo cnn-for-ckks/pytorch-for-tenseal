@@ -65,9 +65,6 @@ class Conv2dFunction(Function):
 
 
 class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
-    weight: Tensor
-    bias: Tensor
-
     def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 

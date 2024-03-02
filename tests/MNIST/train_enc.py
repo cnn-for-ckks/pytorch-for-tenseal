@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
 from torchseal.utils import seed_worker
-from mnist_train import ConvNet
+from train import ConvNet
 
 import torch
 import torchseal
@@ -61,7 +61,7 @@ class EncConvNet(torch.nn.Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, n_epochs=10):
+def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, n_epochs: int = 10) -> EncConvNet:
     # Model in training mode
     enc_model.train()
 
@@ -163,9 +163,9 @@ if __name__ == "__main__":
         train_loader,
         criterion,
         optimizer,
-        (7, 7),
-        3,
-        10
+        kernel_shape=(7, 7),
+        stride=3,
+        n_epochs=10
     )
 
     # Save the model

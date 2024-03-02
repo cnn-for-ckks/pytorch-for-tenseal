@@ -3,8 +3,8 @@ from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
 from torchseal.utils import seed_worker
-from mnist_train import ConvNet
-from mnist_train_enc import EncConvNet
+from train import ConvNet
+from train_enc import EncConvNet
 
 
 import numpy as np
@@ -13,7 +13,7 @@ import tenseal as ts
 import random
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int):
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.0
     class_correct = list(0. for _ in range(10))
@@ -106,11 +106,19 @@ if __name__ == "__main__":
         "data", train=False, download=True, transform=transforms.ToTensor()
     )
 
-    # Set the batch size
-    batch_size = 64
+    # Set the number of samples
+    num_samples = 100
 
     # Create the samplers
-    sampler = RandomSampler(test_data, num_samples=50)
+    sampler = RandomSampler(test_data, num_samples=num_samples)
+
+    # Set the batch size
+    batch_size = 1
+
+    # Create the data loaders for encrypted evaluation
+    enc_test_loader = DataLoader(
+        test_data, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
+    )
 
     # Load the model
     model = ConvNet()
@@ -118,11 +126,6 @@ if __name__ == "__main__":
 
     # Loss function
     criterion = torch.nn.CrossEntropyLoss()
-
-    # Create the data loaders for encrypted evaluation
-    enc_test_loader = DataLoader(
-        test_data, batch_size=1, sampler=sampler, worker_init_fn=seed_worker
-    )
 
     # Create the encrypted model
     enc_model = EncConvNet(model)
@@ -133,6 +136,6 @@ if __name__ == "__main__":
         enc_model,
         enc_test_loader,
         criterion,
-        (7, 7),
-        3
+        kernel_shape=(7, 7),
+        stride=3
     )
