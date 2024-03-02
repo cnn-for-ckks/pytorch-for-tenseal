@@ -13,7 +13,7 @@ import random
 
 
 class EncConvNet(torch.nn.Module):
-    def __init__(self, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Create the encrypted model
@@ -33,14 +33,14 @@ class EncConvNet(torch.nn.Module):
             torch_nn.fc1.out_features,
             torch_nn.fc1.weight.T.data,
             torch_nn.fc1.bias.data,
-        ) if torch_nn is not None else torchseal.nn.Linear(256, 64)
+        ) if torch_nn is not None else torchseal.nn.Linear(256, hidden)
 
         self.fc2 = torchseal.nn.Linear(
             torch_nn.fc2.in_features,
             torch_nn.fc2.out_features,
             torch_nn.fc2.weight.T.data,
             torch_nn.fc2.bias.data,
-        ) if torch_nn is not None else torchseal.nn.Linear(64, 10)
+        ) if torch_nn is not None else torchseal.nn.Linear(hidden, output)
 
     def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
         # Convolutional layer
