@@ -96,7 +96,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = torch.tensor(output, requires_grad=True).view(1, -1)
 
             loss = criterion.forward(output, target)
-            loss.backward()
+            loss.backward() # BUG: Gradient of the Conv2d layer is not computed yet
             optimizer.step()
             train_loss += loss.item()
 
