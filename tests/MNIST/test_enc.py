@@ -68,7 +68,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     for label in range(10):
         print(
             f"Test Accuracy of {label}: {int(100 * class_correct[label] / class_total[label])}% "
-            f"({int(np.sum(class_correct[label]))}/{int(np.sum(class_total[label]))})"
+            f"({int(class_correct[label])}/{int(class_total[label])})"
         )
 
     print(
