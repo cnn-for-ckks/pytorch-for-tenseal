@@ -1,7 +1,9 @@
 from typing import Tuple, Optional
+from torch.nn import Module
 from torch.utils.data import DataLoader, RandomSampler
 from torchvision import datasets, transforms
 from tenseal import CKKSVector
+from torchseal.function import SquareFunction
 from torchseal.utils import seed_worker
 from train import ConvNet
 
@@ -12,7 +14,7 @@ import numpy as np
 import random
 
 
-class EncConvNet(torch.nn.Module):
+class EncConvNet(Module):
     def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
@@ -47,16 +49,16 @@ class EncConvNet(torch.nn.Module):
         first_result = self.conv1.forward(enc_x, windows_nb)
 
         # Square activation function
-        first_result.square_()
+        first_result_squared = SquareFunction.apply(first_result)
 
         # Fully connected layer
-        second_result = self.fc1.forward(first_result)
+        second_result = self.fc1.forward(first_result_squared)
 
         # Square activation function
-        second_result.square_()
+        second_result_squared = SquareFunction.apply(second_result)
 
         # Fully connected layer
-        third_result = self.fc2.forward(second_result)
+        third_result = self.fc2.forward(second_result_squared)
 
         return third_result
 
@@ -83,7 +85,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
                 kernel_shape_h,
                 kernel_shape_w,
                 stride
-            )  # type: ignore[error from tenseal library]
+            )  # type: ignore
 
             # Unpack the result
             x_enc, windows_nb = result
@@ -96,7 +98,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = torch.tensor(output, requires_grad=True).view(1, -1)
 
             loss = criterion.forward(output, target)
-            loss.backward() # BUG: Gradient of the Conv2d layer is not computed yet
+            loss.backward()  # BUG: Gradient is not computed correctly
             optimizer.step()
             train_loss += loss.item()
 

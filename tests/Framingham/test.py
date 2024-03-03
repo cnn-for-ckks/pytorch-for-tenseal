@@ -7,6 +7,7 @@ import torch
 import numpy as np
 import random
 
+
 def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn.BCELoss) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.0
@@ -18,7 +19,7 @@ def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn
         output = model.forward(data)
         loss = criterion.forward(output, target)
         test_loss += loss.item()
-    
+
     # Calculate and print avg test loss
     test_loss = test_loss / len(test_loader)
     print(f"Test Loss: {test_loss:.6f}\n")

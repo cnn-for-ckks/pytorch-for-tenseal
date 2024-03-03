@@ -34,7 +34,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
             kernel_shape_h,
             kernel_shape_w,
             stride
-        )  # type: ignore[error from tenseal library]
+        )  # type: ignore
 
         # Unpack the result
         x_enc, windows_nb = result
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
 
     # Create the encrypted model
-    enc_model = EncConvNet(model)
+    enc_model = EncConvNet(torch_nn=model)
 
     # Encrypted evaluation
     enc_test(

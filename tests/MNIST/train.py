@@ -1,3 +1,5 @@
+from torch import Tensor
+from torch.nn import Module
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchseal.utils import seed_worker
@@ -7,7 +9,7 @@ import numpy as np
 import random
 
 
-class ConvNet(torch.nn.Module):
+class ConvNet(Module):
     def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
@@ -15,7 +17,7 @@ class ConvNet(torch.nn.Module):
         self.fc1 = torch.nn.Linear(256, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         x = self.conv1.forward(x)
 
         # the model uses the square activation function
