@@ -23,25 +23,16 @@ class SquareFunction(Function):
         return result
 
     @staticmethod
-    def backward(ctx: SquareFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Tensor]:
+    def backward(ctx: SquareFunctionCtx, grad_output: Tensor) -> Tuple[Tensor]:
         # Get the saved tensors
         enc_x = ctx.enc_x
 
         # Decrypt the encrypted input and gradient
-        x = torch.tensor(enc_x.decrypt(), requires_grad=True)
-        grad_output = torch.tensor(
-            enc_grad_output.decrypt(), requires_grad=True
+        x = torch.tensor(
+            list(map(lambda x: 2 * x, enc_x.decrypt())), requires_grad=True
         )
 
         # Compute the gradients
-        grad_input = grad_output.mm(x.apply_(lambda x: 2 * x))
+        grad_input = grad_output.mm(x)
 
         return grad_input,
-
-    @staticmethod
-    def apply(enc_x: CKKSVector) -> CKKSVector:
-        result: CKKSVector = super(
-            SquareFunction, SquareFunction
-        ).apply(enc_x)  # type: ignore
-
-        return result

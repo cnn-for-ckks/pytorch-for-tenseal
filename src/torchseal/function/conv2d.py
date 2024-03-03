@@ -25,7 +25,7 @@ class Conv2dFunction(Function):
 
     # NOTE: This method requires private key access
     @staticmethod
-    def backward(ctx: Conv2dFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx: Conv2dFunctionCtx, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         enc_x = ctx.enc_x
@@ -38,10 +38,6 @@ class Conv2dFunction(Function):
 
         # Decrypt the encrypted input and gradient
         x = torch.tensor(enc_x.decrypt(), requires_grad=True)
-        grad_output = torch.tensor(
-            enc_grad_output.decrypt(),
-            requires_grad=True
-        )
 
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None
@@ -49,11 +45,3 @@ class Conv2dFunction(Function):
         # TODO: Compute the gradients
 
         return grad_input, grad_weight, grad_bias
-
-    @staticmethod
-    def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
-        result: CKKSVector = super(Conv2dFunction, Conv2dFunction).apply(
-            enc_x, weight, bias, windows_nb
-        )  # type: ignore
-
-        return result

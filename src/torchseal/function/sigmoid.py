@@ -28,28 +28,20 @@ class SigmoidFunction(Function):
         return result
 
     @staticmethod
-    def backward(ctx: SigmoidFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Tensor]:
+    def backward(ctx: SigmoidFunctionCtx, grad_output: Tensor) -> Tuple[Tensor]:
         # Get the saved tensors
         enc_x = ctx.enc_x
 
         # Decrypt the encrypted input and gradient
-        x = torch.tensor(enc_x.decrypt(), requires_grad=True)
-        grad_output = torch.tensor(
-            enc_grad_output.decrypt(), requires_grad=True
+        out_x = torch.tensor(
+            list(map(lambda x: 0.197 - 0.008 * x, enc_x.decrypt())),
+            requires_grad=True
         )
 
         # TODO: Do approximation of the sigmoid function using the polynomial approximation
 
         # Compute the gradients
         # NOTE: This is just an example
-        grad_input = grad_output.mm(x.apply_(lambda x: 0.197 - 0.008 * x))
+        grad_input = grad_output.mm(out_x)
 
         return grad_input,
-
-    @staticmethod
-    def apply(enc_x: CKKSVector) -> CKKSVector:
-        result: CKKSVector = super(
-            SigmoidFunction, SigmoidFunction
-        ).apply(enc_x)  # type: ignore
-
-        return result

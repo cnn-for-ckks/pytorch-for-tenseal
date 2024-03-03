@@ -22,7 +22,7 @@ class LinearFunction(Function):
 
     # NOTE: This method requires private key access
     @staticmethod
-    def backward(ctx: LinearFunctionCtx, enc_grad_output: CKKSVector) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx: LinearFunctionCtx, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         enc_x = ctx.enc_x
@@ -35,10 +35,6 @@ class LinearFunction(Function):
 
         # Decrypt the encrypted input and gradient
         x = torch.tensor(enc_x.decrypt(), requires_grad=True)
-        grad_output = torch.tensor(
-            enc_grad_output.decrypt(),
-            requires_grad=True
-        )
 
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None
@@ -52,11 +48,3 @@ class LinearFunction(Function):
             grad_bias = grad_output.sum(0)
 
         return grad_input, grad_weight, grad_bias
-
-    @staticmethod
-    def apply(enc_x: CKKSVector, weight: Tensor, bias: Tensor) -> CKKSVector:
-        result: CKKSVector = super(LinearFunction, LinearFunction).apply(
-            enc_x, weight, bias
-        )  # type: ignore
-
-        return result

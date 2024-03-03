@@ -49,13 +49,17 @@ class EncConvNet(Module):
         first_result = self.conv1.forward(enc_x, windows_nb)
 
         # Square activation function
-        first_result_squared = SquareFunction.apply(first_result)
+        first_result_squared: CKKSVector = SquareFunction.apply(
+            first_result
+        )  # type: ignore
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
 
         # Square activation function
-        second_result_squared = SquareFunction.apply(second_result)
+        second_result_squared: CKKSVector = SquareFunction.apply(
+            second_result
+        )  # type: ignore
 
         # Fully connected layer
         third_result = self.fc2.forward(second_result_squared)

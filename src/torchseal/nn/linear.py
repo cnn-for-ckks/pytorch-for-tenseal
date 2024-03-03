@@ -19,4 +19,8 @@ class Linear(Module):
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSVector) -> CKKSVector:
-        return LinearFunction.apply(enc_x, self.weight, self.bias)
+        result: CKKSVector = LinearFunction.apply(
+            enc_x, self.weight, self.bias
+        )  # type: ignore
+
+        return result

@@ -25,4 +25,8 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
-        return Conv2dFunction.apply(enc_x, self.weight, self.bias, windows_nb)
+        result: CKKSVector = Conv2dFunction.apply(
+            enc_x, self.weight, self.bias, windows_nb
+        )  # type: ignore
+
+        return result

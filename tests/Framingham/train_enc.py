@@ -30,7 +30,9 @@ class EncLogisticRegression(Module):
         first_result = self.linear.forward(x)
 
         # Sigmoid activation function
-        first_result_activated = SigmoidFunction.apply(first_result)
+        first_result_activated: CKKSVector = SigmoidFunction.apply(
+            first_result
+        )  # type: ignore
 
         return first_result_activated
 
