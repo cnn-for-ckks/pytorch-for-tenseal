@@ -26,6 +26,9 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     server_context = context.copy()
     server_context.make_context_public()
 
+    # Model in evaluation mode
+    enc_model.eval()
+
     for data, target in test_loader:
         # Encoding and encryption
         result: Tuple[CKKSVector, int] = ts.im2col_encoding(
@@ -124,11 +127,11 @@ if __name__ == "__main__":
     model = ConvNet()
     model.load_state_dict(torch.load("./parameters/MNIST/model.pth"))
 
-    # Loss function
-    criterion = torch.nn.CrossEntropyLoss()
-
     # Create the encrypted model
     enc_model = EncConvNet(torch_nn=model)
+
+    # Loss function
+    criterion = torch.nn.CrossEntropyLoss()
 
     # Encrypted evaluation
     enc_test(
