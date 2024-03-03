@@ -102,11 +102,11 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = torch.tensor(
                 enc_output.decrypt(),
                 requires_grad=True
-            ).view(1, -1)
+            ).view(1, -1)  # BUG: Tensor must be instantiated in input to enable backward propagation
 
             loss = criterion.forward(output, target)
-            loss.backward()  # BUG: Gradient is not computed correctly
-            optimizer.step()
+            loss.backward()  # BUG: Backward autograd not called
+            optimizer.step()  # BUG: Weight update not called
             train_loss += loss.item()
 
         # Calculate average losses
@@ -165,6 +165,9 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # NOTE: Check the weights and biases of the model
+    print("\n".join(list(map(str, enc_model.parameters()))))
+
     # Train the model
     enc_model = enc_train(
         context,
@@ -176,6 +179,9 @@ if __name__ == "__main__":
         stride=3,
         n_epochs=10
     )
+
+    # NOTE: Check the weights and biases of the model
+    print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Save the model
     torch.save(enc_model.state_dict(), "./parameters/MNIST/model-enc.pth")

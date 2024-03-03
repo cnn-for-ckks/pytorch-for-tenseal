@@ -51,9 +51,6 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             raw_data = data[0].tolist()
             enc_data = ts.ckks_vector(context, raw_data)
 
-            # Forward pass
-            output = enc_model.forward(enc_data)
-
             # Encrypted evaluation
             enc_output = enc_model.forward(enc_data)
 
@@ -67,11 +64,11 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
                     )
                 ),
                 requires_grad=True
-            ).view(1, -1)
+            ).view(1, -1)  # BUG: Tensor must be instantiated in input to enable backward propagation
 
             loss = criterion.forward(output, target)
-            loss.backward()  # BUG: Gradient is not computed correctly
-            optimizer.step()
+            loss.backward()  # BUG: Backward autograd not called
+            optimizer.step()  # BUG: Weight update not called
             train_loss += loss.item()
 
         # Calculate average losses
@@ -113,8 +110,8 @@ if __name__ == "__main__":
     n_features = dataset.features.shape[1]
 
     # Create the model, criterion, and optimizer
-    model = EncLogisticRegression(n_features)
-    optim = torch.optim.SGD(model.parameters(), lr=0.1)
+    enc_model = EncLogisticRegression(n_features)
+    optim = torch.optim.SGD(enc_model.parameters(), lr=0.1)
     criterion = torch.nn.BCELoss()
 
     # Controls precision of the fractional part
@@ -135,8 +132,14 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # NOTE: Check the weights and biases of the model
+    print("\n".join(list(map(str, enc_model.parameters()))))
+
     # Train the model
-    enc_model = enc_train(context, model, train_loader, criterion, optim)
+    enc_model = enc_train(context, enc_model, train_loader, criterion, optim)
+
+    # NOTE: Check the weights and biases of the model
+    print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Save the model
-    torch.save(model.state_dict(), "./parameters/framingham/model-enc.pth")
+    torch.save(enc_model.state_dict(), "./parameters/framingham/model-enc.pth")
