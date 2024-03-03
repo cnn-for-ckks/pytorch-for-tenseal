@@ -15,7 +15,7 @@ import random
 
 def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int) -> None:
     # Initialize lists to monitor test loss and accuracy
-    test_loss = 0.0
+    test_loss = 0.
     class_correct = list(0. for _ in range(10))
     class_total = list(0. for _ in range(10))
 

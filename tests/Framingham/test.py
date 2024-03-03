@@ -10,7 +10,7 @@ import random
 
 def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn.BCELoss) -> None:
     # Initialize lists to monitor test loss and accuracy
-    test_loss = 0.0
+    test_loss = 0.
 
     # Model in evaluation mode
     model.eval()

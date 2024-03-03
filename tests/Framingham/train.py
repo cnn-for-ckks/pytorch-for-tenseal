@@ -28,7 +28,7 @@ def train(model: LogisticRegression, train_loader: DataLoader, criterion: torch.
     model.train()
 
     for epoch in range(n_epochs):
-        train_loss = 0.0
+        train_loss = 0.
 
         for data, target in train_loader:
             optimizer.zero_grad()
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     criterion = torch.nn.BCELoss()
 
     # Train the model
-    model = train(model, train_loader, criterion, optim, n_epochs=5)
+    model = train(model, train_loader, criterion, optim, n_epochs=10)
 
     # Save the model
     torch.save(model.state_dict(), "./parameters/framingham/model.pth")

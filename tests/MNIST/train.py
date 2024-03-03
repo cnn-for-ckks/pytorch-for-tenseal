@@ -37,7 +37,7 @@ def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEnt
     model.train()
 
     for epoch in range(n_epochs):
-        train_loss = 0.0
+        train_loss = 0.
 
         for data, target in train_loader:
             optimizer.zero_grad()

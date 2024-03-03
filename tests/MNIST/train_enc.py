@@ -74,7 +74,8 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     server_context = context.copy()
 
     for epoch in range(1, n_epochs+1):
-        train_loss = 0.0
+        train_loss = 0.
+
         for data, target in train_loader:
             optimizer.zero_grad()
 
@@ -88,14 +89,16 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             )  # type: ignore
 
             # Unpack the result
-            x_enc, windows_nb = result
+            enc_x, windows_nb = result
 
             # Encrypted evaluation
-            enc_output = enc_model.forward(x_enc, windows_nb)
+            enc_output = enc_model.forward(enc_x, windows_nb)
 
             # Decryption of result
-            output = enc_output.decrypt()
-            output = torch.tensor(output, requires_grad=True).view(1, -1)
+            output = torch.tensor(
+                enc_output.decrypt(),
+                requires_grad=True
+            ).view(1, -1)
 
             loss = criterion.forward(output, target)
             loss.backward()  # BUG: Gradient is not computed correctly
@@ -124,11 +127,11 @@ if __name__ == "__main__":
         "data", train=True, download=True, transform=transforms.ToTensor()
     )
 
-    # Set the batch size
-    batch_size = 1
-
     # Create the samplers
     sampler = RandomSampler(train_data, num_samples=10)
+
+    # Set the batch size
+    batch_size = 1
 
     # Create the data loaders
     train_loader = DataLoader(

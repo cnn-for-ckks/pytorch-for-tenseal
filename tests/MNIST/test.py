@@ -9,10 +9,9 @@ import numpy as np
 import random
 
 
-
 def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss) -> None:
     # Initialize lists to monitor test loss and accuracy
-    test_loss = 0.0
+    test_loss = 0.
     class_correct = list(0. for _ in range(10))
     class_total = list(0. for _ in range(10))
 
