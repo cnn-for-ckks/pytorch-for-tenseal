@@ -16,6 +16,7 @@ class CKKSWrapper(Tensor):
     def ckks_data(self, ckks_data: CKKSVector) -> None:
         self.__ckks_data = ckks_data
 
+    # # Logging method
     # @classmethod
     # def __torch_function__(cls, func, types, *args, **kwargs):
     #     # Print the function and the types

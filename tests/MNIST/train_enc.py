@@ -161,8 +161,8 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
+    # # NOTE: Check the weights and biases of the model
+    # print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Train the model
     enc_model = enc_train(
@@ -176,8 +176,8 @@ if __name__ == "__main__":
         n_epochs=10
     )
 
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
+    # # NOTE: Check the weights and biases of the model
+    # print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Save the model
     torch.save(enc_model.state_dict(), "./parameters/MNIST/model-enc.pth")
