@@ -24,7 +24,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
     for data, target in test_loader:
         # Encryption
         raw_data = data[0].tolist()
-        data_enc = ts.ckks_vector(context, raw_data)
+        data_enc = ts.ckks_vector(server_context, raw_data)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(data_enc)

@@ -1,19 +1,15 @@
 from typing import Tuple
 from torch import Tensor
 from torch.autograd import Function
-from torch.autograd.function import NestedIOFunction
 from tenseal import CKKSVector
+from torchseal.wrapper.function import CKKSFunctionCtx
 
 import torch
 
 
-class SquareFunctionCtx(NestedIOFunction):
-    enc_x: CKKSVector
-
-
 class SquareFunction(Function):
     @staticmethod
-    def forward(ctx: SquareFunctionCtx, enc_x: CKKSVector) -> CKKSVector:
+    def forward(ctx: CKKSFunctionCtx, enc_x: CKKSVector) -> CKKSVector:
         # Save the ctx for the backward method
         ctx.enc_x = enc_x
 
@@ -23,7 +19,7 @@ class SquareFunction(Function):
         return result
 
     @staticmethod
-    def backward(ctx: SquareFunctionCtx, grad_output: Tensor) -> Tuple[Tensor]:
+    def backward(ctx: CKKSFunctionCtx, grad_output: Tensor) -> Tuple[Tensor]:
         # Get the saved tensors
         enc_x = ctx.enc_x
 

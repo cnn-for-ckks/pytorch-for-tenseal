@@ -1,19 +1,15 @@
 from typing import Tuple, Optional
 from torch import Tensor
 from torch.autograd import Function
-from torch.autograd.function import NestedIOFunction
 from tenseal import CKKSVector
+from torchseal.wrapper.function import CKKSFunctionCtx
 
 import torch
 
 
-class Conv2dFunctionCtx(NestedIOFunction):
-    enc_x: CKKSVector
-
-
 class Conv2dFunction(Function):
     @staticmethod
-    def forward(ctx: Conv2dFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
+    def forward(ctx: CKKSFunctionCtx, enc_x: CKKSVector, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSVector:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x
@@ -25,7 +21,7 @@ class Conv2dFunction(Function):
 
     # NOTE: This method requires private key access
     @staticmethod
-    def backward(ctx: Conv2dFunctionCtx, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx: CKKSFunctionCtx, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         enc_x = ctx.enc_x
