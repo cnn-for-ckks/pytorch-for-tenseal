@@ -101,8 +101,8 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = enc_output.do_decryption()
 
             loss = criterion.forward(output, target)
-            loss.backward()  # BUG: Backward autograd not called
-            optimizer.step()  # BUG: Weight update not called
+            loss.backward()
+            optimizer.step()  # BUG: Weight and bias are not accurately updated
             train_loss += loss.item()
 
         # Calculate average losses

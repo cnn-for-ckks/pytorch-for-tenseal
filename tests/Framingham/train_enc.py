@@ -62,8 +62,8 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             target = raw_target[0]
             loss = criterion.forward(output, target)
 
-            loss.backward()  # BUG: Backward autograd not called
-            optimizer.step()  # BUG: Weight update not called
+            loss.backward()
+            optimizer.step()  # BUG: Weight and bias are not accurately updated
             train_loss += loss.item()
 
         # Calculate average losses
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     train_dataset, _ = random_split(dataset, [0.9, 0.1], generator=generator)
 
     # Create the samplers
-    sampler = RandomSampler(train_dataset, num_samples=20)
+    sampler = RandomSampler(train_dataset, num_samples=10)
 
     # Set the batch size
     batch_size = 1
@@ -131,7 +131,14 @@ if __name__ == "__main__":
     print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Train the model
-    enc_model = enc_train(context, enc_model, train_loader, criterion, optim)
+    enc_model = enc_train(
+        context,
+        enc_model,
+        train_loader,
+        criterion,
+        optim,
+        n_epochs=20
+    )
 
     # NOTE: Check the weights and biases of the model
     print("\n".join(list(map(str, enc_model.parameters()))))
