@@ -1,7 +1,7 @@
 from typing import Optional
 from torch import Tensor
 from torch.nn import Module, Parameter
-from tenseal import CKKSVector
+from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.function.linear import LinearFunction
 
 import torch
@@ -18,9 +18,9 @@ class Linear(Module):
             torch.rand(out_features)
         ) if bias is None else bias
 
-    def forward(self, enc_x: CKKSVector) -> CKKSVector:
-        result: CKKSVector = LinearFunction.apply(
+    def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
+        out_x: CKKSWrapper = LinearFunction.apply(
             enc_x, self.weight, self.bias
         )  # type: ignore
 
-        return result
+        return out_x

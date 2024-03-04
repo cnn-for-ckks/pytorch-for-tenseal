@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, random_split
 from torchseal.utils import seed_worker
+from torchseal.wrapper.ckks import CKKSWrapper
 from dataloader import FraminghamDataset
 from train import LogisticRegression
 from train_enc import EncLogisticRegression
@@ -14,26 +15,23 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
 
-    # Drop the secret key for server inference
-    server_context = context.copy()
-    server_context.make_context_public()
-
     # Model in evaluation mode
     enc_model.eval()
 
-    for data, target in test_loader:
+    for raw_data, raw_target in test_loader:
         # Encryption
-        raw_data = data[0].tolist()
-        data_enc = ts.ckks_vector(server_context, raw_data)
+        data = raw_data[0].tolist()
+        enc_data = ts.ckks_vector(context, data)
+        enc_data_wrapper = CKKSWrapper(enc_data)
 
         # Encrypted evaluation
-        enc_output = enc_model.forward(data_enc)
+        enc_output = enc_model.forward(enc_data_wrapper)
 
         # Decryption using client secret key
-        output = enc_output.decrypt(context.secret_key())
-        output = torch.tensor(output).view(1, -1)
+        output = enc_output.do_decryption()
 
         # Compute loss
+        target = raw_target[0]
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 

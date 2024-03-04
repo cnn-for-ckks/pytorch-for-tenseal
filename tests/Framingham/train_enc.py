@@ -1,9 +1,9 @@
 from typing import Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader, RandomSampler, random_split
-from tenseal import CKKSVector
 from torchseal.function import SigmoidFunction
 from torchseal.utils import seed_worker
+from torchseal.wrapper.ckks import CKKSWrapper
 from train import LogisticRegression
 from dataloader import FraminghamDataset
 
@@ -25,12 +25,12 @@ class EncLogisticRegression(Module):
             torch_nn.linear.bias.data
         ) if torch_nn is not None else torchseal.nn.Linear(n_features, 1)
 
-    def forward(self, x: CKKSVector) -> CKKSVector:
+    def forward(self, x: CKKSWrapper) -> CKKSWrapper:
         # Fully connected layer
         first_result = self.linear.forward(x)
 
         # Sigmoid activation function
-        first_result_activated: CKKSVector = SigmoidFunction.apply(
+        first_result_activated: CKKSWrapper = SigmoidFunction.apply(
             first_result
         )  # type: ignore
 
@@ -44,28 +44,22 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
     for epoch in range(n_epochs):
         train_loss = 0.
 
-        for data, target in train_loader:
+        for raw_data, raw_target in train_loader:
             optimizer.zero_grad()
 
             # Encrypt the data
-            raw_data = data[0].tolist()
-            enc_data = ts.ckks_vector(context, raw_data)
+            data = raw_data[0].tolist()
+            enc_data = ts.ckks_vector(context, data)
+            enc_data_wrapper = CKKSWrapper(enc_data)
 
             # Encrypted evaluation
-            enc_output = enc_model.forward(enc_data)
+            enc_output = enc_model.forward(enc_data_wrapper)
 
             # Decryption of result
-            output = torch.tensor(
-                # Clip the result to be in [0, 1]
-                list(
-                    map(
-                        lambda x: 1. if x > 1 else 0. if x < 0 else x,
-                        enc_output.decrypt()
-                    )
-                ),
-                requires_grad=True
-            ).view(1, -1)  # BUG: Tensor must be instantiated in input to enable backward propagation
+            output = enc_output.do_decryption()
 
+            # Compute loss
+            target = raw_target[0]
             loss = criterion.forward(output, target)
             loss.backward()  # BUG: Backward autograd not called
             optimizer.step()  # BUG: Weight update not called
@@ -132,14 +126,14 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
+    # # NOTE: Check the weights and biases of the model
+    # print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Train the model
     enc_model = enc_train(context, enc_model, train_loader, criterion, optim)
 
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
+    # # NOTE: Check the weights and biases of the model
+    # print("\n".join(list(map(str, enc_model.parameters()))))
 
     # Save the model
     torch.save(enc_model.state_dict(), "./parameters/framingham/model-enc.pth")

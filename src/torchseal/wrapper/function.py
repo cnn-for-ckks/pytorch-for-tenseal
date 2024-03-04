@@ -1,6 +1,6 @@
 from torch.autograd.function import NestedIOFunction
-from tenseal import CKKSVector
+from torchseal.wrapper.ckks import CKKSWrapper
 
 
-class CKKSFunctionCtx(NestedIOFunction):
-    enc_x: CKKSVector
+class CKKSFunctionWrapper(NestedIOFunction):
+    enc_x: CKKSWrapper

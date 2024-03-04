@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from torch import Tensor
 from torch.nn import Module, Parameter
-from tenseal import CKKSVector
+from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.function.conv2d import Conv2dFunction
 
 import torch
@@ -24,9 +24,9 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
             torch.rand(out_channels)
         ) if bias is None else bias
 
-    def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
-        result: CKKSVector = Conv2dFunction.apply(
+    def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
+        out_x: CKKSWrapper = Conv2dFunction.apply(
             enc_x, self.weight, self.bias, windows_nb
         )  # type: ignore
 
-        return result
+        return out_x

@@ -1,34 +1,30 @@
 from typing import Tuple
 from torch import Tensor
 from torch.autograd import Function
-from tenseal import CKKSVector
-from torchseal.wrapper.function import CKKSFunctionCtx
-
-import torch
+from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper.function import CKKSFunctionWrapper
 
 
 class SquareFunction(Function):
     @staticmethod
-    def forward(ctx: CKKSFunctionCtx, enc_x: CKKSVector) -> CKKSVector:
+    def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.enc_x = enc_x
 
         # Apply square function to the encrypted input
-        result: CKKSVector = enc_x.square()  # type: ignore
+        out_x = enc_x.do_square()
 
-        return result
+        return out_x
 
     @staticmethod
-    def backward(ctx: CKKSFunctionCtx, grad_output: Tensor) -> Tuple[Tensor]:
+    def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Tensor]:
         # Get the saved tensors
         enc_x = ctx.enc_x
 
-        # Decrypt the encrypted input and gradient
-        x = torch.tensor(
-            list(map(lambda x: 2 * x, enc_x.decrypt())), requires_grad=True
-        )
+        # Do the backward operation
+        out_x = enc_x.do_square_backward()
 
         # Compute the gradients
-        grad_input = grad_output.mm(x)
+        grad_input = grad_output.mm(out_x)
 
         return grad_input,

@@ -5,6 +5,7 @@ from torchvision import datasets, transforms
 from tenseal import CKKSVector
 from torchseal.function import SquareFunction
 from torchseal.utils import seed_worker
+from torchseal.wrapper.ckks import CKKSWrapper
 from train import ConvNet
 
 import torch
@@ -44,12 +45,12 @@ class EncConvNet(Module):
             torch_nn.fc2.bias.data,
         ) if torch_nn is not None else torchseal.nn.Linear(hidden, output)
 
-    def forward(self, enc_x: CKKSVector, windows_nb: int) -> CKKSVector:
+    def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
         # Convolutional layer
         first_result = self.conv1.forward(enc_x, windows_nb)
 
         # Square activation function
-        first_result_squared: CKKSVector = SquareFunction.apply(
+        first_result_squared: CKKSWrapper = SquareFunction.apply(
             first_result
         )  # type: ignore
 
@@ -57,7 +58,7 @@ class EncConvNet(Module):
         second_result = self.fc1.forward(first_result_squared)
 
         # Square activation function
-        second_result_squared: CKKSVector = SquareFunction.apply(
+        second_result_squared: CKKSWrapper = SquareFunction.apply(
             second_result
         )  # type: ignore
 
@@ -74,9 +75,6 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     # Unpack the kernel shape
     kernel_shape_h, kernel_shape_w = kernel_shape
 
-    # Copy the context for server inference (secret key included)
-    server_context = context.copy()
-
     for epoch in range(1, n_epochs+1):
         train_loss = 0.
 
@@ -85,7 +83,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Encoding and encryption
             result: Tuple[CKKSVector, int] = ts.im2col_encoding(
-                server_context,
+                context,
                 data.view(28, 28).tolist(),
                 kernel_shape_h,
                 kernel_shape_w,
@@ -94,15 +92,13 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Unpack the result
             enc_x, windows_nb = result
+            enc_x_wrapper = CKKSWrapper(enc_x)
 
             # Encrypted evaluation
-            enc_output = enc_model.forward(enc_x, windows_nb)
+            enc_output = enc_model.forward(enc_x_wrapper, windows_nb)
 
             # Decryption of result
-            output = torch.tensor(
-                enc_output.decrypt(),
-                requires_grad=True
-            ).view(1, -1)  # BUG: Tensor must be instantiated in input to enable backward propagation
+            output = enc_output.do_decryption()
 
             loss = criterion.forward(output, target)
             loss.backward()  # BUG: Backward autograd not called
