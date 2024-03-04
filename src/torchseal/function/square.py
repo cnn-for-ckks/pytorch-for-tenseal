@@ -9,7 +9,7 @@ class SquareFunction(Function):
     @staticmethod
     def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
-        ctx.enc_x = enc_x
+        ctx.enc_x = enc_x.clone()
 
         # Apply square function to the encrypted input
         out_x = enc_x.do_square()
@@ -19,12 +19,12 @@ class SquareFunction(Function):
     @staticmethod
     def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Tensor]:
         # Get the saved tensors
-        enc_x = ctx.enc_x
+        x = ctx.enc_x.do_decryption()
 
         # Do the backward operation
-        out_x = enc_x.do_square_backward()
+        out = x.do_square_backward()
 
         # Compute the gradients
-        grad_input = grad_output.mm(out_x)
+        grad_input = grad_output.matmul(out)
 
         return grad_input,

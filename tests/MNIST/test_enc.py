@@ -38,7 +38,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 
         # Unpack the result
         enc_x, windows_nb = result
-        enc_x_wrapper = CKKSWrapper(enc_x)
+        enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(enc_x_wrapper, windows_nb)

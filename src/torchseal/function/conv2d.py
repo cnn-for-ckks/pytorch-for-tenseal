@@ -10,7 +10,7 @@ class Conv2dFunction(Function):
     def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor, windows_nb: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
-        ctx.enc_x = enc_x
+        ctx.enc_x = enc_x.clone()
 
         # Apply the convolution to the encrypted input
         out_x = enc_x.do_conv2d(weight, bias, windows_nb)
@@ -22,7 +22,7 @@ class Conv2dFunction(Function):
     def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
-        enc_x = ctx.enc_x
+        x = ctx.enc_x.do_decryption()
 
         # Unpack the saved tensors
         weight, = saved_tensors

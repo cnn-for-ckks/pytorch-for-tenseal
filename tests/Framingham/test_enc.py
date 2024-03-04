@@ -22,7 +22,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         # Encryption
         data = raw_data[0].tolist()
         enc_data = ts.ckks_vector(context, data)
-        enc_data_wrapper = CKKSWrapper(enc_data)
+        enc_data_wrapper = CKKSWrapper(torch.rand(len(data)), enc_data)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(enc_data_wrapper)

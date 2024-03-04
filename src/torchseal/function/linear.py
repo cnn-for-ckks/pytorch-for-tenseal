@@ -10,7 +10,7 @@ class LinearFunction(Function):
     def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
-        ctx.enc_x = enc_x
+        ctx.enc_x = enc_x.clone()
 
         # Apply the linear transformation to the encrypted input
         out_x = enc_x.do_linear(weight, bias)
@@ -22,7 +22,7 @@ class LinearFunction(Function):
     def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
-        enc_x = ctx.enc_x
+        x = ctx.enc_x.do_decryption()
 
         # Unpack the saved tensors
         weight, = saved_tensors
@@ -35,11 +35,11 @@ class LinearFunction(Function):
 
         # Compute the gradients
         if result[0]:
-            grad_input = grad_output.mm(weight.t())
+            grad_input = grad_output.mul(weight.reshape(-1))
         if result[1]:
-            grad_weight = grad_output.t().mm(enc_x)
+            grad_weight = grad_output.mul(x).reshape(-1, 1)
         if result[2]:
-            grad_bias = grad_output.sum(0)
+            grad_bias = grad_output.sum(0).reshape(1)
 
         return grad_input, grad_weight, grad_bias
 

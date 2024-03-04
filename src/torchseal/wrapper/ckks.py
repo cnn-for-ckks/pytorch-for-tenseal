@@ -25,7 +25,7 @@ class CKKSWrapper(Tensor):
     #     return super(CKKSWrapper, cls).__torch_function__(func, types, *args, **kwargs)
 
     # Overridden methods
-    def __new__(cls, _: CKKSVector, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _data: Tensor, _ckks_data: CKKSVector, *args, **kwargs) -> "CKKSWrapper":
         # Create the tensor
         data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
 
@@ -35,19 +35,29 @@ class CKKSWrapper(Tensor):
         return instance
 
     # Overridden methods
-    def __init__(self, ckks_data: CKKSVector, *args, **kwargs) -> None:
+    def __init__(self, data: Tensor, ckks_data: CKKSVector, *args, **kwargs) -> None:
         # Call the super constructor
         super(Tensor, self).__init__(*args, **kwargs)
 
         # Set the data
+        self.data = data
         self.ckks_data = ckks_data
 
     # Overridden methods
-    def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
-        # Create a new tensor
-        tensor = super().view(other.size())
+    def clone(self, *args, **kwargs) -> "CKKSWrapper":
+        # Clone the data
+        data = super(Tensor, self).clone(*args, **kwargs)
+        ckks_data: CKKSVector = self.ckks_data.copy()  # type: ignore
 
-        self.data = tensor.data
+        # Create the new instance
+        instance = CKKSWrapper(data, ckks_data)
+
+        return instance
+
+    # Overridden methods
+
+    def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        self.data = super(Tensor, self).view_as(other)
 
         return self
 
@@ -58,8 +68,14 @@ class CKKSWrapper(Tensor):
             self.ckks_data.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(weight.tolist(), bias.tolist())
         ])
 
-        # Update the data
+        # Change the shape of the data
+        tensor = torch.rand(new_ckks_vector.size())
+
+        # Update the CKKS data
         self.ckks_data = new_ckks_vector
+
+        # Update the data
+        self.data = tensor.data
 
         return self
 
@@ -72,8 +88,14 @@ class CKKSWrapper(Tensor):
             bias.tolist()
         )
 
+        # Change the shape of the data
+        tensor = torch.rand(new_ckks_vector.size())
+
         # Update the data
         self.ckks_data = new_ckks_vector
+
+        # Update the data
+        self.data = tensor.data
 
         return self
 
@@ -127,6 +149,16 @@ class CKKSWrapper(Tensor):
         new_tensor = torch.tensor(
             list(map(lambda x: 2 * x, self.data))
         )
+
+        # Update the data
+        self.data = new_tensor.data
+
+        return self
+
+    # Data Operation
+    def do_clamp(self, min: float, max: float) -> "CKKSWrapper":
+        # Apply the clamp function to the data
+        new_tensor = torch.clamp(self.data, min=min, max=max)
 
         # Update the data
         self.data = new_tensor.data
