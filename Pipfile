@@ -10,6 +10,7 @@ torch = "*"
 torchvision = "*"
 torchseal = {file = "."}
 pandas = "*"
+torchviz = "*"
 
 [dev-packages]
 

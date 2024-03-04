@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader, RandomSampler, random_split
 from torchseal.function import SigmoidFunction
 from torchseal.utils import seed_worker
 from torchseal.wrapper.ckks import CKKSWrapper
+# from torchviz import make_dot
 from train import LogisticRegression
 from dataloader import FraminghamDataset
 
@@ -56,11 +57,23 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             enc_output = enc_model.forward(enc_data_wrapper)
 
             # Decryption of result
-            output = enc_output.do_decryption()
+            raw_output = enc_output.do_decryption()
+
+            # # NOTE: Delete this line after debugging
+            # make_dot(raw_output).render("raw-output", format="png")
+
+            # Reshape the output
+            output = raw_output.view(1, 1)
+
+            # # NOTE: Delete this line after debugging
+            # make_dot(output).render("output", format="png")
 
             # Compute loss
-            target = raw_target[0]
-            loss = criterion.forward(output, target)
+            loss = criterion.forward(output, raw_target)
+
+            # # NOTE: Delete this line after debugging
+            # make_dot(loss).render("loss", format="png")
+
             loss.backward()  # BUG: Backward autograd not called
             optimizer.step()  # BUG: Weight update not called
             train_loss += loss.item()
