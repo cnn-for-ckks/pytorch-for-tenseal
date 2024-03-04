@@ -22,7 +22,7 @@ def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn
 
     # Calculate and print avg test loss
     test_loss = test_loss / len(test_loader)
-    print(f"Test Loss: {test_loss:.6f}\n")
+    print(f"Test Loss: {test_loss:.6f}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, RandomSampler, random_split
 from torchseal.utils import seed_worker
 from torchseal.wrapper.ckks import CKKSWrapper
 from dataloader import FraminghamDataset
-from train import LogisticRegression
 from train_enc import EncLogisticRegression
 
 import torch
@@ -35,9 +34,11 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
+        print(f"Current Test Loss: {loss.item():.6f}")
+
     # Calculate and print avg test loss
     test_loss = test_loss / len(test_loader)
-    print(f"Test Loss: {test_loss:.6f}\n")
+    print(f"\nAverage Test Loss: {test_loss:.6f}")
 
 
 if __name__ == "__main__":
@@ -53,23 +54,27 @@ if __name__ == "__main__":
     generator = torch.Generator().manual_seed(73)
     _, test_dataset = random_split(dataset, [0.9, 0.1], generator=generator)
 
+    # Create the samplers
+    sampler = RandomSampler(test_dataset, num_samples=20)
+
     # Set the batch size
     batch_size = 1
 
     # Create the data loader
     test_loader = DataLoader(
-        dataset=test_dataset, batch_size=batch_size, worker_init_fn=seed_worker
+        dataset=test_dataset, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
     )
 
     # Get the number of features
     n_features = dataset.features.shape[1]
 
     # Load the model
-    model = LogisticRegression(n_features)
-    model.load_state_dict(torch.load("./parameters/framingham/model.pth"))
-
-    # Create the encrypted model
-    enc_model = EncLogisticRegression(n_features, torch_nn=model)
+    enc_model = EncLogisticRegression(n_features)
+    enc_model.load_state_dict(
+        torch.load(
+            "./parameters/framingham/model-enc.pth"
+        )
+    )
 
     # Controls precision of the fractional part
     bits_scale = 26
