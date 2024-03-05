@@ -62,12 +62,10 @@ if __name__ == "__main__":
     # Get the number of features
     n_features = dataset.features.shape[1]
 
-    # Define criterion
-    criterion = torch.nn.BCELoss()
-
     # Create the model, criterion, and optimizer
     model = LogisticRegression(n_features)
     optim = torch.optim.SGD(model.parameters(), lr=0.1)
+    criterion = torch.nn.BCELoss()
 
     # Save the original model
     torch.save(
@@ -107,6 +105,7 @@ if __name__ == "__main__":
     # Create the model, criterion, and optimizer
     enc_model = EncLogisticRegression(n_features, torch_nn=original_model)
     enc_optim = torch.optim.SGD(enc_model.parameters(), lr=0.1)
+    enc_criterion = torch.nn.BCELoss()
 
     # Print the weights and biases of the model
     print("Ciphertext Model (Before Training):")
@@ -118,7 +117,7 @@ if __name__ == "__main__":
         context,
         enc_model,
         train_loader,
-        criterion,
+        enc_criterion,
         enc_optim,
         n_epochs=10
     )
@@ -130,7 +129,7 @@ if __name__ == "__main__":
     print()
 
     # Test the model
-    enc_test(context, enc_model, test_loader, criterion)
+    enc_test(context, enc_model, test_loader, enc_criterion)
 
     # Save the model
     torch.save(

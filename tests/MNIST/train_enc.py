@@ -34,14 +34,14 @@ class EncConvNet(Module):
         self.fc1 = torchseal.nn.Linear(
             torch_nn.fc1.in_features,
             torch_nn.fc1.out_features,
-            torch_nn.fc1.weight.T.data,
+            torch_nn.fc1.weight.data,
             torch_nn.fc1.bias.data,
         ) if torch_nn is not None else torchseal.nn.Linear(256, hidden)
 
         self.fc2 = torchseal.nn.Linear(
             torch_nn.fc2.in_features,
             torch_nn.fc2.out_features,
-            torch_nn.fc2.weight.T.data,
+            torch_nn.fc2.weight.data,
             torch_nn.fc2.bias.data,
         ) if torch_nn is not None else torchseal.nn.Linear(hidden, output)
 

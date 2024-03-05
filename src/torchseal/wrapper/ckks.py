@@ -83,7 +83,7 @@ class CKKSWrapper(Tensor):
     def do_linear(self, weight: Tensor, bias: Tensor) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
         new_ckks_vector = self.ckks_data.matmul(
-            weight.tolist()
+            weight.t().tolist()
         ).add(
             bias.tolist()
         )

@@ -17,7 +17,7 @@ class EncLogisticRegression(Module):
         self.linear = torchseal.nn.Linear(
             n_features,
             1,
-            torch_nn.linear.weight.T.data,
+            torch_nn.linear.weight.data,
             torch_nn.linear.bias.data
         ) if torch_nn is not None else torchseal.nn.Linear(n_features, 1)
 
@@ -57,7 +57,6 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             # Compute loss
             target = raw_target[0]
             loss = criterion.forward(output, target)
-
             loss.backward()
             optimizer.step()  # BUG: Weight and bias are not accurately updated
             train_loss += loss.item()

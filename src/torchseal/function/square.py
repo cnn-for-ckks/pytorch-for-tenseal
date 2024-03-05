@@ -25,6 +25,6 @@ class SquareFunction(Function):
         out = x.do_square_backward()
 
         # Compute the gradients
-        grad_input = grad_output.matmul(out)
+        grad_input = grad_output.mul(out)
 
         return grad_input,

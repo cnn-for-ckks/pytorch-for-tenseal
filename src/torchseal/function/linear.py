@@ -35,9 +35,9 @@ class LinearFunction(Function):
 
         # Compute the gradients
         if result[0]:
-            grad_input = grad_output.mul(weight.reshape(-1))
+            grad_input = grad_output.matmul(weight)
         if result[1]:
-            grad_weight = grad_output.mul(x).reshape(-1, 1)
+            grad_weight = grad_output.unsqueeze(0).t().matmul(x.unsqueeze(0))
         if result[2]:
             grad_bias = grad_output.sum(0).reshape(1)
 
