@@ -63,9 +63,12 @@ class CKKSWrapper(Tensor):
 
     # CKKS Operation
     def do_conv2d(self, weight: Tensor, bias: Tensor, windows_nb: int) -> "CKKSWrapper":
+        # TODO: Add support for multiple input channels
+        out_weight = weight[0]
+
         # Apply the convolution to the encrypted input
         new_ckks_vector = CKKSVector.pack_vectors([
-            self.ckks_data.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(weight.tolist(), bias.tolist())
+            self.ckks_data.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(out_weight.tolist(), bias.tolist())
         ])
 
         # Change the shape of the data
@@ -101,7 +104,6 @@ class CKKSWrapper(Tensor):
 
     # CKKS Operation
     def do_sigmoid(self) -> "CKKSWrapper":
-        # TODO: Do approximation of the sigmoid function using the polynomial approximation
         new_ckks_vector: CKKSVector = self.ckks_data.polyval(
             [0.5, 0.197, 0, -0.004]
         )  # type: ignore

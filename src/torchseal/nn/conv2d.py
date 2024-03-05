@@ -17,7 +17,7 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         # Create the weight and bias
         self.weight = Parameter(
             torch.rand(
-                out_channels, kernel_n_rows, kernel_n_cols
+                1, out_channels, kernel_n_rows, kernel_n_cols
             ) if weight is None else weight
         )
         self.bias = Parameter(

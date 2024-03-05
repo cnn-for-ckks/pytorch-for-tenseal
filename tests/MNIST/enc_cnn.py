@@ -24,6 +24,7 @@ class EncConvNet(Module):
                 torch_nn.conv1.stride[0],
                 0,  # TODO: Add support for padding
                 torch_nn.conv1.weight.data.view(
+                    torch_nn.conv1.in_channels,
                     torch_nn.conv1.out_channels,
                     torch_nn.conv1.kernel_size[0],
                     torch_nn.conv1.kernel_size[1]
