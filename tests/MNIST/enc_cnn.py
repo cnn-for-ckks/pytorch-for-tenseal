@@ -1,18 +1,15 @@
 from typing import Tuple, Optional
 from torch.nn import Module
-from torch.utils.data import DataLoader, RandomSampler
-from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
 from tenseal import CKKSVector
 from torchseal.function import SquareFunction
-from torchseal.utils import seed_worker
 from torchseal.wrapper.ckks import CKKSWrapper
-from train import ConvNet
+from cnn import ConvNet
 
 import torch
 import torchseal
 import tenseal as ts
 import numpy as np
-import random
 
 
 class EncConvNet(Module):
@@ -106,7 +103,9 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             train_loss += loss.item()
 
         # Calculate average losses
-        train_loss = train_loss / len(train_loader)
+        train_loss = 0 if len(
+            train_loader
+        ) == 0 else train_loss / len(train_loader)
 
         print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch, train_loss))
 
@@ -116,69 +115,64 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     return enc_model
 
 
-if __name__ == "__main__":
-    # Set the seed for reproducibility
-    torch.manual_seed(73)
-    np.random.seed(73)
-    random.seed(73)
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int) -> None:
+    # Initialize lists to monitor test loss and accuracy
+    test_loss = 0.
+    class_correct = list(0. for _ in range(10))
+    class_total = list(0. for _ in range(10))
 
-    # Load the data
-    train_data = datasets.MNIST(
-        "data", train=True, download=True, transform=transforms.ToTensor()
+    # Unpack the kernel shape
+    kernel_shape_h, kernel_shape_w = kernel_shape
+
+    # Model in evaluation mode
+    enc_model.eval()
+
+    for data, target in test_loader:
+        # Encoding and encryption
+        result: Tuple[CKKSVector, int] = ts.im2col_encoding(
+            context,
+            data.view(28, 28).tolist(),
+            kernel_shape_h,
+            kernel_shape_w,
+            stride
+        )  # type: ignore
+
+        # Unpack the result
+        enc_x, windows_nb = result
+        enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
+
+        # Encrypted evaluation
+        enc_output = enc_model.forward(enc_x_wrapper, windows_nb)
+
+        # Decryption of result using client secret key
+        output = enc_output.do_decryption().view(1, -1)
+
+        # Compute loss
+        loss = criterion.forward(output, target)
+        test_loss += loss.item()
+
+        # Convert output probabilities to predicted class
+        _, pred = torch.max(output, 1)
+
+        # Compare predictions to true label
+        correct = np.squeeze(pred.eq(target.data.view_as(pred)))
+
+        # Calculate test accuracy for each object class
+        label = target.data[0]
+        class_correct[label] += correct.item()
+        class_total[label] += 1
+
+    # Calculate and print avg test loss
+    test_loss = test_loss / sum(class_total)
+    print(f"Test Loss for Encrypted Data: {test_loss:.6f}\n")
+
+    for label in range(10):
+        print(
+            f"Test Accuracy of {label}: {0 if class_total[label] == 0 else int(100 * class_correct[label] / class_total[label])}% "
+            f"({int(class_correct[label])}/{int(class_total[label])})"
+        )
+
+    print(
+        f"\nTest Accuracy for Encrypted Data (Overall): {0 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
+        f"({int(np.sum(class_correct))}/{int(np.sum(class_total))})"
     )
-
-    # Create the samplers
-    generator = torch.Generator().manual_seed(73)
-    sampler = RandomSampler(train_data, num_samples=10, generator=generator)
-
-    # Set the batch size
-    batch_size = 1
-
-    # Create the data loaders
-    train_loader = DataLoader(
-        train_data, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
-    )
-
-    # Create the model, criterion, and optimizer
-    enc_model = EncConvNet()
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
-
-    # Controls precision of the fractional part
-    bits_scale = 26
-
-    # Create TenSEAL context
-    context = ts.context(
-        ts.SCHEME_TYPE.CKKS,
-        poly_modulus_degree=8192,
-        coeff_mod_bit_sizes=[
-            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
-        ]
-    )
-
-    # Set the scale
-    context.global_scale = pow(2, bits_scale)
-
-    # Galois keys are required to do ciphertext rotations
-    context.generate_galois_keys()
-
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
-
-    # Train the model
-    enc_model = enc_train(
-        context,
-        enc_model,
-        train_loader,
-        criterion,
-        optimizer,
-        kernel_shape=(7, 7),
-        stride=3,
-        n_epochs=10
-    )
-
-    # NOTE: Check the weights and biases of the model
-    print("\n".join(list(map(str, enc_model.parameters()))))
-
-    # Save the model
-    torch.save(enc_model.state_dict(), "./parameters/MNIST/model-enc.pth")

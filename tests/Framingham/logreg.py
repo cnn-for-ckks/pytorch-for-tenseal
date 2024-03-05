@@ -35,7 +35,9 @@ def train(model: LogisticRegression, train_loader: DataLoader, criterion: torch.
             train_loss += loss.item()
 
         # Calculate average losses
-        train_loss = train_loss / len(train_loader)
+        train_loss = 0 if len(
+            train_loader
+        ) == 0 else train_loss / len(train_loader)
 
         print(
             "Epoch: {} \tTraining Loss (Plaintext): {:.6f}".format(
@@ -62,5 +64,5 @@ def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn
         test_loss += loss.item()
 
     # Calculate and print avg test loss
-    test_loss = test_loss / len(test_loader)
+    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
     print(f"Average Test Loss (Plaintext): {test_loss:.6f}")

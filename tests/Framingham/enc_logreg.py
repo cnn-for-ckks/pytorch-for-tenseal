@@ -62,7 +62,9 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             train_loss += loss.item()
 
         # Calculate average losses
-        train_loss = train_loss / len(train_loader)
+        train_loss = 0 if len(
+            train_loader
+        ) == 0 else train_loss / len(train_loader)
 
         print(
             "Epoch: {} \tTraining Loss (Ciphertext): {:.6f}".format(
@@ -103,5 +105,5 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
 
     # Calculate and print avg test loss
-    test_loss = test_loss / len(test_loader)
+    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
     print(f"\nAverage Test Loss (Ciphertext): {test_loss:.6f}")
