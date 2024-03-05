@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, RandomSampler, random_split
+from torch.utils.data import DataLoader, Subset, random_split
 from torchseal.utils import seed_worker
 from dataloader import FraminghamDataset
 from logreg import LogisticRegression, train, test
@@ -36,27 +36,24 @@ if __name__ == "__main__":
     # Load the data
     dataset = FraminghamDataset(csv_file="./data/framingham.csv")
 
+    # Take subset of the data
+    subdataset = Subset(dataset, list(range(100)))
+
     # Split the data into training and testing
     generator = torch.Generator().manual_seed(73)
     train_dataset, test_dataset = random_split(
-        dataset, [0.9, 0.1], generator=generator
+        subdataset, [0.9, 0.1], generator=generator
     )
 
-    # Create the samplers
-    train_sampler = RandomSampler(
-        train_dataset, num_samples=10, generator=generator)
-    test_sampler = RandomSampler(
-        test_dataset, num_samples=10, generator=generator)
-
     # Set the batch size
-    batch_size = 1
+    batch_size = 1  # NOTE: This is set to 1 to allow for encryption
 
     # Create the data loaders
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, sampler=train_sampler, worker_init_fn=seed_worker
+        train_dataset, batch_size=batch_size, worker_init_fn=seed_worker
     )
     test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, sampler=test_sampler, worker_init_fn=seed_worker
+        test_dataset, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Get the number of features
