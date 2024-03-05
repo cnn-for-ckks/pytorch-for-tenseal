@@ -93,7 +93,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         enc_output = enc_model.forward(enc_data_wrapper)
 
         # Decryption using client secret key
-        output = enc_output.do_decryption()
+        output = enc_output.do_decryption().clamp(0, 1)
 
         # Compute loss
         target = raw_target[0]

@@ -37,12 +37,12 @@ if __name__ == "__main__":
     dataset = FraminghamDataset(csv_file="./data/framingham.csv")
 
     # Take subset of the data
-    subdataset = Subset(dataset, list(range(100)))
+    subdataset = Subset(dataset, list(range(20)))
 
     # Split the data into training and testing
     generator = torch.Generator().manual_seed(73)
     train_dataset, test_dataset = random_split(
-        subdataset, [0.9, 0.1], generator=generator
+        subdataset, [0.5, 0.5], generator=generator
     )
 
     # Set the batch size
