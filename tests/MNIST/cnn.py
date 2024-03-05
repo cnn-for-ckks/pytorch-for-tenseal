@@ -85,8 +85,8 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
 
         # Calculate test accuracy for each object class
         for i in range(len(target)):
-            label = target.data[i]
-            class_correct[label] += correct[i].item()
+            label = target.data[0]
+            class_correct[label] += correct.item()
             class_total[label] += 1
 
     # Calculate and print avg test loss

@@ -31,7 +31,7 @@ class EncConvNet(Module):
             torch_nn.fc1.out_features,
             torch_nn.fc1.weight.data,
             torch_nn.fc1.bias.data,
-        ) if torch_nn is not None else torchseal.nn.Linear(256, hidden)
+        ) if torch_nn is not None else torchseal.nn.Linear(64, hidden)
 
         self.fc2 = torchseal.nn.Linear(
             torch_nn.fc2.in_features,
@@ -73,13 +73,13 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     for epoch in range(1, n_epochs+1):
         train_loss = 0.
 
-        for data, target in train_loader:
+        for raw_data, raw_target in train_loader:
             optimizer.zero_grad()
 
             # Encoding and encryption
             result: Tuple[CKKSVector, int] = ts.im2col_encoding(
                 context,
-                data.view(28, 28).tolist(),
+                raw_data.view(28, 28).tolist(),
                 kernel_shape_h,
                 kernel_shape_w,
                 stride
@@ -87,15 +87,18 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Unpack the result
             enc_x, windows_nb = result
-            enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
+            enc_x_wrapper = CKKSWrapper(torch.rand(enc_x.size()), enc_x)
 
             # Encrypted evaluation
             enc_output = enc_model.forward(
-                enc_x_wrapper, windows_nb, stride, padding)
+                enc_x_wrapper, windows_nb, stride, padding
+            )
 
             # Decryption of result
             output = enc_output.do_decryption()
 
+            # Compute loss
+            target = raw_target[0]
             loss = criterion.forward(output, target)
             loss.backward()
             optimizer.step()  # BUG: Weight and bias are not accurately updated
@@ -138,7 +141,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 
         # Unpack the result
         enc_x, windows_nb = result
-        enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
+        enc_x_wrapper = CKKSWrapper(torch.rand(enc_x.size()), enc_x)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(

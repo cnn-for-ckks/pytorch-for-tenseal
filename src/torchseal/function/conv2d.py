@@ -38,4 +38,15 @@ class Conv2dFunction(Function):
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None
 
+        if result[0]:
+            grad_input = conv2d_input(
+                x.shape, weight, grad_output, stride=stride, padding=padding
+            )
+        if result[1]:
+            grad_weight = conv2d_weight(
+                x, weight.shape, grad_output, stride=stride, padding=padding
+            )
+        if result[2]:
+            grad_bias = grad_output.sum(0).reshape(1)
+
         return grad_input, grad_weight, grad_bias
