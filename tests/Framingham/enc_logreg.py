@@ -58,7 +58,7 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             target = raw_target[0]
             loss = criterion.forward(output, target)
             loss.backward()
-            optimizer.step()  # BUG: Weight and bias are not accurately updated
+            optimizer.step()
             train_loss += loss.item()
 
         # Calculate average losses

@@ -1,4 +1,3 @@
-from math import e
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from torchseal.utils import seed_worker
@@ -115,5 +114,6 @@ if __name__ == "__main__":
         enc_subset_test_loader,
         enc_criterion,
         kernel_shape=(7, 7),
-        stride=3
+        stride=3,
+        padding=0
     )

@@ -7,7 +7,7 @@ from torchseal.function.conv2d import Conv2dFunction
 import torch
 
 
-class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
+class Conv2d(Module):  # TODO: Add support for in_channels and out_channels (this enables the use of multiple convolutions in a row)
     def __init__(self, kernel_size: Tuple[int, int], weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
@@ -24,9 +24,9 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
             torch.rand(1)
         ) if bias is None else bias
 
-    def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
+    def forward(self, enc_x: CKKSWrapper, windows_nb: int, stride: int, padding: int) -> CKKSWrapper:
         out_x: CKKSWrapper = Conv2dFunction.apply(
-            enc_x, self.weight, self.bias, windows_nb
+            enc_x, self.weight, self.bias, windows_nb, stride, padding
         )  # type: ignore
 
         return out_x

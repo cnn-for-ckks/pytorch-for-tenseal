@@ -40,9 +40,9 @@ class EncConvNet(Module):
             torch_nn.fc2.bias.data,
         ) if torch_nn is not None else torchseal.nn.Linear(hidden, output)
 
-    def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
+    def forward(self, enc_x: CKKSWrapper, windows_nb: int, stride: int, padding: int) -> CKKSWrapper:
         # Convolutional layer
-        first_result = self.conv1.forward(enc_x, windows_nb)
+        first_result = self.conv1.forward(enc_x, windows_nb, stride, padding)
 
         # Square activation function
         first_result_squared: CKKSWrapper = SquareFunction.apply(
@@ -63,7 +63,7 @@ class EncConvNet(Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, n_epochs: int = 10) -> EncConvNet:
+def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, padding: int, n_epochs: int = 10) -> EncConvNet:
     # Model in training mode
     enc_model.train()
 
@@ -90,7 +90,8 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
 
             # Encrypted evaluation
-            enc_output = enc_model.forward(enc_x_wrapper, windows_nb)
+            enc_output = enc_model.forward(
+                enc_x_wrapper, windows_nb, stride, padding)
 
             # Decryption of result
             output = enc_output.do_decryption()
@@ -113,7 +114,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     return enc_model
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int) -> None:
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int, padding: int, ) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
     class_correct = list(0. for _ in range(10))
@@ -140,7 +141,9 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         enc_x_wrapper = CKKSWrapper(torch.rand(len(data)), enc_x)
 
         # Encrypted evaluation
-        enc_output = enc_model.forward(enc_x_wrapper, windows_nb)
+        enc_output = enc_model.forward(
+            enc_x_wrapper, windows_nb, stride, padding
+        )
 
         # Decryption of result using client secret key
         output = enc_output.do_decryption().view(1, -1)
