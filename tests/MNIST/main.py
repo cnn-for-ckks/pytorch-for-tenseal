@@ -42,8 +42,8 @@ if __name__ == "__main__":
     )
 
     # Subset the data
-    subset_train_data = Subset(train_data, list(range(50)))
-    subset_test_data = Subset(test_data, list(range(50)))
+    subset_train_data = Subset(train_data, list(range(20)))
+    subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
     batch_size = 1
@@ -69,6 +69,7 @@ if __name__ == "__main__":
 
     # Print the weights and biases of the model
     print("Plaintext Model (Before Training):")
+    print("Number of Parameters:", len(list(map(str, model.parameters()))))
     print("\n".join(list(map(str, model.parameters()))))
     print()
 
@@ -90,51 +91,60 @@ if __name__ == "__main__":
     # Save the model
     torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")
 
-    # # Create the trained model
-    # original_model = ConvNet()
-    # original_model.load_state_dict(
-    #     torch.load(
-    #         "./parameters/MNIST/original-model.pth"
-    #     )
-    # )
+    # Create the trained model
+    original_model = ConvNet()
+    original_model.load_state_dict(
+        torch.load(
+            "./parameters/MNIST/trained-model.pth"
+        )
+    )
 
-    # # Set the batch size
-    # enc_batch_size = 1  # NOTE: This is set to 1 to allow for encryption
+    # Set the batch size
+    enc_batch_size = 1  # NOTE: This is set to 1 to allow for encryption
 
-    # # Create the encrypted data loaders
-    # enc_subset_train_loader = DataLoader(
-    #     subset_train_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
-    # )
-    # enc_subset_test_loader = DataLoader(
-    #     subset_test_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
-    # )
+    # Create the encrypted data loaders
+    enc_subset_train_loader = DataLoader(
+        subset_train_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
+    )
+    enc_subset_test_loader = DataLoader(
+        subset_test_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
+    )
 
-    # # Create the model, criterion, and optimizer
-    # enc_model = EncConvNet(torch_nn=original_model)
-    # enc_criterion = torch.nn.CrossEntropyLoss()
-    # enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
+    # Create the model, criterion, and optimizer
+    enc_model = EncConvNet(torch_nn=original_model)
+    enc_criterion = torch.nn.CrossEntropyLoss()
+    enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
 
-    # # Encrypted training
-    # enc_model = enc_train(
-    #     context,
-    #     enc_model,
-    #     enc_subset_train_loader,
-    #     enc_criterion,
-    #     enc_optimizer,
-    #     kernel_shape=(7, 7),
-    #     stride=3,
-    #     padding=0,
-    #     n_epochs=10
-    # )
-    # print()
+    # Print the weights and biases of the model
+    print("Ciphertext Model (Before Training):")
+    print("Number of Parameters:", len(list(map(str, enc_model.parameters()))))
+    print("\n".join(list(map(str, enc_model.parameters()))))
+    print()
 
-    # # Encrypted evaluation
-    # enc_test(
-    #     context,
-    #     enc_model,
-    #     enc_subset_test_loader,
-    #     enc_criterion,
-    #     kernel_shape=(7, 7),
-    #     stride=3,
-    #     padding=0
-    # )
+    # Encrypted training
+    enc_model = enc_train(
+        context,
+        enc_model,
+        enc_subset_train_loader,
+        enc_criterion,
+        enc_optimizer,
+        kernel_shape=(7, 7),
+        stride=3,
+        n_epochs=10
+    )
+    print()
+
+    # Print the weights and biases of the model
+    print("Ciphertext Model (After Training):")
+    print("\n".join(list(map(str, enc_model.parameters()))))
+    print()
+
+    # Encrypted evaluation
+    enc_test(
+        context,
+        enc_model,
+        enc_subset_test_loader,
+        enc_criterion,
+        kernel_shape=(7, 7),
+        stride=3,
+    )

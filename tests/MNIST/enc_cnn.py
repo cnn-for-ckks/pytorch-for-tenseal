@@ -17,32 +17,42 @@ class EncConvNet(Module):
         super(EncConvNet, self).__init__()
 
         # Create the encrypted model
-        self.conv1 = torchseal.nn.Conv2d(
-            (torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]),
-            torch_nn.conv1.weight.data.view(
-                torch_nn.conv1.kernel_size[0],
-                torch_nn.conv1.kernel_size[1]
-            ),
-            torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
-        ) if torch_nn is not None else torchseal.nn.Conv2d((7, 7))
+        if torch_nn is not None:
+            self.conv1 = torchseal.nn.Conv2d(
+                torch_nn.conv1.out_channels,
+                (torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]),
+                torch_nn.conv1.stride[0],
+                0,  # TODO: Add support for padding
+                torch_nn.conv1.weight.data.view(
+                    torch_nn.conv1.out_channels,
+                    torch_nn.conv1.kernel_size[0],
+                    torch_nn.conv1.kernel_size[1]
+                ),
+                torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
+            )
 
-        self.fc1 = torchseal.nn.Linear(
-            torch_nn.fc1.in_features,
-            torch_nn.fc1.out_features,
-            torch_nn.fc1.weight.data,
-            torch_nn.fc1.bias.data,
-        ) if torch_nn is not None else torchseal.nn.Linear(64, hidden)
+            self.fc1 = torchseal.nn.Linear(
+                torch_nn.fc1.in_features,
+                torch_nn.fc1.out_features,
+                torch_nn.fc1.weight.data,
+                torch_nn.fc1.bias.data,
+            )
 
-        self.fc2 = torchseal.nn.Linear(
-            torch_nn.fc2.in_features,
-            torch_nn.fc2.out_features,
-            torch_nn.fc2.weight.data,
-            torch_nn.fc2.bias.data,
-        ) if torch_nn is not None else torchseal.nn.Linear(hidden, output)
+            self.fc2 = torchseal.nn.Linear(
+                torch_nn.fc2.in_features,
+                torch_nn.fc2.out_features,
+                torch_nn.fc2.weight.data,
+                torch_nn.fc2.bias.data,
+            )
 
-    def forward(self, enc_x: CKKSWrapper, windows_nb: int, stride: int, padding: int) -> CKKSWrapper:
+        else:
+            self.conv1 = torchseal.nn.Conv2d(4, (7, 7), 3, 0)
+            self.fc1 = torchseal.nn.Linear(256, hidden)
+            self.fc2 = torchseal.nn.Linear(hidden, output)
+
+    def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
         # Convolutional layer
-        first_result = self.conv1.forward(enc_x, windows_nb, stride, padding)
+        first_result = self.conv1.forward(enc_x, windows_nb)
 
         # Square activation function
         first_result_squared: CKKSWrapper = SquareFunction.apply(
@@ -63,7 +73,7 @@ class EncConvNet(Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, padding: int, n_epochs: int = 10) -> EncConvNet:
+def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_shape: Tuple[int, int], stride: int, n_epochs: int = 10) -> EncConvNet:
     # Model in training mode
     enc_model.train()
 
@@ -91,7 +101,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
 
             # Encrypted evaluation
             enc_output = enc_model.forward(
-                enc_x_wrapper, windows_nb, stride, padding
+                enc_x_wrapper, windows_nb
             )
 
             # Decryption of result
@@ -117,7 +127,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     return enc_model
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int, padding: int, ) -> None:
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_shape: Tuple[int, int], stride: int) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
     class_correct = list(0. for _ in range(10))
@@ -129,11 +139,11 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     # Model in evaluation mode
     enc_model.eval()
 
-    for data, target in test_loader:
+    for raw_data, raw_target in test_loader:
         # Encoding and encryption
         result: Tuple[CKKSVector, int] = ts.im2col_encoding(
             context,
-            data.view(28, 28).tolist(),
+            raw_data.view(28, 28).tolist(),
             kernel_shape_h,
             kernel_shape_w,
             stride
@@ -145,24 +155,25 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 
         # Encrypted evaluation
         enc_output = enc_model.forward(
-            enc_x_wrapper, windows_nb, stride, padding
+            enc_x_wrapper, windows_nb
         )
 
         # Decryption of result using client secret key
-        output = enc_output.do_decryption().view(1, -1)
+        output = enc_output.do_decryption()
 
         # Compute loss
+        target = raw_target[0]
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
         # Convert output probabilities to predicted class
-        _, pred = torch.max(output, 1)
+        _, pred = torch.max(output, 0)
 
         # Compare predictions to true label
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
 
         # Calculate test accuracy for each object class
-        label = target.data[0]
+        label = target.data.item()
         class_correct[label] += correct.item()
         class_total[label] += 1
 

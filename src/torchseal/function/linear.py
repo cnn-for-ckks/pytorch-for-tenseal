@@ -39,7 +39,7 @@ class LinearFunction(Function):
         if result[1]:
             grad_weight = grad_output.unsqueeze(0).t().matmul(x.unsqueeze(0))
         if result[2]:
-            grad_bias = grad_output.sum(0).reshape(1)
+            grad_bias = grad_output
 
         return grad_input, grad_weight, grad_bias
 
