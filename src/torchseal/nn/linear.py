@@ -12,11 +12,11 @@ class Linear(Module):
         super(Linear, self).__init__()
 
         self.weight = Parameter(
-            torch.rand(in_features, out_features)
-        ) if weight is None else weight
+            torch.rand(in_features, out_features) if weight is None else weight
+        )
         self.bias = Parameter(
-            torch.rand(out_features)
-        ) if bias is None else bias
+            torch.rand(out_features) if bias is None else bias
+        )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         out_x: CKKSWrapper = LinearFunction.apply(
