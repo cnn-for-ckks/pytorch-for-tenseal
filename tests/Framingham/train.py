@@ -1,6 +1,6 @@
 from torch import Tensor
 from torch.nn import Module
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, RandomSampler, random_split
 from torchseal.utils import seed_worker
 from dataloader import FraminghamDataset
 
@@ -62,12 +62,15 @@ if __name__ == "__main__":
     generator = torch.Generator().manual_seed(73)
     train_dataset, _ = random_split(dataset, [0.9, 0.1], generator=generator)
 
+    # Create the samplers
+    sampler = RandomSampler(train_dataset, num_samples=10, generator=generator)
+
     # Set the batch size
-    batch_size = 64
+    batch_size = 1
 
     # Create the data loader
     train_loader = DataLoader(
-        dataset=train_dataset, batch_size=batch_size, worker_init_fn=seed_worker
+        dataset=train_dataset, batch_size=batch_size, sampler=sampler, worker_init_fn=seed_worker
     )
 
     # Get the number of features

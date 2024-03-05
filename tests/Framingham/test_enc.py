@@ -55,7 +55,8 @@ if __name__ == "__main__":
     _, test_dataset = random_split(dataset, [0.9, 0.1], generator=generator)
 
     # Create the samplers
-    sampler = RandomSampler(test_dataset, num_samples=20)
+    generator = torch.Generator().manual_seed(73)
+    sampler = RandomSampler(test_dataset, num_samples=10, generator=generator)
 
     # Set the batch size
     batch_size = 1

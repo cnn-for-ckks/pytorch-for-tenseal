@@ -91,7 +91,7 @@ if __name__ == "__main__":
     train_dataset, _ = random_split(dataset, [0.9, 0.1], generator=generator)
 
     # Create the samplers
-    sampler = RandomSampler(train_dataset, num_samples=10)
+    sampler = RandomSampler(train_dataset, num_samples=10, generator=generator)
 
     # Set the batch size
     batch_size = 1
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         train_loader,
         criterion,
         optim,
-        n_epochs=20
+        n_epochs=10
     )
 
     # NOTE: Check the weights and biases of the model

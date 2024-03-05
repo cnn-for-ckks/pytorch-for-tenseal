@@ -128,7 +128,8 @@ if __name__ == "__main__":
     )
 
     # Create the samplers
-    sampler = RandomSampler(train_data, num_samples=10)
+    generator = torch.Generator().manual_seed(73)
+    sampler = RandomSampler(train_data, num_samples=10, generator=generator)
 
     # Set the batch size
     batch_size = 1

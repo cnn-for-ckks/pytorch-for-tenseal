@@ -62,11 +62,9 @@ if __name__ == "__main__":
         "data", train=False, download=True, transform=transforms.ToTensor()
     )
 
-    # Set the number of samples
-    num_samples = 100
-
     # Create the samplers
-    sampler = RandomSampler(test_data, num_samples=num_samples)
+    generator = torch.Generator().manual_seed(73)
+    sampler = RandomSampler(test_data, num_samples=100, generator=generator)
 
     # Set the batch size
     batch_size = 64
