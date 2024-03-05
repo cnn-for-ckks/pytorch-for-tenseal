@@ -31,6 +31,6 @@ class Conv2dFunction(Function):
         result: Tuple[bool, bool, bool] = ctx.needs_input_grad  # type: ignore
 
         # Initialize the gradients
-        grad_input = grad_weight = grad_bias = grad_output  # TODO: Compute the gradients
+        grad_input = grad_weight = grad_bias = None  # TODO: Compute the gradients
 
         return grad_input, grad_weight, grad_bias

@@ -18,15 +18,13 @@ class EncConvNet(Module):
 
         # Create the encrypted model
         self.conv1 = torchseal.nn.Conv2d(
-            torch_nn.conv1.out_channels,
             (torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]),
             torch_nn.conv1.weight.data.view(
-                torch_nn.conv1.out_channels,
                 torch_nn.conv1.kernel_size[0],
                 torch_nn.conv1.kernel_size[1]
             ),
             torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
-        ) if torch_nn is not None else torchseal.nn.Conv2d(4, (7, 7))
+        ) if torch_nn is not None else torchseal.nn.Conv2d((7, 7))
 
         self.fc1 = torchseal.nn.Linear(
             torch_nn.fc1.in_features,

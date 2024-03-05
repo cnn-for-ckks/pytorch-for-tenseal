@@ -8,7 +8,7 @@ import torch
 
 
 class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
-    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
+    def __init__(self, kernel_size: Tuple[int, int], weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Unpack the kernel size
@@ -17,11 +17,11 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         # Create the weight and bias
         self.weight = Parameter(
             torch.rand(
-                out_channels, kernel_n_rows, kernel_n_cols
+                kernel_n_rows, kernel_n_cols
             )
         ) if weight is None else weight
         self.bias = Parameter(
-            torch.rand(out_channels)
+            torch.rand(1)
         ) if bias is None else bias
 
     def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:

@@ -10,20 +10,26 @@ class ConvNet(Module):
     def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
-        self.conv1 = torch.nn.Conv2d(1, 4, kernel_size=7, padding=0, stride=3)
-        self.fc1 = torch.nn.Linear(256, hidden)
+        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=7, padding=0, stride=3)
+        self.fc1 = torch.nn.Linear(64, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.conv1.forward(x)
 
-        # the model uses the square activation function
+        # Flatten the data
+        x = x.view(-1, 64)
+
+        # Apply the activation function
         x = x * x
 
-        # flattening while keeping the batch axis
-        x = x.view(-1, 256)
+        # Apply the fully connected layers
         x = self.fc1.forward(x)
+
+        # Apply the activation function
         x = x * x
+
+        # Apply the fully connected layers
         x = self.fc2.forward(x)
 
         return x
@@ -84,7 +90,7 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
             class_total[label] += 1
 
     # Calculate and print avg test loss
-    test_loss = 0 if len(test_loader) else test_loss / len(test_loader)
+    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
     print(f"Test Loss: {test_loss:.6f}\n")
 
     for label in range(10):

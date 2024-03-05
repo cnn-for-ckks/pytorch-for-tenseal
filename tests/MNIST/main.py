@@ -82,6 +82,7 @@ if __name__ == "__main__":
 
     # Test the model
     test(model, subset_test_loader, criterion)
+    print()
 
     # Save the model
     torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")
