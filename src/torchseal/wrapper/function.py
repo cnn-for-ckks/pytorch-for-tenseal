@@ -9,4 +9,3 @@ class CKKSFunctionWrapper(NestedIOFunction):
 class CKKSConvFunctionWrapper(NestedIOFunction):
     enc_x: CKKSWrapper
     stride: int
-    padding: int

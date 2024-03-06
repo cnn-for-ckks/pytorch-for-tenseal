@@ -8,12 +8,11 @@ from torchseal.wrapper.function import CKKSConvFunctionWrapper
 
 class Conv2dFunction(Function):
     @staticmethod
-    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor, windows_nb: int, stride: int, padding: int) -> CKKSWrapper:
+    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor, windows_nb: int, stride: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x.clone()
         ctx.stride = stride
-        ctx.padding = padding
 
         # Apply the convolution to the encrypted input
         out_x = enc_x.do_conv2d(weight, bias, windows_nb)
@@ -27,7 +26,6 @@ class Conv2dFunction(Function):
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         x = ctx.enc_x.do_decryption()
         stride = ctx.stride
-        padding = ctx.padding
 
         # Unpack the saved tensors
         weight, = saved_tensors
@@ -39,12 +37,16 @@ class Conv2dFunction(Function):
         grad_input = grad_weight = grad_bias = None
 
         if result[0]:
+            # TODO: col2im the input
+            # See: https://pytorch.org/docs/stable/generated/torch.nn.Fold.html
             grad_input = conv2d_input(
-                x.shape, weight, grad_output, stride=stride, padding=padding
+                x.shape, weight, grad_output, stride=stride
             )
         if result[1]:
+            # TODO: col2im the input
+            # See: https://pytorch.org/docs/stable/generated/torch.nn.Fold.html
             grad_weight = conv2d_weight(
-                x, weight.shape, grad_output, stride=stride, padding=padding
+                x, weight.shape, grad_output, stride=stride
             )
         if result[2]:
             grad_bias = grad_output.sum(0).reshape(1)

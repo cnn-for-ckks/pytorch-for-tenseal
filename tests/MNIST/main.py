@@ -121,23 +121,23 @@ if __name__ == "__main__":
     print("\n".join(list(map(str, enc_model.parameters()))))
     print()
 
-    # Encrypted training
-    enc_model = enc_train(
-        context,
-        enc_model,
-        enc_subset_train_loader,
-        enc_criterion,
-        enc_optimizer,
-        kernel_shape=(7, 7),
-        stride=3,
-        n_epochs=10
-    )
-    print()
+    # # Encrypted training
+    # enc_model = enc_train(
+    #     context,
+    #     enc_model,
+    #     enc_subset_train_loader,
+    #     enc_criterion,
+    #     enc_optimizer,
+    #     kernel_shape=(7, 7),
+    #     stride=3,
+    #     n_epochs=10
+    # )
+    # print()
 
-    # Print the weights and biases of the model
-    print("Ciphertext Model (After Training):")
-    print("\n".join(list(map(str, enc_model.parameters()))))
-    print()
+    # # Print the weights and biases of the model
+    # print("Ciphertext Model (After Training):")
+    # print("\n".join(list(map(str, enc_model.parameters()))))
+    # print()
 
     # Encrypted evaluation
     enc_test(

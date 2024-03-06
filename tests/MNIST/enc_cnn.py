@@ -19,10 +19,8 @@ class EncConvNet(Module):
         # Create the encrypted model
         if torch_nn is not None:
             self.conv1 = torchseal.nn.Conv2d(
-                torch_nn.conv1.out_channels,
                 (torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]),
                 torch_nn.conv1.stride[0],
-                0,  # TODO: Add support for padding
                 torch_nn.conv1.weight.data.view(
                     torch_nn.conv1.in_channels,
                     torch_nn.conv1.out_channels,
@@ -47,8 +45,8 @@ class EncConvNet(Module):
             )
 
         else:
-            self.conv1 = torchseal.nn.Conv2d(4, (7, 7), 3, 0)
-            self.fc1 = torchseal.nn.Linear(256, hidden)
+            self.conv1 = torchseal.nn.Conv2d((7, 7), 3)
+            self.fc1 = torchseal.nn.Linear(64, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:

@@ -7,8 +7,8 @@ from torchseal.function.conv2d import Conv2dFunction
 import torch
 
 
-class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use of multiple convolutions in a row)
-    def __init__(self, out_channels: int, kernel_size: Tuple[int, int], stride: int, padding: int, weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
+class Conv2d(Module):  # TODO: Add support for in_channels and out_channels (this enables the use of multiple convolutions in a row)
+    def __init__(self, kernel_size: Tuple[int, int], stride: int, weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Unpack the kernel size
@@ -17,20 +17,19 @@ class Conv2d(Module):  # TODO: Add support for in_channels (this enables the use
         # Create the weight and bias
         self.weight = Parameter(
             torch.rand(
-                1, out_channels, kernel_n_rows, kernel_n_cols
+                1, 1, kernel_n_rows, kernel_n_cols
             ) if weight is None else weight
         )
         self.bias = Parameter(
-            torch.rand(out_channels) if bias is None else bias
+            torch.rand(1) if bias is None else bias
         )
 
-        # Set the stride and padding
+        # Set the stride
         self.stride = stride
-        self.padding = padding
 
     def forward(self, enc_x: CKKSWrapper, windows_nb: int) -> CKKSWrapper:
         out_x: CKKSWrapper = Conv2dFunction.apply(
-            enc_x, self.weight, self.bias, windows_nb, self.stride, self.padding
+            enc_x, self.weight, self.bias, windows_nb, self.stride,
         )  # type: ignore
 
         return out_x
