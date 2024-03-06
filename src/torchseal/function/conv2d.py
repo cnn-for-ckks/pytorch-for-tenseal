@@ -37,7 +37,7 @@ class Conv2dFunction(Function):
         grad_input = grad_weight = grad_bias = None
 
         if result[0]:
-            # TODO: col2im the input
+            # TODO: col2im the weight
             # See: https://pytorch.org/docs/stable/generated/torch.nn.Fold.html
             grad_input = conv2d_input(
                 x.shape, weight, grad_output, stride=stride
