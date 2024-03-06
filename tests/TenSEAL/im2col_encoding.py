@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # Randomize the tensor
     weight = torch.tensor(
-        [[[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] for _ in range(8)]]
+        [[[0.1, 0.2, 0.3, 0.4, 0.5, 0.6] for _ in range(6)]]
     )
 
     # NOTE: Plaintext im2col
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     )
     print("image.shape:", image.shape, end="\n\n")
 
-    unfolded_image = unfold(image, kernel_size=(8, 8), stride=3)
+    unfolded_image = unfold(image, kernel_size=(6, 6), stride=3)
     print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
 
     # NOTE: Plaintext convolution
@@ -56,7 +56,8 @@ if __name__ == "__main__":
     enc_unfolded_image = ts.enc_matmul_encoding(
         context, unfolded_image.t()
     )
-    windows_nb = unfolded_image.shape[1]
+    num_row = unfolded_image.shape[0]
+    num_col = unfolded_image.shape[1]
 
     # NOTE: Encrypted convolution
     # Create the convolutional weight
@@ -64,20 +65,27 @@ if __name__ == "__main__":
 
     # Perform the convolution
     enc_result = enc_unfolded_image.enc_matmul_plain(
-        enc_conv_weight.tolist(), windows_nb
+        enc_conv_weight.tolist(), num_col
     )
 
     # Decrypt the result
     print("enc_result:", enc_result.decrypt(), end="\n\n")
 
-    # NOTE: Plaintext col2im (Only works when the kernel size is power of 2)
+    # NOTE: Plaintext col2im
     raw_dec_unfolded_image = enc_unfolded_image.decrypt()
     dec_unfolded_image = torch.tensor(enc_unfolded_image.decrypt()).reshape(
-        len(raw_dec_unfolded_image) // windows_nb, windows_nb
+        len(raw_dec_unfolded_image) // num_col, num_col
     )
     print("dec_unfolded_image.shape", dec_unfolded_image.shape, end="\n\n")
 
+    # Throw away padding
+    dec_unfolded_image_cleaned = dec_unfolded_image[:num_row, :]
+    print(
+        "dec_unfolded_image_cleaned.shape:",
+        dec_unfolded_image_cleaned.shape, end="\n\n"
+    )
+
     dec_image = fold(
-        dec_unfolded_image, output_size=(28, 28), kernel_size=(8, 8), stride=3
+        dec_unfolded_image_cleaned, output_size=(28, 28), kernel_size=(6, 6), stride=3
     )
     print("dec_image.shape:", dec_image.shape, end="\n\n")
