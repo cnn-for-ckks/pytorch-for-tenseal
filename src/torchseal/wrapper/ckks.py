@@ -63,13 +63,14 @@ class CKKSWrapper(Tensor):
 
     # CKKS Operation
     def do_conv2d(self, weight: Tensor, bias: Tensor, windows_nb: int) -> "CKKSWrapper":
-        # TODO: Add support for multiple input channels
-        out_weight = weight[0]
+        # TODO: Add support for multiple input and output channels
+        out_weight = weight[0][0]
+        out_bias = bias[0]
 
         # Apply the convolution to the encrypted input
-        new_ckks_vector = CKKSVector.pack_vectors([
-            self.ckks_data.conv2d_im2col(kernel, windows_nb).add(bias) for kernel, bias in zip(out_weight.tolist(), bias.tolist())
-        ])
+        new_ckks_vector = self.ckks_data.conv2d_im2col(
+            out_weight.tolist(), windows_nb
+        ).add(out_bias.tolist())
 
         # Change the shape of the data
         tensor = torch.rand(new_ckks_vector.size())
