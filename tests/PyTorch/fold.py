@@ -1,24 +1,40 @@
-from torch.nn import Fold, Unfold
+from torch.nn.functional import unfold, fold
+
 import torch
+import numpy as np
+import random
 
 if __name__ == "__main__":
-    unfold = Unfold(kernel_size=(3, 3), stride=1)
-    fold = Fold(output_size=(28, 28), kernel_size=(3, 3), stride=1)
+    # Set the seed for reproducibility
+    torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
 
-    image = torch.rand(1, 1, 28, 28)
+    N, C, H, W = 1, 1, 6, 6  # Batch size, Channels, Height, Width
+    x = torch.arange(N * C * H * W).view(N, C, H, W).float()
 
-    print("image.shape:", image.shape, end="\n\n")
+    # Parameters for unfold
+    # NOTE: Must not overlap
+    kernel_size = (2, 2)
+    stride = (2, 2)
+    padding = (0, 0)  # Adding padding to see its effect
 
-    unfolded_image = unfold.forward(image)
-    print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
-
-    dec_image = fold.forward(
-        unfolded_image
+    # Unfold
+    unfolded = unfold(
+        x,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding
     )
-    print("dec_image.shape:", dec_image.shape, end="\n\n")
 
-    # Check if the original image and the folded image are the same
-    print(
-        "Are the original image and the folded image the same?",
-        torch.allclose(image, dec_image)
+    # Fold (Inverse operation)
+    folded = fold(
+        unfolded,
+        output_size=(H, W),
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding
     )
+
+    # Check if the folded tensor is equal to the original tensor
+    print("Is x equal to folded?", torch.allclose(x, folded))

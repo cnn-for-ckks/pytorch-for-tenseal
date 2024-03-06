@@ -23,20 +23,19 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Randomize the tensor
-    weight = torch.tensor(
-        [[[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7] for _ in range(7)]]
-    )
+    weight = torch.rand(1, 7, 7)
+    print("weight.shape:", weight.shape, end="\n\n")
+
+    image = torch.rand(1, 28, 28)
+    print("image.shape:", image.shape, end="\n\n")
 
     # NOTE: Plaintext im2col
-    image = torch.tensor(
-        [[
-            [
-                0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8
-            ] for _ in range(28)
-        ]]
-    )
-    print("image.shape:", image.shape, end="\n\n")
-    unfolded_image = unfold(image, kernel_size=(7, 7), stride=3)
+    unfolded_image = unfold(
+        image,
+        kernel_size=(7, 7),
+        stride=(7, 7),
+        padding=(0, 0)
+    )  # NOTE: Must not overlap
     print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
 
     # NOTE: Plaintext convolution
@@ -70,7 +69,7 @@ if __name__ == "__main__":
     # Decrypt the result
     print("enc_result:", enc_result.decrypt(), end="\n\n")
 
-    # NOTE: Plaintext col2im (Still broken)
+    # NOTE: Plaintext col2im
     raw_dec_unfolded_image = enc_unfolded_image.decrypt()
     dec_unfolded_image = torch.tensor(raw_dec_unfolded_image).reshape(
         len(raw_dec_unfolded_image) // num_col, num_col
@@ -80,7 +79,16 @@ if __name__ == "__main__":
     # Throw away the extra rows
     dec_unfolded_image_clipped = dec_unfolded_image[:num_row, :]
 
+    # Fold (Inverse operation)
     dec_image = fold(
-        dec_unfolded_image_clipped, output_size=(28, 28), kernel_size=(7, 7), stride=3
-    )
+        dec_unfolded_image_clipped,
+        output_size=(28, 28),
+        kernel_size=(7, 7),
+        stride=(7, 7),
+        padding=(0, 0)
+    )  # NOTE: Must not overlap
     print("dec_image.shape:", dec_image.shape, end="\n\n")
+
+    # Check if the original and folded tensors are equal
+    error_sum = (image - dec_image).abs().sum()
+    print("error_sum:", error_sum, end="\n\n")
