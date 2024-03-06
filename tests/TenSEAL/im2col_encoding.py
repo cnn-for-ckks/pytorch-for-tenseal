@@ -38,6 +38,18 @@ if __name__ == "__main__":
     )
     unfolded_image = unfold(image, kernel_size=(7, 7), stride=3)
 
+    # NOTE: Plaintext convolution
+    # Create the convolutional weight
+    conv_weight = weight.view(1, -1)
+
+    # Perform the convolution
+    conv_output = conv_weight.matmul(
+        unfolded_image
+    ).view(-1)
+
+    # print the result
+    print("conv_output:", conv_output.tolist(), end="\n\n")
+
     # NOTE: Encrypted im2col
     enc_unfolded_image = ts.enc_matmul_encoding(
         context, unfolded_image.t()
@@ -55,15 +67,3 @@ if __name__ == "__main__":
 
     # Decrypt the result
     print("enc_result:", enc_result.decrypt(), end="\n\n")
-
-    # NOTE: Plaintext convolution
-    # Create the convolutional weight
-    conv_weight = weight.view(1, -1)
-
-    # Perform the convolution
-    conv_output = conv_weight.matmul(
-        unfolded_image
-    ).view(-1)
-
-    # print the result
-    print("conv_output:", conv_output.tolist(), end="\n\n")
