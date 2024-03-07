@@ -1,3 +1,4 @@
+from math import e
 from torch.nn.functional import unfold, fold
 
 import tenseal as ts
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Randomize the tensor
-    weight = torch.rand(1, 7, 7)
+    weight = torch.rand(1, 1, 4, 4)
     print("weight.shape:", weight.shape, end="\n\n")
 
     image = torch.rand(1, 28, 28)
@@ -32,9 +33,9 @@ if __name__ == "__main__":
     # NOTE: Plaintext im2col
     unfolded_image = unfold(
         image,
-        kernel_size=(7, 7),
-        stride=(7, 7),
-        padding=(0, 0)
+        kernel_size=(4, 4),
+        stride=4,
+        padding=0
     )  # NOTE: Must not overlap
     print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
 
     # NOTE: Encrypted convolution
     # Create the convolutional weight
-    enc_conv_weight = ts.plain_tensor(weight.view(-1))
+    enc_conv_weight = weight.view(-1)
 
     # Perform the convolution
     enc_result = enc_unfolded_image.enc_matmul_plain(
@@ -83,9 +84,9 @@ if __name__ == "__main__":
     dec_image = fold(
         dec_unfolded_image_clipped,
         output_size=(28, 28),
-        kernel_size=(7, 7),
-        stride=(7, 7),
-        padding=(0, 0)
+        kernel_size=(4, 4),
+        stride=4,
+        padding=0
     )  # NOTE: Must not overlap
     print("dec_image.shape:", dec_image.shape, end="\n\n")
 

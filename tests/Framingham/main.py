@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader, Subset, random_split
-from torchseal.utils import seed_worker
 from dataloader import FraminghamDataset
 from logreg import LogisticRegression, train, test
 from enc_logreg import EncLogisticRegression, enc_train, enc_test
+from utils import seed_worker
 
 import torch
 import tenseal as ts

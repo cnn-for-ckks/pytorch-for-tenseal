@@ -1,5 +1,7 @@
+from typing import Tuple
 from torch import Tensor
 from tenseal import CKKSVector
+from torchseal.utils import im2col_conv2d, im2col_decoding
 
 import torch
 import tenseal as ts
@@ -62,15 +64,15 @@ class CKKSWrapper(Tensor):
         return self
 
     # CKKS Operation
-    def do_conv2d(self, weight: Tensor, bias: Tensor, windows_nb: int) -> "CKKSWrapper":
+    def do_conv2d(self, weight: Tensor, bias: Tensor, num_col: int) -> "CKKSWrapper":
         # TODO: Add support for multiple input and output channels
-        out_weight = weight[0][0]
-        out_bias = bias[0]
+        out_weight = weight.view(-1)
+        out_bias = bias.item()
 
         # Apply the convolution to the encrypted input
-        new_ckks_vector = self.ckks_data.conv2d_im2col(
-            out_weight.tolist(), windows_nb
-        ).add(out_bias.tolist())
+        new_ckks_vector = im2col_conv2d(
+            self.ckks_data, out_weight, num_col
+        ).add(out_bias)
 
         # Change the shape of the data
         tensor = torch.rand(new_ckks_vector.size())
@@ -162,6 +164,18 @@ class CKKSWrapper(Tensor):
     def do_clamp(self, min: float, max: float) -> "CKKSWrapper":
         # Apply the clamp function to the data
         new_tensor = torch.clamp(self.data, min=min, max=max)
+
+        # Update the data
+        self.data = new_tensor.data
+
+        return self
+
+    # Data Operation
+    def do_image_decryption(self, num_row: int, num_col: int, output_size: Tuple[int, int], kernel_size: Tuple[int, int], stride: int, padding: int) -> "CKKSWrapper":
+        # Define the new tensor
+        new_tensor = im2col_decoding(
+            self.ckks_data, num_row, num_col, output_size, kernel_size, stride, padding
+        )
 
         # Update the data
         self.data = new_tensor.data

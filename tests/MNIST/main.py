@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
-from torchseal.utils import seed_worker
 from cnn import ConvNet, train, test
 from enc_cnn import EncConvNet, enc_train, enc_test
+from utils import seed_worker
 
 import torch
 import numpy as np
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # Save the model
     torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")
 
-    # Create the trained model
+    # Create the original model
     original_model = ConvNet()
     original_model.load_state_dict(
         torch.load(
@@ -121,23 +121,23 @@ if __name__ == "__main__":
     print("\n".join(list(map(str, enc_model.parameters()))))
     print()
 
-    # # Encrypted training
+    # Encrypted training
     # enc_model = enc_train(
     #     context,
     #     enc_model,
     #     enc_subset_train_loader,
     #     enc_criterion,
     #     enc_optimizer,
-    #     kernel_shape=(7, 7),
-    #     stride=3,
+    #     kernel_size=(4, 4),
+    #     stride=4,
     #     n_epochs=10
     # )
     # print()
 
-    # # Print the weights and biases of the model
-    # print("Ciphertext Model (After Training):")
-    # print("\n".join(list(map(str, enc_model.parameters()))))
-    # print()
+    # Print the weights and biases of the model
+    print("Ciphertext Model (After Training):")
+    print("\n".join(list(map(str, enc_model.parameters()))))
+    print()
 
     # Encrypted evaluation
     enc_test(
@@ -145,6 +145,6 @@ if __name__ == "__main__":
         enc_model,
         enc_subset_test_loader,
         enc_criterion,
-        kernel_shape=(7, 7),
-        stride=3,
+        kernel_size=(4, 4),
+        stride=4,
     )
