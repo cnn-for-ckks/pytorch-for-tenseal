@@ -14,7 +14,7 @@ if __name__ == "__main__":
     x = torch.arange(N * C * H * W).view(N, C, H, W).float()
 
     # Parameters for unfold
-    # NOTE: Must not overlap
+    # BUG: Must not overlap
     kernel_size = (2, 2)
     stride = (2, 2)
     padding = (0, 0)  # Adding padding to see its effect

@@ -95,7 +95,7 @@ if __name__ == "__main__":
     original_model = ConvNet()
     original_model.load_state_dict(
         torch.load(
-            "./parameters/MNIST/trained-model.pth"
+            "./parameters/MNIST/original-model.pth"
         )
     )
 
@@ -122,17 +122,17 @@ if __name__ == "__main__":
     print()
 
     # Encrypted training
-    # enc_model = enc_train(
-    #     context,
-    #     enc_model,
-    #     enc_subset_train_loader,
-    #     enc_criterion,
-    #     enc_optimizer,
-    #     kernel_size=(4, 4),
-    #     stride=4,
-    #     n_epochs=10
-    # )
-    # print()
+    enc_model = enc_train(
+        context,
+        enc_model,
+        enc_subset_train_loader,
+        enc_criterion,
+        enc_optimizer,
+        kernel_size=(4, 4),  # BUG: Must not overlap
+        stride=4,  # BUG: Must not overlap
+        n_epochs=10
+    )
+    print()
 
     # Print the weights and biases of the model
     print("Ciphertext Model (After Training):")
@@ -145,6 +145,6 @@ if __name__ == "__main__":
         enc_model,
         enc_subset_test_loader,
         enc_criterion,
-        kernel_size=(4, 4),
-        stride=4,
+        kernel_size=(4, 4),  # BUG: Must not overlap
+        stride=4,  # BUG: Must not overlap
     )

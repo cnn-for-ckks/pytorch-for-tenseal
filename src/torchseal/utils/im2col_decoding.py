@@ -6,7 +6,7 @@ from tenseal import CKKSVector
 import torch
 
 
-# NOTE: Must not overlap
+# BUG: Must not overlap
 def im2col_decoding(enc_unfolded_image: CKKSVector, num_row: int, num_col: int, output_size: Tuple[int, int], kernel_size: Tuple[int, int], stride: int, padding: int) -> Tensor:
     # Decrypt the result
     raw_dec_unfolded_image = enc_unfolded_image.decrypt()

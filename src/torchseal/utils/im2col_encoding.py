@@ -6,7 +6,7 @@ from tenseal import CKKSVector
 import tenseal as ts
 
 
-# NOTE: Must not overlap
+# BUG: Must not overlap
 def im2col_encoding(context: ts.Context, image: Tensor, kernel_size: Tuple[int, int], stride: int, padding: int) -> Tuple[CKKSVector, int, int]:
     # Unfold the image
     unfolded_image = unfold(
