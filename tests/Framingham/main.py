@@ -46,7 +46,7 @@ if __name__ == "__main__":
     )
 
     # Set the batch size
-    batch_size = 1  # NOTE: This is set to 1 to allow for encryption
+    batch_size = 1  # TODO: Handle larger batch sizes
 
     # Create the data loaders
     train_loader = DataLoader(

@@ -100,7 +100,7 @@ if __name__ == "__main__":
     )
 
     # Set the batch size
-    enc_batch_size = 1  # NOTE: This is set to 1 to allow for encryption
+    enc_batch_size = 1  # TODO: Handle larger batch sizes
 
     # Create the encrypted data loaders
     enc_subset_train_loader = DataLoader(
@@ -147,4 +147,10 @@ if __name__ == "__main__":
         enc_criterion,
         kernel_size=(4, 4),  # BUG: Must not overlap
         stride=4,  # BUG: Must not overlap
+    )
+
+    # Save the model
+    torch.save(
+        enc_model.state_dict(),
+        "./parameters/MNIST/enc-trained-model.pth"
     )
