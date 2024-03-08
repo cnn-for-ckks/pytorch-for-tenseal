@@ -128,8 +128,8 @@ if __name__ == "__main__":
         enc_subset_train_loader,
         enc_criterion,
         enc_optimizer,
-        kernel_size=(4, 4),  # BUG: Must not overlap
-        stride=4,  # BUG: Must not overlap
+        kernel_size=(7, 7),
+        stride=3,
         n_epochs=10
     )
     print()
@@ -145,8 +145,8 @@ if __name__ == "__main__":
         enc_model,
         enc_subset_test_loader,
         enc_criterion,
-        kernel_size=(4, 4),  # BUG: Must not overlap
-        stride=4,  # BUG: Must not overlap
+        kernel_size=(7, 7),
+        stride=3,
     )
 
     # Save the model

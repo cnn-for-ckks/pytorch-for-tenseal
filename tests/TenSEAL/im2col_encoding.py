@@ -24,7 +24,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Randomize the tensor
-    weight = torch.rand(1, 1, 4, 4)
+    weight = torch.rand(1, 1, 7, 7)
     print("weight.shape:", weight.shape, end="\n\n")
 
     image = torch.rand(1, 28, 28)
@@ -33,10 +33,10 @@ if __name__ == "__main__":
     # Plaintext im2col
     unfolded_image = unfold(
         image,
-        kernel_size=(4, 4),
-        stride=4,
+        kernel_size=(7, 7),
+        stride=3,
         padding=0
-    )  # BUG: Must not overlap
+    )
     print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
 
     # Plaintext convolution
@@ -84,12 +84,27 @@ if __name__ == "__main__":
     dec_image = fold(
         dec_unfolded_image_clipped,
         output_size=(28, 28),
-        kernel_size=(4, 4),
-        stride=4,
+        kernel_size=(7, 7),
+        stride=3,
         padding=0
-    )  # BUG: Must not overlap
-    print("dec_image.shape:", dec_image.shape, end="\n\n")
+    )
+
+    # Adjustment tensor
+    adjustment_tensor = fold(
+        unfold(
+            torch.ones_like(dec_image),
+            kernel_size=(7, 7),
+            stride=3,
+            padding=0
+        ),
+        output_size=(28, 28), kernel_size=(7, 7), stride=3, padding=0
+    )
+
+    # Adjust the tensor
+    dec_image_adjusted = dec_image.div(adjustment_tensor)
+
+    print("dec_image_adjusted.shape:", dec_image_adjusted.shape, end="\n\n")
 
     # Check if the original and folded tensors are equal
-    error_sum = (image - dec_image).abs().sum()
+    error_sum = (image - dec_image_adjusted).abs().sum()
     print("error_sum:", error_sum, end="\n\n")

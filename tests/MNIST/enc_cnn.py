@@ -13,8 +13,9 @@ import tenseal as ts
 import numpy as np
 
 
+# TODO: Encrypt weight and bias of the model when training the model
 class EncConvNet(Module):
-    def __init__(self, hidden=28, output=10, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Create the encrypted model
@@ -51,9 +52,9 @@ class EncConvNet(Module):
 
         else:
             self.conv1 = torchseal.nn.Conv2d(
-                output_size=(28, 28), kernel_size=(4, 4), stride=4, padding=0
+                output_size=(28, 28), kernel_size=(7, 7), stride=3, padding=0
             )
-            self.fc1 = torchseal.nn.Linear(49, hidden)
+            self.fc1 = torchseal.nn.Linear(64, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper, num_row: int, num_col: int) -> CKKSWrapper:

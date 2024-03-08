@@ -7,18 +7,18 @@ import numpy as np
 
 
 class ConvNet(Module):
-    def __init__(self, hidden=28, output=10) -> None:
+    def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
-        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(4, 4), stride=4)
-        self.fc1 = torch.nn.Linear(49, hidden)
+        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(7, 7), stride=3)
+        self.fc1 = torch.nn.Linear(64, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.conv1.forward(x)
 
         # Flatten the data
-        x = x.view(-1, 49)
+        x = x.view(-1, 64)
 
         # Apply the activation function
         x = x * x
