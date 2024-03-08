@@ -17,7 +17,7 @@ class LinearFunction(Function):
 
         return out_x
 
-    # NOTE: This method requires private key access
+    # TODO: Encrypt weight and bias of the model when training the model in order not to require private key access
     @staticmethod
     def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         # Get the saved tensors
