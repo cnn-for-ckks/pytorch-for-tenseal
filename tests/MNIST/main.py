@@ -46,7 +46,7 @@ if __name__ == "__main__":
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
-    batch_size = 1
+    batch_size = 1  # TODO: Handle larger batch sizes
 
     # Create the data loaders
     subset_train_loader = DataLoader(
@@ -99,15 +99,12 @@ if __name__ == "__main__":
         )
     )
 
-    # Set the batch size
-    enc_batch_size = 1  # TODO: Handle larger batch sizes
-
     # Create the encrypted data loaders
     enc_subset_train_loader = DataLoader(
-        subset_train_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
+        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
     enc_subset_test_loader = DataLoader(
-        subset_test_data, batch_size=enc_batch_size, worker_init_fn=seed_worker
+        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer

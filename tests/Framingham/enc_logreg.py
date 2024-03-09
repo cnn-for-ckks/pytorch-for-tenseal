@@ -44,7 +44,7 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             optimizer.zero_grad()
 
             # Encrypt the data
-            data = raw_data[0].tolist()
+            data = raw_data[0].tolist()  # TODO: Handle larger batch sizes
             enc_data = ts.ckks_vector(context, data)
             enc_data_wrapper = CKKSWrapper(
                 torch.rand(enc_data.size()), enc_data
@@ -57,7 +57,7 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             output = enc_output.do_decryption().clamp(0, 1)
 
             # Compute loss
-            target = raw_target[0]
+            target = raw_target[0]  # TODO: Handle larger batch sizes
             loss = criterion.forward(output, target)
             loss.backward()
             optimizer.step()
@@ -89,7 +89,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
 
     for raw_data, raw_target in test_loader:
         # Encryption
-        data = raw_data[0].tolist()
+        data = raw_data[0].tolist()  # TODO: Handle larger batch sizes
         enc_data = ts.ckks_vector(context, data)
         enc_data_wrapper = CKKSWrapper(torch.rand(enc_data.size()), enc_data)
 
@@ -100,7 +100,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         output = enc_output.do_decryption().clamp(0, 1)
 
         # Compute loss
-        target = raw_target[0]
+        target = raw_target[0]  # TODO: Handle larger batch sizes
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 

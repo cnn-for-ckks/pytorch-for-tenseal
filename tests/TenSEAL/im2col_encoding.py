@@ -1,4 +1,3 @@
-from math import e
 from torch.nn.functional import unfold, fold
 
 import tenseal as ts
@@ -23,6 +22,12 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Declare global parameters
+    output_size = (28, 28)
+    kernel_size = (7, 7)
+    stride = 3
+    padding = 0
+
     # Randomize the tensor
     weight = torch.rand(1, 1, 7, 7)
     print("weight.shape:", weight.shape, end="\n\n")
@@ -33,15 +38,16 @@ if __name__ == "__main__":
     # Plaintext im2col
     unfolded_image = unfold(
         image,
-        kernel_size=(7, 7),
-        stride=3,
-        padding=0
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding
     )
     print("unfolded_image.shape:", unfolded_image.shape, end="\n\n")
 
     # Plaintext convolution
     # Create the convolutional weight
     conv_weight = weight.view(1, -1)
+    print("conv_weight.shape:", conv_weight.shape, end="\n\n")
 
     # Perform the convolution
     conv_output = conv_weight.matmul(
@@ -61,6 +67,7 @@ if __name__ == "__main__":
     # Encrypted convolution
     # Create the convolutional weight
     enc_conv_weight = weight.view(-1)
+    print("enc_conv_weight.shape:", enc_conv_weight.shape, end="\n\n")
 
     # Perform the convolution
     enc_result = enc_unfolded_image.enc_matmul_plain(
@@ -83,21 +90,21 @@ if __name__ == "__main__":
     # Fold (Inverse operation)
     dec_image = fold(
         dec_unfolded_image_clipped,
-        output_size=(28, 28),
-        kernel_size=(7, 7),
-        stride=3,
-        padding=0
+        output_size=output_size,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding
     )
 
     # Adjustment tensor
     adjustment_tensor = fold(
         unfold(
             torch.ones_like(dec_image),
-            kernel_size=(7, 7),
-            stride=3,
-            padding=0
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding
         ),
-        output_size=(28, 28), kernel_size=(7, 7), stride=3, padding=0
+        output_size=output_size, kernel_size=kernel_size, stride=stride, padding=padding
     )
 
     # Adjust the tensor

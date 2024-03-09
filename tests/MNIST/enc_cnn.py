@@ -84,7 +84,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     # Model in training mode
     enc_model.train()
 
-    for epoch in range(1, n_epochs+1):
+    for epoch in range(n_epochs):
         train_loss = 0.
 
         for raw_data, raw_target in train_loader:
@@ -93,7 +93,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             # Encoding and encryption
             result: Tuple[CKKSVector, int, int] = im2col_encoding(
                 context,
-                raw_data.view(1, 28, 28),
+                raw_data.view(1, 28, 28),  # TODO: Handle larger batch sizes
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=0
@@ -115,7 +115,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = enc_output.do_decryption()
 
             # Compute loss
-            target = raw_target[0]
+            target = raw_target[0]  # TODO: Handle larger batch sizes
             loss = criterion.forward(output, target)
             loss.backward()
             optimizer.step()
@@ -126,7 +126,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             train_loader
         ) == 0 else train_loss / len(train_loader)
 
-        print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch, train_loss))
+        print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch + 1, train_loss))
 
     # Model in evaluation mode
     enc_model.eval()
@@ -147,7 +147,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         # Encoding and encryption
         result: Tuple[CKKSVector, int, int] = im2col_encoding(
             context,
-            raw_data.view(1, 28, 28),
+            raw_data.view(1, 28, 28),  # TODO: Handle larger batch sizes
             kernel_size=kernel_size,
             stride=stride,
             padding=0
@@ -168,7 +168,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         output = enc_output.do_decryption()
 
         # Compute loss
-        target = raw_target[0]
+        target = raw_target[0]  # TODO: Handle larger batch sizes
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
