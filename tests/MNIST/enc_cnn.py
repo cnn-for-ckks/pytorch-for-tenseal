@@ -2,7 +2,6 @@ from typing import Tuple, Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader
 from tenseal import CKKSVector
-from torchseal.function import SquareFunction
 from torchseal.utils import im2col_encoding
 from torchseal.wrapper.ckks import CKKSWrapper
 from cnn import ConvNet
@@ -17,6 +16,10 @@ import numpy as np
 class EncConvNet(Module):
     def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
+
+        # Define the layers
+        self.act1 = torchseal.nn.Square()
+        self.act2 = torchseal.nn.Square()
 
         # Create the encrypted model
         if torch_nn is not None:
@@ -62,17 +65,13 @@ class EncConvNet(Module):
         first_result = self.conv1.forward(enc_x, num_row, num_col)
 
         # Square activation function
-        first_result_squared: CKKSWrapper = SquareFunction.apply(
-            first_result
-        )  # type: ignore
+        first_result_squared = self.act1.forward(first_result)
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
 
         # Square activation function
-        second_result_squared: CKKSWrapper = SquareFunction.apply(
-            second_result
-        )  # type: ignore
+        second_result_squared = self.act2.forward(second_result)
 
         # Fully connected layer
         third_result = self.fc2.forward(second_result_squared)

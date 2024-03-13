@@ -1,7 +1,6 @@
 from typing import Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader
-from torchseal.function import SigmoidFunction
 from torchseal.wrapper.ckks import CKKSWrapper
 from logreg import LogisticRegression
 
@@ -20,15 +19,14 @@ class EncLogisticRegression(Module):
             torch_nn.linear.weight.data,
             torch_nn.linear.bias.data
         ) if torch_nn is not None else torchseal.nn.Linear(n_features, 1)
+        self.activation_function = torchseal.nn.Sigmoid()
 
     def forward(self, x: CKKSWrapper) -> CKKSWrapper:
         # Fully connected layer
         first_result = self.linear.forward(x)
 
         # Sigmoid activation function
-        first_result_activated: CKKSWrapper = SigmoidFunction.apply(
-            first_result
-        )  # type: ignore
+        first_result_activated = self.activation_function.forward(first_result)
 
         return first_result_activated
 
