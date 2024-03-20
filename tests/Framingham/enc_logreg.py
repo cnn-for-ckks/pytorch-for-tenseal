@@ -9,6 +9,7 @@ import tenseal as ts
 import torchseal
 
 
+# TODO: Encrypt weight and bias of the model when training the model
 class EncLogisticRegression(Module):
     def __init__(self, n_features: int, torch_nn: Optional[LogisticRegression] = None) -> None:
         super(EncLogisticRegression, self).__init__()

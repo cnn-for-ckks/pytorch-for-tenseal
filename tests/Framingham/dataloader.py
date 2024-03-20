@@ -27,9 +27,10 @@ class FraminghamDataset(Dataset):
 
         # Balance data
         grouped = data.groupby("TenYearCHD")
+        n = grouped.size().min()
         data = grouped.apply(
             lambda x: x.sample(
-                grouped.size().min(),
+                n if type(n) == int else 0,
                 random_state=73
             ).reset_index(drop=True)
         )
