@@ -11,6 +11,7 @@ torchvision = "*"
 torchseal = {file = "."}
 pandas = "*"
 torchviz = "*"
+scipy = "*"
 
 [dev-packages]
 

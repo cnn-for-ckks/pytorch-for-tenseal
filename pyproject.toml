@@ -14,6 +14,7 @@ requires-python = ">=3.6, <3.10"
 dependencies = [
   "tenseal",
   "numpy",
+  "scipy",
   "torch",
 ]
 classifiers = [

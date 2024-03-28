@@ -12,7 +12,6 @@ import tenseal as ts
 import numpy as np
 
 
-# TODO: Encrypt weight and bias of the model when training the model
 class EncConvNet(Module):
     def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
@@ -62,6 +61,7 @@ class EncConvNet(Module):
 
     def forward(self, enc_x: CKKSWrapper, num_row: int, num_col: int) -> CKKSWrapper:
         # Convolutional layer
+        # TODO: Have more than one layer
         first_result = self.conv1.forward(enc_x, num_row, num_col)
 
         # Square activation function

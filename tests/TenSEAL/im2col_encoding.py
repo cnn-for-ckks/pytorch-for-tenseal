@@ -54,7 +54,7 @@ if __name__ == "__main__":
         unfolded_image
     ).view(-1)
 
-    # print the result
+    # Print the result
     print("conv_output:", conv_output.tolist(), end="\n\n")
 
     # Encrypted im2col
