@@ -1,69 +1,108 @@
-from torch.nn.functional import conv2d
-from scipy.linalg import toeplitz
-
-import numpy as np
 import torch
 
 
-def toeplitz_1_ch(kernel, input_size):
-    # shapes
-    k_h, k_w = kernel.shape
-    i_h, i_w = input_size
-    o_h = i_h-k_h+1
+# Source: https://stackoverflow.com/questions/68896578/pytorchs-torch-as-strided-with-negative-strides-for-making-a-toeplitz-matrix/68899386#68899386
+def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+    vals = torch.cat((r, c[1:].flip(0)))
+    shape = len(c), len(r)
+    i, j = torch.ones(*shape).nonzero().T
 
-    # construct 1d conv toeplitz matrices for each row of the kernel
-    results = []
-    for r in range(k_h):
-        results.append(
-            toeplitz(
-                c=(kernel[r, 0], *np.zeros(i_w-k_w)), r=(*kernel[r], *np.zeros(i_w-k_w))
-            )
+    return vals[j - i].reshape(*shape)
+
+
+def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
+    # Get the shapes
+    kernel_height, kernel_width = kernel.shape
+    input_height, input_width = input_size
+    output_height = input_height - kernel_height + 1
+
+    # Construct 1D convolution toeplitz matrices for each row of the kernel
+    results = torch.stack([
+        toeplitz(
+            c=torch.stack([
+                kernel[r, 0], *torch.zeros(input_width - kernel_width)
+            ]), r=torch.stack([
+                *kernel[r], *torch.zeros(input_width-kernel_width)
+            ])
+        ) for r in range(kernel_height)
+    ])
+
+    # Construct toeplitz matrix of toeplitz matrices (just for padding=0)
+    number_of_blocks_height, number_of_blocks_width = output_height, input_height
+    block_height, block_width = results[0].shape
+
+    # Initialize the output tensor
+    weight_convolutions = torch.zeros(
+        (
+            number_of_blocks_height,
+            block_height,
+            number_of_blocks_width,
+            block_width
         )
+    )
 
-    # construct toeplitz matrix of toeplitz matrices (just for padding=0)
-    h_blocks, w_blocks = o_h, i_h
-    h_block, w_block = results[0].shape
+    # Fill the output tensor
+    for i, block in enumerate(results):
+        for j in range(output_height):
+            weight_convolutions[j, :, i + j, :] = block
 
-    W_conv = np.zeros((h_blocks, h_block, w_blocks, w_block))
+    # Reshape the output tensor
+    weight_convolutions = weight_convolutions.view(
+        number_of_blocks_height * block_height,
+        number_of_blocks_width * block_width
+    )
 
-    for i, B in enumerate(results):
-        for j in range(o_h):
-            W_conv[j, :, i+j, :] = B
-
-    W_conv.shape = (h_blocks*h_block, w_blocks*w_block)
-
-    return W_conv
+    return weight_convolutions
 
 
-def toeplitz_mult_ch(kernel, input_size):
-    """Compute toeplitz matrix for 2d conv with multiple in and out channels.
-    Args:
-        kernel: shape=(n_out, n_in, H_k, W_k)
-        input_size: (n_in, H_i, W_i)"""
+def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
+    # Get the shapes
+    kernel_height, kernel_width, kernel_channel, _ = kernel.shape
+    input_height, input_width, input_channel = input_size
+    output_size = torch.Size([
+        kernel_height,
+        input_width - kernel_width + 1,
+        input_channel - kernel_channel + 1
+    ])
 
-    kernel_size = kernel.shape
-    output_size = (kernel_size[0], input_size[1] -
-                   (kernel_size[1]-1), input_size[2] - (kernel_size[2]-1))
-    T = np.zeros((output_size[0], int(
-        np.prod(output_size[1:])), input_size[0], int(np.prod(input_size[1:]))))
+    # Initialize the output tensor
+    weight_convolutions = torch.zeros(
+        (
+            output_size[0],
+            int(torch.prod(torch.tensor(output_size[1:])).item()),
+            input_height,
+            int(torch.prod(torch.tensor(input_size[1:])).item())
+        )
+    )
 
-    for i, ks in enumerate(kernel):  # loop over output channel
-        for j, k in enumerate(ks):  # loop over input channel
-            T_k = toeplitz_1_ch(k, input_size[1:])
-            T[i, :, j, :] = T_k
+    # Fill the output tensor
+    for i, kernel_output in enumerate(kernel):
+        for j, kernel_input in enumerate(kernel_output):
+            weight_convolutions[i, :, j, :] = toeplitz_one_channel(
+                kernel_input, input_size[1:]
+            )
 
-    T.shape = (np.prod(output_size), np.prod(input_size))
+    # Reshape the output tensor
+    weight_convolutions = weight_convolutions.view(
+        int(torch.prod(torch.tensor(output_size)).item()),
+        int(torch.prod(torch.tensor(input_size)).item())
+    )
 
-    return T
+    return weight_convolutions
 
 
 if __name__ == "__main__":
-    k = np.random.randn(4*3*3*3).reshape((4, 3, 3, 3))
-    i = np.random.randn(3, 7, 9)
+    kernel = torch.randn(4, 3, 3, 3)
+    input_tensor = torch.randn(3, 7, 9)
 
-    T = toeplitz_mult_ch(k, i.shape)
-    out = T.dot(i.flatten()).reshape((1, 4, 5, 7))
+    toeplitz_matrix = toeplitz_multiple_channels(kernel, input_tensor.shape)
+    output = toeplitz_matrix.matmul(input_tensor.view(-1)).view(1, 4, 5, 7)
 
-    # check correctness of convolution via toeplitz matrix
-    print(np.sum(
-        (out - conv2d(torch.tensor(i).view(1, 3, 7, 9), torch.tensor(k)).numpy())**2))
+    # Check the correctness of the convolution via the toeplitz matrix
+    print(
+        torch.sum(
+            (output - torch.nn.functional.conv2d(
+                input_tensor.view(1, 3, 7, 9), kernel
+            ))**2
+        ).item()
+    )
