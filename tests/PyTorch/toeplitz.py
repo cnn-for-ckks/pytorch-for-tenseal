@@ -10,6 +10,7 @@ def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
     return vals[j - i].reshape(*shape)
 
 
+# TODO: Add stride and padding support
 def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
     # Get the shapes
     kernel_height, kernel_width = kernel.shape
@@ -55,6 +56,7 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size) -> torch.
     return weight_convolutions
 
 
+# TODO: Add stride and padding support
 def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
     # Get the shapes
     kernel_height, kernel_width, kernel_channel, _ = kernel.shape
