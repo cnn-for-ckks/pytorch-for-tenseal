@@ -1,15 +1,18 @@
 from typing import Tuple, Optional
 from torch.nn import Module
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
+from torchvision import datasets, transforms
 from tenseal import CKKSVector
 from torchseal.utils import im2col_encoding
 from torchseal.wrapper.ckks import CKKSWrapper
 from cnn import ConvNet
+from utils import seed_worker
 
 import torch
-import torchseal
-import tenseal as ts
 import numpy as np
+import random
+import tenseal as ts
+import torchseal
 
 
 class EncConvNet(Module):
@@ -195,4 +198,112 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     print(
         f"\nTest Accuracy for Encrypted Data (Overall): {0 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
         f"({int(np.sum(class_correct))}/{int(np.sum(class_total))})"
+    )
+
+
+if __name__ == "__main__":
+    # Set the seed for reproducibility
+    torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
+
+    # Controls precision of the fractional part
+    bits_scale = 26
+
+    # Create TenSEAL context
+    context = ts.context(
+        ts.SCHEME_TYPE.CKKS,
+        poly_modulus_degree=8192,
+        coeff_mod_bit_sizes=[
+            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
+        ]
+    )
+
+    # Set the scale
+    context.global_scale = pow(2, bits_scale)
+
+    # Galois keys are required to do ciphertext rotations
+    context.generate_galois_keys()
+# Load the data
+    train_data = datasets.MNIST(
+        "data", train=True, download=True, transform=transforms.ToTensor()
+    )
+    test_data = datasets.MNIST(
+        "data", train=False, download=True, transform=transforms.ToTensor()
+    )
+
+    # Subset the data
+    subset_train_data = Subset(train_data, list(range(20)))
+    subset_test_data = Subset(test_data, list(range(20)))
+
+    # Set the batch size
+    batch_size = 1  # TODO: Handle larger batch sizes
+
+    # Create the data loaders
+    subset_train_loader = DataLoader(
+        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+    subset_test_loader = DataLoader(
+        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+
+    # Create the original model
+    original_model = ConvNet()
+    original_model.load_state_dict(
+        torch.load(
+            "./parameters/MNIST/original-model.pth"
+        )
+    )
+
+    # Create the encrypted data loaders
+    enc_subset_train_loader = DataLoader(
+        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+    enc_subset_test_loader = DataLoader(
+        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+
+    # Create the model, criterion, and optimizer
+    enc_model = EncConvNet(torch_nn=original_model)
+    enc_criterion = torch.nn.CrossEntropyLoss()
+    enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
+
+    # Print the weights and biases of the model
+    print("Ciphertext Model (Before Training):")
+    print("Number of Parameters:", len(list(map(str, enc_model.parameters()))))
+    print("\n".join(list(map(str, enc_model.parameters()))))
+    print()
+
+    # Encrypted training
+    enc_model = enc_train(
+        context,
+        enc_model,
+        enc_subset_train_loader,
+        enc_criterion,
+        enc_optimizer,
+        kernel_size=(7, 7),
+        stride=3,
+        n_epochs=10
+    )
+    print()
+
+    # Print the weights and biases of the model
+    print("Ciphertext Model (After Training):")
+    print("\n".join(list(map(str, enc_model.parameters()))))
+    print()
+
+    # Encrypted evaluation
+    enc_test(
+        context,
+        enc_model,
+        enc_subset_test_loader,
+        enc_criterion,
+        kernel_size=(7, 7),
+        stride=3,
+    )
+
+    # Save the model
+    torch.save(
+        enc_model.state_dict(),
+        "./parameters/MNIST/enc-trained-model.pth"
     )

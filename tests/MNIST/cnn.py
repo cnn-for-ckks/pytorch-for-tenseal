@@ -1,9 +1,12 @@
 from torch import Tensor
 from torch.nn import Module
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
+from torchvision import datasets, transforms
+from utils import seed_worker
 
 import torch
 import numpy as np
+import random
 
 
 class ConvNet(Module):
@@ -84,7 +87,7 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
 
         # Calculate test accuracy for each object class
-        for i in range(len(target)):
+        for _ in range(len(target)):
             label = target.data[0]
             class_correct[label] += correct.item()
             class_total[label] += 1
@@ -103,3 +106,68 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
         f"\nTest Accuracy (Overall): {0 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
         f"({int(np.sum(class_correct))}/{int(np.sum(class_total))})"
     )
+
+
+if __name__ == "__main__":
+    # Set the seed for reproducibility
+    torch.manual_seed(73)
+    np.random.seed(73)
+    random.seed(73)
+
+    # Load the data
+    train_data = datasets.MNIST(
+        "data", train=True, download=True, transform=transforms.ToTensor()
+    )
+    test_data = datasets.MNIST(
+        "data", train=False, download=True, transform=transforms.ToTensor()
+    )
+
+    # Subset the data
+    subset_train_data = Subset(train_data, list(range(20)))
+    subset_test_data = Subset(test_data, list(range(20)))
+
+    # Set the batch size
+    batch_size = 1  # TODO: Handle larger batch sizes
+
+    # Create the data loaders
+    subset_train_loader = DataLoader(
+        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+    subset_test_loader = DataLoader(
+        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
+    )
+
+    # Create the model, criterion, and optimizer
+    model = ConvNet()
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    # Save the original model
+    torch.save(
+        model.state_dict(),
+        "./parameters/MNIST/original-model.pth"
+    )
+
+    # Print the weights and biases of the model
+    print("Plaintext Model (Before Training):")
+    print("Number of Parameters:", len(list(map(str, model.parameters()))))
+    print("\n".join(list(map(str, model.parameters()))))
+    print()
+
+    # Train the model
+    model = train(
+        model, subset_train_loader, criterion, optimizer, n_epochs=10
+    )
+    print()
+
+    # Print the weights and biases of the model
+    print("Plaintext Model (After Training):")
+    print("\n".join(list(map(str, model.parameters()))))
+    print()
+
+    # Test the model
+    test(model, subset_test_loader, criterion)
+    print()
+
+    # Save the model
+    torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")
