@@ -1,6 +1,7 @@
 from torch import Tensor
 from torch.utils.data import Dataset
 
+import numpy as np
 import pandas as pd
 import torch
 
@@ -28,9 +29,10 @@ class FraminghamDataset(Dataset):
         # Balance data
         grouped = data.groupby("TenYearCHD")
         n = grouped.size().min()
+
         data = grouped.apply(
             lambda x: x.sample(
-                n if type(n) == int else 0,
+                n if type(n) == np.int64 else 0,
                 random_state=73
             ).reset_index(drop=True)
         )
