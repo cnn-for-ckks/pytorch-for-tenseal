@@ -1,13 +1,11 @@
 from typing import Tuple
-from torch import Tensor
 from tenseal import CKKSVector
-from torchseal.utils import im2col_conv2d, im2col_decoding
 
 import torch
 import tenseal as ts
 
 
-class CKKSWrapper(Tensor):
+class CKKSWrapper(torch.Tensor):
     __ckks_data: CKKSVector
 
     @property
@@ -27,7 +25,7 @@ class CKKSWrapper(Tensor):
     #     return super(CKKSWrapper, cls).__torch_function__(func, types, *args, **kwargs)
 
     # Overridden methods
-    def __new__(cls, _data: Tensor, _ckks_data: CKKSVector, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _data: torch.Tensor, _ckks_data: CKKSVector, *args, **kwargs) -> "CKKSWrapper":
         # Create the tensor
         data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
 
@@ -37,9 +35,9 @@ class CKKSWrapper(Tensor):
         return instance
 
     # Overridden methods
-    def __init__(self, data: Tensor, ckks_data: CKKSVector, *args, **kwargs) -> None:
+    def __init__(self, data: torch.Tensor, ckks_data: CKKSVector, *args, **kwargs) -> None:
         # Call the super constructor
-        super(Tensor, self).__init__(*args, **kwargs)
+        super(torch.Tensor, self).__init__(*args, **kwargs)
 
         # Set the data
         self.data = data
@@ -48,7 +46,7 @@ class CKKSWrapper(Tensor):
     # Overridden methods
     def clone(self, *args, **kwargs) -> "CKKSWrapper":
         # Clone the data
-        data = super(Tensor, self).clone(*args, **kwargs)
+        data = super(torch.Tensor, self).clone(*args, **kwargs)
         ckks_data: CKKSVector = self.ckks_data.copy()  # type: ignore
 
         # Create the new instance
@@ -59,25 +57,23 @@ class CKKSWrapper(Tensor):
     # Overridden methods
 
     def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
-        self.data = super(Tensor, self).view_as(other)
+        self.data = super(torch.Tensor, self).view_as(other)
 
         return self
 
     # CKKS Operation
-    def do_conv2d(self, weight: Tensor, bias: Tensor, num_col: int) -> "CKKSWrapper":
-        # TODO: Add support for multiple input and output channels
-        out_weight = weight.view(-1)
-        out_bias = bias.item()
-
-        # Apply the convolution to the encrypted input
-        new_ckks_vector = im2col_conv2d(
-            self.ckks_data, out_weight, num_col
-        ).add(out_bias)
+    def do_linear(self, weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
+        # Apply the linear transformation to the encrypted input
+        new_ckks_vector = self.ckks_data.matmul(
+            weight.t().tolist()
+        ).add(
+            bias.tolist()
+        )
 
         # Change the shape of the data
         tensor = torch.rand(new_ckks_vector.size())
 
-        # Update the CKKS data
+        # Update the data
         self.ckks_data = new_ckks_vector
 
         # Update the data
@@ -86,12 +82,12 @@ class CKKSWrapper(Tensor):
         return self
 
     # CKKS Operation
-    def do_linear(self, weight: Tensor, bias: Tensor) -> "CKKSWrapper":
-        # Apply the linear transformation to the encrypted input
+    def do_conv2d(self, toeplitz_weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
+        # Apply the conv2d operation to the encrypted input
         new_ckks_vector = self.ckks_data.matmul(
-            weight.t().tolist()
+            toeplitz_weight.t().tolist()
         ).add(
-            bias.tolist()
+            bias.item()
         )
 
         # Change the shape of the data
@@ -166,18 +162,6 @@ class CKKSWrapper(Tensor):
     def do_clamp(self, min: float, max: float) -> "CKKSWrapper":
         # Apply the clamp function to the data
         new_tensor = torch.clamp(self.data, min=min, max=max)
-
-        # Update the data
-        self.data = new_tensor.data
-
-        return self
-
-    # Data Operation
-    def do_image_decryption(self, num_row: int, num_col: int, output_size: Tuple[int, int], kernel_size: Tuple[int, int], stride: int, padding: int) -> "CKKSWrapper":
-        # Define the new tensor
-        new_tensor = im2col_decoding(
-            self.ckks_data, num_row, num_col, output_size, kernel_size, stride, padding
-        )
 
         # Update the data
         self.data = new_tensor.data

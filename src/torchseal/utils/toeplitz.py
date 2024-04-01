@@ -7,10 +7,10 @@ def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
     shape = len(c), len(r)
     i, j = torch.ones(*shape).nonzero().T
 
-    return vals[j - i].reshape(*shape)
+    return vals[j - i].view(*shape)
 
 
-# TODO: Add stride and padding support
+# Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
 def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
     # Get the shapes
     kernel_height, kernel_width = kernel.shape
@@ -56,7 +56,7 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size) -> torch.
     return weight_convolutions
 
 
-# TODO: Add stride and padding support
+# Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
 def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size) -> torch.Tensor:
     # Get the shapes
     kernel_out_channel, _, kernel_height, kernel_width = kernel.shape

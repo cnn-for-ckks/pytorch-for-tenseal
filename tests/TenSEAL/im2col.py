@@ -1,4 +1,4 @@
-from torch.nn.functional import unfold, fold
+from torch.nn.functional import unfold
 
 import tenseal as ts
 import torch

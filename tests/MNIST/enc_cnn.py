@@ -2,8 +2,6 @@ from typing import Tuple, Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
-from tenseal import CKKSVector
-from torchseal.utils import im2col_encoding
 from torchseal.wrapper.ckks import CKKSWrapper
 from cnn import ConvNet
 from utils import seed_worker
@@ -30,8 +28,6 @@ class EncConvNet(Module):
                 kernel_size=(
                     torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]
                 ),
-                stride=torch_nn.conv1.stride[0],
-                padding=0,  # NOTE: Hardcoded for MNIST dataset
                 weight=torch_nn.conv1.weight.data.view(
                     torch_nn.conv1.in_channels,
                     torch_nn.conv1.out_channels,
@@ -57,15 +53,15 @@ class EncConvNet(Module):
 
         else:
             self.conv1 = torchseal.nn.Conv2d(
-                output_size=(28, 28), kernel_size=(7, 7), stride=3, padding=0
+                output_size=(28, 28), kernel_size=(7, 7)
             )
             self.fc1 = torchseal.nn.Linear(64, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)
 
-    def forward(self, enc_x: CKKSWrapper, num_row: int, num_col: int) -> CKKSWrapper:
+    def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Convolutional layer
         # TODO: Have more than one layer
-        first_result = self.conv1.forward(enc_x, num_row, num_col)
+        first_result = self.conv1.forward(enc_x)
 
         # Square activation function
         first_result_squared = self.act1.forward(first_result)
@@ -82,7 +78,7 @@ class EncConvNet(Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, kernel_size: Tuple[int, int], stride: int, n_epochs: int = 10) -> EncConvNet:
+def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, n_epochs: int = 10) -> EncConvNet:
     # Model in training mode
     enc_model.train()
 
@@ -93,25 +89,14 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             optimizer.zero_grad()
 
             # Encoding and encryption
-            result: Tuple[CKKSVector, int, int] = im2col_encoding(
-                context,
-                raw_data.view(1, 28, 28),  # TODO: Handle larger batch sizes
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=0
-            )
-
-            # Unpack the result
-            enc_unfolded_image, num_row, num_col = result
-            enc_x_wrapper = CKKSWrapper(
-                torch.rand(enc_unfolded_image.size()),
-                enc_unfolded_image
+            data = raw_data.view(-1).tolist()
+            enc_data = ts.ckks_vector(context, data)
+            enc_data_wrapper = CKKSWrapper(
+                torch.rand(enc_data.size()), enc_data
             )
 
             # Encrypted evaluation
-            enc_output = enc_model.forward(
-                enc_x_wrapper, num_row, num_col
-            )
+            enc_output = enc_model.forward(enc_data_wrapper)
 
             # Decryption of result
             output = enc_output.do_decryption()
@@ -136,7 +121,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     return enc_model
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, kernel_size: Tuple[int, int], stride: int) -> None:
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
     class_correct = list(0. for _ in range(10))
@@ -147,25 +132,15 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 
     for raw_data, raw_target in test_loader:
         # Encoding and encryption
-        result: Tuple[CKKSVector, int, int] = im2col_encoding(
-            context,
-            raw_data.view(1, 28, 28),  # TODO: Handle larger batch sizes
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=0
-        )
-
-        # Unpack the result
-        enc_unfolded_image, num_row, num_col = result
-        enc_x_wrapper = CKKSWrapper(
-            torch.rand(enc_unfolded_image.size()),
-            enc_unfolded_image
+        data = raw_data.view(-1).tolist()
+        enc_data = ts.ckks_vector(context, data)
+        enc_data_wrapper = CKKSWrapper(
+            torch.rand(enc_data.size()), enc_data
         )
 
         # Encrypted evaluation
-        enc_output = enc_model.forward(
-            enc_x_wrapper, num_row, num_col
-        )
+        enc_output = enc_model.forward(enc_data_wrapper)
+
         # Decryption of result using client secret key
         output = enc_output.do_decryption()
 
@@ -281,8 +256,6 @@ if __name__ == "__main__":
         enc_subset_train_loader,
         enc_criterion,
         enc_optimizer,
-        kernel_size=(7, 7),
-        stride=3,
         n_epochs=10
     )
     print()
@@ -298,8 +271,6 @@ if __name__ == "__main__":
         enc_model,
         enc_subset_test_loader,
         enc_criterion,
-        kernel_size=(7, 7),
-        stride=3,
     )
 
     # Save the model
