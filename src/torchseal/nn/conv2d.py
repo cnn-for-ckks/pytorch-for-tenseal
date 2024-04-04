@@ -1,14 +1,13 @@
 from typing import Tuple, Optional
-from torch import Tensor
-from torch.nn import Module, Parameter
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.function.conv2d import Conv2dFunction
 
 import torch
 
 
-class Conv2d(Module):  # TODO: Add support for in_channels and out_channels (this enables the use of multiple convolutions in a row)
-    def __init__(self, in_channel: int, out_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 1, weight: Optional[Tensor] = None, bias: Optional[Tensor] = None) -> None:
+# TODO: Add support for in_channels and out_channels (this enables the use of multiple convolutions in a row)
+class Conv2d(torch.nn.Module):
+    def __init__(self, in_channel: int, out_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 1, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Save the parameters
@@ -20,12 +19,12 @@ class Conv2d(Module):  # TODO: Add support for in_channels and out_channels (thi
         kernel_n_rows, kernel_n_cols = kernel_size
 
         # Create the weight and bias
-        self.weight = Parameter(
+        self.weight = torch.nn.Parameter(
             torch.rand(
                 out_channel, in_channel, kernel_n_rows, kernel_n_cols
             ) if weight is None else weight
         )
-        self.bias = Parameter(
+        self.bias = torch.nn.Parameter(
             torch.rand(out_channel) if bias is None else bias
         )
 

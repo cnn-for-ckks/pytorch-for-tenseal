@@ -1,20 +1,18 @@
 from typing import Optional
-from torch import Tensor
-from torch.nn import Module, Parameter
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.function.linear import LinearFunction
 
 import torch
 
 
-class Linear(Module):
-    def __init__(self, in_features: int, out_features: int, weight: Optional[Tensor] = None, bias: Optional[Tensor] = None):
+class Linear(torch.nn.Module):
+    def __init__(self, in_features: int, out_features: int, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None):
         super(Linear, self).__init__()
 
-        self.weight = Parameter(
+        self.weight = torch.nn.Parameter(
             torch.rand(in_features, out_features) if weight is None else weight
         )
-        self.bias = Parameter(
+        self.bias = torch.nn.Parameter(
             torch.rand(out_features) if bias is None else bias
         )
 

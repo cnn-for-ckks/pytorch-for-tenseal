@@ -1,4 +1,3 @@
-from torch import Tensor
 from torch.utils.data import Dataset
 
 import numpy as np
@@ -54,5 +53,5 @@ class FraminghamDataset(Dataset):
     def __len__(self) -> int:
         return self.features.shape[0]
 
-    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         return self.features[idx], self.target[idx]

@@ -1,8 +1,9 @@
 from typing import Tuple
-from torch import Tensor
 from torch.autograd import Function
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.wrapper.function import CKKSFunctionWrapper
+
+import torch
 
 
 class SigmoidFunction(Function):
@@ -17,7 +18,7 @@ class SigmoidFunction(Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Tensor]:
+    def backward(ctx: CKKSFunctionWrapper, grad_output: torch.Tensor) -> Tuple[torch.Tensor]:
         # Get the saved tensors
         x = ctx.enc_x.do_decryption()
 

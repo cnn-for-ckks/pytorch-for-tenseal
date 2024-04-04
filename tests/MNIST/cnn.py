@@ -1,5 +1,3 @@
-from torch import Tensor
-from torch.nn import Module
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from utils import seed_worker
@@ -9,7 +7,7 @@ import numpy as np
 import random
 
 
-class ConvNet(Module):
+class ConvNet(torch.nn.Module):
     def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
@@ -17,7 +15,7 @@ class ConvNet(Module):
         self.fc1 = torch.nn.Linear(64, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1.forward(x)
 
         # Flatten the data

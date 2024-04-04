@@ -1,13 +1,14 @@
 from typing import Optional, Tuple
-from torch import Tensor
 from torch.autograd import Function
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.wrapper.function import CKKSFunctionWrapper
 
+import torch
+
 
 class LinearFunction(Function):
     @staticmethod
-    def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor) -> CKKSWrapper:
+    def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x.clone()
@@ -18,7 +19,7 @@ class LinearFunction(Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSFunctionWrapper, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx: CKKSFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         x = ctx.enc_x.do_decryption()
@@ -43,7 +44,7 @@ class LinearFunction(Function):
         return grad_input, grad_weight, grad_bias
 
     @staticmethod
-    def apply(enc_x: CKKSWrapper, weight: Tensor, bias: Tensor) -> CKKSWrapper:
+    def apply(enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor) -> CKKSWrapper:
         out_x: CKKSWrapper = super(LinearFunction, LinearFunction).apply(
             enc_x, weight, bias
         )  # type: ignore

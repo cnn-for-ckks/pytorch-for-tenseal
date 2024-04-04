@@ -1,9 +1,10 @@
-from torch.nn import Module
 from torchseal.function import SigmoidFunction
 from torchseal.wrapper.ckks import CKKSWrapper
 
+import torch
 
-class Sigmoid(Module):
+
+class Sigmoid(torch.nn.Module):
     def __init__(self) -> None:
         super(Sigmoid, self).__init__()
 

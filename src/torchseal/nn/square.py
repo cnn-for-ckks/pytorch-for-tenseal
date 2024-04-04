@@ -1,9 +1,10 @@
-from torch.nn import Module
 from torchseal.function import SquareFunction
 from torchseal.wrapper.ckks import CKKSWrapper
 
+import torch
 
-class Square(Module):
+
+class Square(torch.nn.Module):
     def __init__(self) -> None:
         super(Square, self).__init__()
 

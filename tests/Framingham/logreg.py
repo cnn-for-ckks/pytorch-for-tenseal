@@ -1,5 +1,3 @@
-from torch import Tensor
-from torch.nn import Module
 from torch.utils.data import DataLoader, Subset, random_split
 
 from dataloader import FraminghamDataset
@@ -10,13 +8,13 @@ import numpy as np
 import random
 
 
-class LogisticRegression(Module):
+class LogisticRegression(torch.nn.Module):
     def __init__(self, n_features: int) -> None:
         super(LogisticRegression, self).__init__()
 
         self.linear = torch.nn.Linear(n_features, 1)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear.forward(x)
 
         x = torch.sigmoid(x)

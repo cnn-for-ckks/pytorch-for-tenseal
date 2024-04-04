@@ -1,5 +1,4 @@
 from typing import Tuple, Optional
-from torch import Tensor
 from torch.autograd import Function
 from torch.nn.grad import conv2d_input, conv2d_weight
 from torchseal.wrapper.ckks import CKKSWrapper
@@ -11,7 +10,7 @@ import torch
 
 class Conv2dFunction(Function):
     @staticmethod
-    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: Tensor, bias: Tensor, output_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
+    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, output_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x.clone()
@@ -28,7 +27,7 @@ class Conv2dFunction(Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSConvFunctionWrapper, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[Tensor] = ctx.saved_tensors  # type: ignore
         enc_x = ctx.enc_x

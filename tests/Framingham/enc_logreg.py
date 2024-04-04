@@ -1,5 +1,4 @@
 from typing import Optional
-from torch.nn import Module
 from torch.utils.data import DataLoader, Subset, random_split
 from torchseal.wrapper.ckks import CKKSWrapper
 
@@ -15,7 +14,7 @@ import torchseal
 
 
 # NOTE: Decrypting the output of the model does not make it less secure
-class EncLogisticRegression(Module):
+class EncLogisticRegression(torch.nn.Module):
     def __init__(self, n_features: int, torch_nn: Optional[LogisticRegression] = None) -> None:
         super(EncLogisticRegression, self).__init__()
 

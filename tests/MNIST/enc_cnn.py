@@ -1,5 +1,4 @@
 from typing import Optional
-from torch.nn import Module
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from torchseal.wrapper.ckks import CKKSWrapper
@@ -13,7 +12,7 @@ import tenseal as ts
 import torchseal
 
 
-class EncConvNet(Module):
+class EncConvNet(torch.nn.Module):
     def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
