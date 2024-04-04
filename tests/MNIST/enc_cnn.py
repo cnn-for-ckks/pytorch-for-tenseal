@@ -13,7 +13,7 @@ import torchseal
 
 
 class EncConvNet(torch.nn.Module):
-    def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=16, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Define the layers
@@ -43,6 +43,13 @@ class EncConvNet(torch.nn.Module):
                 bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
             )
 
+            self.avg_pool = torchseal.nn.AvgPool2d(
+                n_channel=torch_nn.conv1.out_channels,
+                kernel_size=(2, 2),
+                output_size=torch.Size([1, 8, 8]),
+                stride=2,
+            )
+
             self.fc1 = torchseal.nn.Linear(
                 torch_nn.fc1.in_features,
                 torch_nn.fc1.out_features,
@@ -61,16 +68,24 @@ class EncConvNet(torch.nn.Module):
             self.conv1 = torchseal.nn.Conv2d(
                 in_channel=1, out_channel=1, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
             )
-            self.fc1 = torchseal.nn.Linear(64, hidden)
+            self.avg_pool = torchseal.nn.AvgPool2d(
+                n_channel=1,
+                kernel_size=(2, 2),
+                output_size=torch.Size([1, 8, 8]),
+                stride=2,
+            )
+            self.fc1 = torchseal.nn.Linear(16, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Convolutional layer
-        # TODO: Have more than one layer
         first_result = self.conv1.forward(enc_x)
 
+        # Average pooling layer
+        first_result_averaged = self.avg_pool.forward(first_result)
+
         # Square activation function
-        first_result_squared = self.act1.forward(first_result)
+        first_result_squared = self.act1.forward(first_result_averaged)
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
@@ -205,7 +220,8 @@ if __name__ == "__main__":
 
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
-# Load the data
+
+    # Load the data
     train_data = datasets.MNIST(
         "data", train=True, download=True, transform=transforms.ToTensor()
     )

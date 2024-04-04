@@ -5,9 +5,8 @@ from torchseal.function.conv2d import Conv2dFunction
 import torch
 
 
-# TODO: Add support for in_channels and out_channels (this enables the use of multiple convolutions in a row)
 class Conv2d(torch.nn.Module):
-    def __init__(self, in_channel: int, out_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 1, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, in_channel: int, out_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Save the parameters

@@ -1,4 +1,3 @@
-from typing import Tuple
 from tenseal import CKKSVector
 
 import torch
@@ -61,6 +60,23 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
+    def do_multiplication(self, matrix: torch.Tensor) -> "CKKSWrapper":
+        # Apply the multiplication to the encrypted input
+        new_ckks_vector: CKKSVector = self.ckks_data.matmul(
+            matrix.t().tolist()
+        )
+
+        # Change the shape of the data
+        tensor = torch.rand(new_ckks_vector.size())
+
+        # Update the data
+        self.ckks_data = new_ckks_vector
+
+        # Update the data
+        self.data = tensor.data
+
+        return self
+
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
@@ -87,7 +103,7 @@ class CKKSWrapper(torch.Tensor):
         new_ckks_vector = self.ckks_data.matmul(
             toeplitz_weight.t().tolist()
         ).add(
-            bias.item()
+            bias.item()  # TODO: Handle multiple biases for multiple channels
         )
 
         # Change the shape of the data

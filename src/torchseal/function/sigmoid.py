@@ -1,12 +1,11 @@
 from typing import Tuple
-from torch.autograd import Function
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.wrapper.function import CKKSFunctionWrapper
 
 import torch
 
 
-class SigmoidFunction(Function):
+class SigmoidFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
