@@ -30,21 +30,23 @@ if __name__ == "__main__":
     enc_input_tensor = ts.ckks_vector(context, input_tensor.view(-1).tolist())
 
     # Create the toeplitz matrix
-    toeplitz_matrix = toeplitz_multiple_channels(kernel, input_tensor.shape)
+    toeplitz_matrix = toeplitz_multiple_channels(
+        kernel, input_tensor.shape, stride=3, padding=0
+    )
 
     # Multiply the toeplitz matrix with the encrypted input tensor
     enc_output = enc_input_tensor.matmul(toeplitz_matrix.t().tolist())
 
     # Decrypt the output tensor
     dec_output = enc_output.decrypt()
-    dec_output_tensor = torch.tensor(dec_output).view(1, 1, 7, 7)
+    dec_output_tensor = torch.tensor(dec_output).view(1, 1, 3, 3)
 
     # Compare the output with the target
     output_tensor = toeplitz_matrix.matmul(
         input_tensor.view(-1)
-    ).view(1, 1, 7, 7)
+    ).view(1, 1, 3, 3)
     target = torch.nn.functional.conv2d(
-        input_tensor.view(1, 1, 9, 9), kernel
+        input_tensor.view(1, 1, 9, 9), kernel, stride=3, padding=0
     )
 
     # Check the correctness of the convolution via the toeplitz matrix

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # Declare global parameters
     output_size = (9, 9)
     kernel_size = (3, 3)
-    stride = 1
+    stride = 3
     padding = 0
 
     # Randomize the tensor
@@ -66,14 +66,14 @@ if __name__ == "__main__":
     )
 
     # Plaintext col2im
-    result = torch.tensor(enc_result.decrypt()).view(1, 1, 7, 7)
+    result = torch.tensor(enc_result.decrypt()).view(1, 1, 3, 3)
 
     # Compare the output with the target
     output = weight.view(1, -1).matmul(
         unfolded_image
-    ).view(1, 1, 7, 7)
+    ).view(1, 1, 3, 3)
     target = torch.nn.functional.conv2d(
-        image.view(1, 1, 9, 9), weight
+        image.view(1, 1, 9, 9), weight, stride=3, padding=0
     )
 
     # Check the correctness of the convolution via the im2col encoding
