@@ -98,26 +98,6 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_conv2d(self, toeplitz_weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
-        # Apply the conv2d operation to the encrypted input
-        new_ckks_vector = self.ckks_data.matmul(
-            toeplitz_weight.t().tolist()
-        ).add(
-            bias.item()  # TODO: Handle multiple biases for multiple channels
-        )
-
-        # Change the shape of the data
-        tensor = torch.rand(new_ckks_vector.size())
-
-        # Update the data
-        self.ckks_data = new_ckks_vector
-
-        # Update the data
-        self.data = tensor.data
-
-        return self
-
-    # CKKS Operation
     def do_sigmoid(self) -> "CKKSWrapper":
         # TODO: Create an adjustable approximation to calculate the sigmoid function
         new_ckks_vector: CKKSVector = self.ckks_data.polyval(

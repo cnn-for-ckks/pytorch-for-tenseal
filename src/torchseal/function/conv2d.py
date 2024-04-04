@@ -17,11 +17,20 @@ class Conv2dFunction(torch.autograd.Function):
         ctx.stride = stride
         ctx.padding = padding
 
-        # Apply the convolution to the encrypted input
+        # Get the toeplitz weight
         toeplitz_weight = toeplitz_multiple_channels(
             weight, output_size, stride=stride, padding=padding
         )
-        out_x = enc_x.do_conv2d(toeplitz_weight, bias)
+
+        # Get the bias
+        toeplitz_output_length, _ = toeplitz_weight.shape
+        bias_length, = bias.shape
+        toeplitz_bias = torch.cat(
+            [bias for _ in range(toeplitz_output_length // bias_length)]
+        )
+
+        # Apply the convolution to the encrypted input
+        out_x = enc_x.do_linear(toeplitz_weight, toeplitz_bias)
 
         return out_x
 
