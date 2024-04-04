@@ -23,14 +23,13 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Declare global parameters
-    output_size = (9, 9)
-    kernel_size = (3, 3)
+    kernel_size = (7, 7)
     stride = 3
     padding = 0
 
     # Randomize the tensor
-    weight = torch.rand(1, 1, 3, 3)
-    image = torch.rand(1, 9, 9)
+    weight = torch.rand(1, 1, 7, 7)
+    image = torch.rand(1, 28, 28)
 
     # Plaintext im2col
     unfolded_image = unfold(
@@ -66,14 +65,14 @@ if __name__ == "__main__":
     )
 
     # Plaintext col2im
-    result = torch.tensor(enc_result.decrypt()).view(1, 1, 3, 3)
+    result = torch.tensor(enc_result.decrypt()).view(1, 1, 8, 8)
 
     # Compare the output with the target
     output = weight.view(1, -1).matmul(
         unfolded_image
-    ).view(1, 1, 3, 3)
+    ).view(1, 1, 8, 8)
     target = torch.nn.functional.conv2d(
-        image.view(1, 1, 9, 9), weight, stride=3, padding=0
+        image.view(1, 1, 28, 28), weight, stride=3, padding=0
     )
 
     # Check the correctness of the convolution via the im2col encoding

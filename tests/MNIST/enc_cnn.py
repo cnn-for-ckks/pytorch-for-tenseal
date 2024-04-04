@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
@@ -24,10 +24,17 @@ class EncConvNet(Module):
         # Create the encrypted model
         if torch_nn is not None:
             self.conv1 = torchseal.nn.Conv2d(
-                output_size=(28, 28),  # NOTE: Hardcoded for MNIST dataset
+                # Required parameters
+                in_channel=torch_nn.conv1.in_channels,
+                out_channel=torch_nn.conv1.out_channels,
                 kernel_size=(
                     torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]
                 ),
+                output_size=torch.Size([1, 28, 28]),
+                stride=torch_nn.conv1.stride[0],
+                padding=0,
+
+                # Optional parameters
                 weight=torch_nn.conv1.weight.data.view(
                     torch_nn.conv1.in_channels,
                     torch_nn.conv1.out_channels,
@@ -53,7 +60,7 @@ class EncConvNet(Module):
 
         else:
             self.conv1 = torchseal.nn.Conv2d(
-                output_size=(28, 28), kernel_size=(7, 7)
+                in_channel=1, out_channel=1, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
             )
             self.fc1 = torchseal.nn.Linear(64, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)

@@ -1,6 +1,7 @@
-from typing import Tuple
 from torch.autograd.function import NestedIOFunction
 from torchseal.wrapper.ckks import CKKSWrapper
+
+import torch
 
 
 class CKKSFunctionWrapper(NestedIOFunction):
@@ -9,5 +10,6 @@ class CKKSFunctionWrapper(NestedIOFunction):
 
 class CKKSConvFunctionWrapper(NestedIOFunction):
     enc_x: CKKSWrapper
-    output_size: Tuple[int, int]
-    kernel_size: Tuple[int, int]
+    output_size: torch.Size
+    stride: int
+    padding: int
