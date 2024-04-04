@@ -27,8 +27,12 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
         # Construct 1D convolution toeplitz matrices for each row of the kernel considering stride
         toeplitz(
             torch.cat(
-                [kernel[r, 0:1], torch.zeros(
-                    padded_input_height - kernel_height)]
+                [
+                    kernel[r, 0:1],
+                    torch.zeros(
+                        padded_input_height - kernel_height
+                    )
+                ]
             ),
             torch.cat(
                 [kernel[r, :], torch.zeros(padded_input_width - kernel_width)]
@@ -43,7 +47,8 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
 
     # Initialize the final weight matrix with zeros
     weight_matrix = torch.zeros(
-        (num_blocks_height * block_height, padded_input_width * padded_input_height))
+        (num_blocks_height * block_height, padded_input_width * padded_input_height)
+    )
 
     # Fill in the blocks for the final weight matrix
     for i in range(kernel_height):
@@ -58,9 +63,8 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
 
     return weight_matrix
 
+
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-
-
 def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, stride: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     kernel_out_channel, _, kernel_height, kernel_width = kernel.shape
@@ -70,38 +74,31 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     padded_input_height = input_height + 2 * padding
     padded_input_width = input_width + 2 * padding
 
-    # Calculate the output size (with stride)
-    output_size = torch.Size([
-        kernel_out_channel,
-        (padded_input_height - kernel_height) // stride + 1,
-        (padded_input_width - kernel_width) // stride + 1
-    ])
+    # Calculate the output size (with padding and stride)
+    output_height = (padded_input_height - kernel_height) // stride + 1
+    output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Initialize the output tensor
     weight_convolutions = torch.zeros(
         (
             kernel_out_channel,
-            int(torch.prod(torch.tensor(output_size[1:])).item()),
+            output_height * output_width,
             input_in_channel,
-            int(torch.prod(torch.tensor(input_size[1:])).item())
+            input_height * input_width
         )
     )
 
     # Fill the output tensor
     for i, kernel_output in enumerate(kernel):
         for j, kernel_input in enumerate(kernel_output):
-            conv_one_channel = toeplitz_one_channel(
+            weight_convolutions[i, :, j, :] = toeplitz_one_channel(
                 kernel_input, input_size[1:], padding=padding, stride=stride
             )
-            print(kernel_input.shape)
-            print(input_size[1:])
-            print(conv_one_channel.shape)
 
-            weight_convolutions[i, :, j, :] = conv_one_channel
     # Reshape the output tensor
     weight_convolutions = weight_convolutions.view(
-        int(torch.prod(torch.tensor(output_size)).item()),
-        int(torch.prod(torch.tensor(input_size)).item())
+        kernel_out_channel * output_height * output_width,
+        input_in_channel * input_height * input_width
     )
 
     return weight_convolutions
