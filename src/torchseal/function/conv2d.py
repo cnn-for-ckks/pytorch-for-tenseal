@@ -48,7 +48,7 @@ class Conv2dFunction(torch.autograd.Function):
 
         # Unpack the tensor shapes
         output_channel, output_height, output_width = output_size
-        kernel_out_channel, kernel_in_channel, kernel_height, kernel_width = weight.shape
+        kernel_out_channel, _, kernel_height, kernel_width = weight.shape
 
         # Calculate feature dimension
         feature_h = (
@@ -63,7 +63,7 @@ class Conv2dFunction(torch.autograd.Function):
             1, output_channel, output_height, output_width  # TODO: Handle larger batch sizes
         )
         reshaped_grad_output = grad_output.view(
-            kernel_out_channel, kernel_in_channel, feature_h, feature_w
+            1, kernel_out_channel, feature_h, feature_w
         )
 
         # Get the needs_input_grad
@@ -81,6 +81,6 @@ class Conv2dFunction(torch.autograd.Function):
                 reshaped_x, weight.shape, reshaped_grad_output, stride=stride, padding=padding
             )
         if result[2]:
-            grad_bias = grad_output
+            grad_bias = reshaped_grad_output.sum(dim=(0, 2, 3))
 
         return grad_input, grad_weight, grad_bias, None, None, None

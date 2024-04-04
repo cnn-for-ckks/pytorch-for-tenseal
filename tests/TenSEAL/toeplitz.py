@@ -23,8 +23,8 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Declare parameters
-    kernel = torch.randn(1, 1, 7, 7)
-    input_tensor = torch.randn(1, 28, 28)
+    kernel = torch.randn(2, 2, 7, 7)
+    input_tensor = torch.randn(2, 28, 28)
 
     # Encrypt the input tensor
     enc_input_tensor = ts.ckks_vector(context, input_tensor.view(-1).tolist())
@@ -39,14 +39,14 @@ if __name__ == "__main__":
 
     # Decrypt the output tensor
     dec_output = enc_output.decrypt()
-    dec_output_tensor = torch.tensor(dec_output).view(1, 1, 8, 8)
+    dec_output_tensor = torch.tensor(dec_output).view(1, 2, 8, 8)
 
     # Compare the output with the target
     output_tensor = toeplitz_matrix.matmul(
         input_tensor.view(-1)
-    ).view(1, 1, 8, 8)
+    ).view(1, 2, 8, 8)
     target = torch.nn.functional.conv2d(
-        input_tensor.view(1, 1, 28, 28), kernel, stride=3, padding=0
+        input_tensor.view(1, 2, 28, 28), kernel, stride=3, padding=0
     )
 
     # Check the correctness of the convolution via the toeplitz matrix

@@ -13,7 +13,7 @@ import torchseal
 
 
 class EncConvNet(torch.nn.Module):
-    def __init__(self, hidden=16, output=10, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=32, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Define the layers
@@ -34,19 +34,14 @@ class EncConvNet(torch.nn.Module):
                 padding=0,
 
                 # Optional parameters
-                weight=torch_nn.conv1.weight.data.view(
-                    torch_nn.conv1.in_channels,
-                    torch_nn.conv1.out_channels,
-                    torch_nn.conv1.kernel_size[0],
-                    torch_nn.conv1.kernel_size[1]
-                ),
+                weight=torch_nn.conv1.weight.data,
                 bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
             )
 
             self.avg_pool = torchseal.nn.AvgPool2d(
                 n_channel=torch_nn.conv1.out_channels,
                 kernel_size=(2, 2),
-                output_size=torch.Size([1, 8, 8]),
+                output_size=torch.Size([2, 8, 8]),
                 stride=2,
             )
 
@@ -66,15 +61,15 @@ class EncConvNet(torch.nn.Module):
 
         else:
             self.conv1 = torchseal.nn.Conv2d(
-                in_channel=1, out_channel=1, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
+                in_channel=1, out_channel=2, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
             )
             self.avg_pool = torchseal.nn.AvgPool2d(
-                n_channel=1,
+                n_channel=2,
                 kernel_size=(2, 2),
-                output_size=torch.Size([1, 8, 8]),
+                output_size=torch.Size([2, 8, 8]),
                 stride=2,
             )
-            self.fc1 = torchseal.nn.Linear(16, hidden)
+            self.fc1 = torchseal.nn.Linear(32, hidden)
             self.fc2 = torchseal.nn.Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
