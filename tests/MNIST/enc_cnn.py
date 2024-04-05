@@ -13,8 +13,9 @@ import tenseal as ts
 import torchseal
 
 
+# BUG: There is a bug when using multiple convolution (ValueError: encrypted1 and encrypted2 parameter mismatch)
 class EncConvNet(torch.nn.Module):
-    def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=16, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Define the layers
@@ -72,7 +73,7 @@ class EncConvNet(torch.nn.Module):
                 stride=2,
                 padding=0
             )
-            self.fc1 = Linear(64, hidden)
+            self.fc1 = Linear(16, hidden)
             self.fc2 = Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
@@ -218,9 +219,6 @@ if __name__ == "__main__":
 
     # Set the scale
     context.global_scale = pow(2, bits_scale)
-
-    # Set the auto rescale
-    context.auto_rescale = True
 
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()

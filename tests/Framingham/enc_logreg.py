@@ -131,9 +131,6 @@ if __name__ == "__main__":
     # Set the scale
     context.global_scale = pow(2, bits_scale)
 
-    # Set the auto rescale
-    context.auto_rescale = True
-
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 

@@ -81,7 +81,8 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
         print("Linear with Bias" if bias is not None else "Linear without Bias")
-        print("Auto rescaling: ", self.ckks_data.context().auto_rescale)
+        print(f"Weight: {weight.shape}")
+        print(f"Data: {self.ckks_data.shape}")
 
         # Apply the linear transformation to the encrypted input
         start_time = time.perf_counter()

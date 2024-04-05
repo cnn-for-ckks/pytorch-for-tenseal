@@ -5,7 +5,6 @@ from torchseal.function import AvgPool2dFunction
 import torch
 
 
-# BUG: There is a bug (ValueError: encrypted1 and encrypted2 parameter mismatch)
 class AvgPool2d(torch.nn.Module):
     def __init__(self, n_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 0,) -> None:
         super(AvgPool2d, self).__init__()
