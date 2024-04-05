@@ -1,7 +1,6 @@
 from typing import Tuple
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
-from torchseal.utils import toeplitz_multiple_channels
 
 import torch
 
@@ -26,14 +25,9 @@ class AvgPool2d(torch.nn.Module):
             kernel_n_cols * kernel_n_rows
         )
 
-        # Efficiently calculate the toeplitz matrix
-        self.toeplitz_avg_kernel = toeplitz_multiple_channels(
-            self.avg_kernel, output_size[1:], stride=stride, padding=padding
-        )
-
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         out_x: CKKSWrapper = AvgPool2dFunction.apply(
-            enc_x, self.avg_kernel, self.toeplitz_avg_kernel, self.output_size, self.stride, self.padding
+            enc_x, self.avg_kernel, self.output_size, self.stride, self.padding
         )  # type: ignore
 
         return out_x

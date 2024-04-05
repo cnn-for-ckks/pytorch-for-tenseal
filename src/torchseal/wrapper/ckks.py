@@ -1,9 +1,10 @@
+from typing import Optional
 from tenseal import CKKSTensor
 
 import torch
 import tenseal as ts
 import numpy as np
-# import time
+import time
 
 
 class CKKSWrapper(torch.Tensor):
@@ -78,60 +79,26 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_multiplication(self, matrix: torch.Tensor) -> "CKKSWrapper":
-        # Create the plaintext matrix
-        plaintext_matrix = ts.plain_tensor(matrix.t().tolist())
-
-        # print("MULTIPLICATION")
-        # print(self.ckks_data.shape)
-        # print(plaintext_matrix.shape)
-        # print()
-
-        # Apply the multiplication to the encrypted input
-        # start_time = time.perf_counter()
-        new_ckks_tensor: CKKSTensor = self.ckks_data.mm(
-            plaintext_matrix
-        )
-        # end_time = time.perf_counter()
-
-        # print(
-        #     f"Time taken for multiplication: {end_time - start_time:.6f} seconds\n"
-        # )
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        # Change the shape of the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
-
-        # Update the data
-        self.data = tensor.data
-
-        return self
-
-    # CKKS Operation
-    def do_linear(self, weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
-        # Create the plaintext weight and bias
-        plaintext_weight = ts.plain_tensor(weight.t().tolist())
-        plaintext_bias = ts.plain_tensor(bias.tolist())
-
-        # print("LINEAR")
-        # print(self.ckks_data.shape)
-        # print(plaintext_weight.shape)
-        # print()
+    def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
+        print("Linear with Bias" if bias is not None else "Linear without Bias")
+        print("Auto rescaling: ", self.ckks_data.context().auto_rescale)
 
         # Apply the linear transformation to the encrypted input
-        # start_time = time.perf_counter()
-        new_ckks_tensor = self.ckks_data.mm(
-            plaintext_weight
-        ).add(
-            plaintext_bias
-        )
-        # end_time = time.perf_counter()
+        start_time = time.perf_counter()
 
-        # print(
-        #     f"Time taken for linear transformation: {end_time - start_time:.6f} seconds\n"
-        # )
+        new_ckks_tensor = self.ckks_data.mm(
+            ts.plain_tensor(weight.t().tolist())
+        ).add(
+            ts.plain_tensor(bias.tolist())
+        ) if bias is not None else self.ckks_data.mm(
+            ts.plain_tensor(weight.t().tolist())
+        )
+
+        end_time = time.perf_counter()
+
+        print(
+            f"Time taken for linear transformation: {end_time - start_time:.6f} seconds\n"
+        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

@@ -8,19 +8,23 @@ import random
 
 
 class ConvNet(torch.nn.Module):
-    def __init__(self, hidden=64, output=10) -> None:
+    def __init__(self, hidden=16, output=10) -> None:
         super(ConvNet, self).__init__()
 
         self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(7, 7), stride=3)
-        self.fc1 = torch.nn.Linear(64, hidden)
+        self.avg_pool = torch.nn.AvgPool2d(kernel_size=(2, 2), stride=2)
+        self.fc1 = torch.nn.Linear(16, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply the convolutional layer
         x = self.conv1.forward(x)
 
+        # Apply the average pooling layer
+        x = self.avg_pool.forward(x)
+
         # Flatten the data
-        x = x.view(-1, 64)
+        x = x.view(-1, 16)
 
         # Apply the activation function
         x = x * x

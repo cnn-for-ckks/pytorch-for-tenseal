@@ -39,6 +39,14 @@ class EncConvNet(torch.nn.Module):
                 bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
             )
 
+            self.avg_pool = AvgPool2d(
+                n_channel=torch_nn.conv1.out_channels,
+                output_size=torch.Size([2, 1, 8, 8]),
+                kernel_size=(2, 2),
+                stride=2,
+                padding=0
+            )
+
             self.fc1 = Linear(
                 torch_nn.fc1.in_features,
                 torch_nn.fc1.out_features,
@@ -57,6 +65,13 @@ class EncConvNet(torch.nn.Module):
             self.conv1 = Conv2d(
                 in_channel=1, out_channel=1, kernel_size=(7, 7), stride=3, output_size=torch.Size([2, 1, 28, 28])
             )
+            self.avg_pool = AvgPool2d(
+                n_channel=1,
+                output_size=torch.Size([2, 1, 8, 8]),
+                kernel_size=(2, 2),
+                stride=2,
+                padding=0
+            )
             self.fc1 = Linear(64, hidden)
             self.fc2 = Linear(hidden, output)
 
@@ -64,8 +79,11 @@ class EncConvNet(torch.nn.Module):
         # Convolutional layer
         first_result = self.conv1.forward(enc_x)
 
+        # Average pooling layer
+        first_result_averaged = self.avg_pool.forward(first_result)
+
         # Square activation function
-        first_result_squared = self.act1.forward(first_result)
+        first_result_squared = self.act1.forward(first_result_averaged)
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
@@ -200,6 +218,9 @@ if __name__ == "__main__":
 
     # Set the scale
     context.global_scale = pow(2, bits_scale)
+
+    # Set the auto rescale
+    context.auto_rescale = True
 
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
