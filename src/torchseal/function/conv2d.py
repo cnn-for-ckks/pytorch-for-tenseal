@@ -25,9 +25,7 @@ class Conv2dFunction(torch.autograd.Function):
         # Get the bias
         toeplitz_output_length, _ = toeplitz_weight.shape
         bias_length, = bias.shape
-        toeplitz_bias = torch.cat(
-            [bias for _ in range(toeplitz_output_length // bias_length)]
-        )
+        toeplitz_bias = bias.repeat(toeplitz_output_length // bias_length)
 
         # Apply the convolution to the encrypted input
         out_x = enc_x.do_linear(toeplitz_weight, toeplitz_bias)
