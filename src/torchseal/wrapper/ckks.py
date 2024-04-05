@@ -54,23 +54,39 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Overridden methods
-
     def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
         self.data = super(torch.Tensor, self).view_as(other)
 
         return self
 
+    # CKKS Operation
+    def do_encryption(self, context: ts.Context) -> "CKKSWrapper":
+        # Define the new CKKS vector
+        new_ckks_vector = ts.ckks_vector(context, self.data.tolist())
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_vector
+
+        # Blur the data
+        tensor = torch.zeros(new_ckks_vector.size())
+
+        # Update the data
+        self.data = tensor.data
+
+        return self
+
+    # CKKS Operation
     def do_multiplication(self, matrix: torch.Tensor) -> "CKKSWrapper":
         # Apply the multiplication to the encrypted input
         new_ckks_vector: CKKSVector = self.ckks_data.matmul(
             matrix.t().tolist()
         )
 
-        # Change the shape of the data
-        tensor = torch.rand(new_ckks_vector.size())
-
-        # Update the data
+        # Update the encrypted data
         self.ckks_data = new_ckks_vector
+
+        # Change the shape of the data
+        tensor = torch.zeros(new_ckks_vector.size())
 
         # Update the data
         self.data = tensor.data
@@ -86,11 +102,11 @@ class CKKSWrapper(torch.Tensor):
             bias.tolist()
         )
 
-        # Change the shape of the data
-        tensor = torch.rand(new_ckks_vector.size())
-
-        # Update the data
+        # Update the encrypted data
         self.ckks_data = new_ckks_vector
+
+        # Change the shape of the data
+        tensor = torch.zeros(new_ckks_vector.size())
 
         # Update the data
         self.data = tensor.data
@@ -104,7 +120,7 @@ class CKKSWrapper(torch.Tensor):
             [0.5, 0.197, 0, -0.004]
         )  # type: ignore
 
-        # Update the data
+        # Update the encrypted data
         self.ckks_data = new_ckks_vector
 
         return self
@@ -114,18 +130,20 @@ class CKKSWrapper(torch.Tensor):
         # Apply the square function to the encrypted input
         new_ckks_vector: CKKSVector = self.ckks_data.square()  # type: ignore
 
-        # Update the data
+        # Update the encrypted data
         self.ckks_data = new_ckks_vector
 
         return self
 
-    # CKKS Operation
-    def do_encryption(self, context: ts.Context) -> "CKKSWrapper":
-        # Define the new CKKS vector
-        new_ckks_vector = ts.ckks_vector(context, self.data.tolist())
+    # Data Operation
+    def do_decryption(self) -> "CKKSWrapper":
+        # Define the new tensor
+        new_tensor = torch.tensor(
+            self.ckks_data.decrypt(), requires_grad=True
+        )
 
         # Update the data
-        self.ckks_data = new_ckks_vector
+        self.data = new_tensor.data
 
         return self
 
@@ -158,18 +176,6 @@ class CKKSWrapper(torch.Tensor):
     def do_clamp(self, min: float, max: float) -> "CKKSWrapper":
         # Apply the clamp function to the data
         new_tensor = torch.clamp(self.data, min=min, max=max)
-
-        # Update the data
-        self.data = new_tensor.data
-
-        return self
-
-    # Data Operation
-    def do_decryption(self) -> "CKKSWrapper":
-        # Define the new tensor
-        new_tensor = torch.tensor(
-            self.ckks_data.decrypt(), requires_grad=True
-        )
 
         # Update the data
         self.data = new_tensor.data

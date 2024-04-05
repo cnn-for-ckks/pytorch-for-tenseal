@@ -108,7 +108,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             data = raw_data.view(-1).tolist()
             enc_data = ts.ckks_vector(context, data)
             enc_data_wrapper = CKKSWrapper(
-                torch.rand(enc_data.size()), enc_data
+                torch.zeros(enc_data.size()), enc_data
             )
 
             # Encrypted evaluation
