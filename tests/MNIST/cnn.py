@@ -90,9 +90,9 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
 
         # Calculate test accuracy for each object class
-        for _ in range(len(target)):
-            label = target.data[0]
-            class_correct[label] += correct.item()
+        for i in range(len(target)):
+            label = target.data[i]
+            class_correct[label] += correct[i].item()
             class_total[label] += 1
 
     # Calculate and print avg test loss
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
-    batch_size = 1  # TODO: Handle larger batch sizes
+    batch_size = 2
 
     # Create the data loaders
     subset_train_loader = DataLoader(
