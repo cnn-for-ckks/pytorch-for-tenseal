@@ -1,1 +1,1 @@
-from .toeplitz import near_zeros, toeplitz_multiple_channels
+from .toeplitz import toeplitz_multiple_channels

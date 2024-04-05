@@ -1,6 +1,5 @@
 from typing import Optional
 from tenseal import CKKSTensor
-from torchseal.utils import near_zeros
 
 import torch
 import tenseal as ts
@@ -71,7 +70,7 @@ class CKKSWrapper(torch.Tensor):
         self.ckks_data = new_ckks_tensor
 
         # Blur the data
-        tensor = near_zeros(new_ckks_tensor.shape)
+        tensor = torch.zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
@@ -93,7 +92,7 @@ class CKKSWrapper(torch.Tensor):
         self.ckks_data = new_ckks_tensor
 
         # Change the shape of the data
-        tensor = near_zeros(new_ckks_tensor.shape)
+        tensor = torch.zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
