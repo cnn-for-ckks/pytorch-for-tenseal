@@ -115,6 +115,7 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_sigmoid(self) -> "CKKSWrapper":
+        # Apply the sigmoid function to the data
         # TODO: Create an adjustable approximation to calculate the sigmoid function
         new_ckks_vector: CKKSVector = self.ckks_data.polyval(
             [0.5, 0.197, 0, -0.004]

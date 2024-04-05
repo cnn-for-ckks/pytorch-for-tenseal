@@ -10,7 +10,7 @@ class Linear(torch.nn.Module):
         super(Linear, self).__init__()
 
         self.weight = torch.nn.Parameter(
-            torch.rand(in_features, out_features) if weight is None else weight
+            torch.rand(out_features, in_features) if weight is None else weight
         )
         self.bias = torch.nn.Parameter(
             torch.rand(out_features) if bias is None else bias

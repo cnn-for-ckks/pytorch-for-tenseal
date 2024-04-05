@@ -41,11 +41,3 @@ class LinearFunction(torch.autograd.Function):
             grad_bias = grad_output
 
         return grad_input, grad_weight, grad_bias
-
-    @staticmethod
-    def apply(enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor) -> CKKSWrapper:
-        out_x: CKKSWrapper = super(LinearFunction, LinearFunction).apply(
-            enc_x, weight, bias
-        )  # type: ignore
-
-        return out_x
