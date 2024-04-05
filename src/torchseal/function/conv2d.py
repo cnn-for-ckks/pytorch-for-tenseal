@@ -63,7 +63,7 @@ class Conv2dFunction(torch.autograd.Function):
             1, output_channel, output_height, output_width  # TODO: Handle larger batch sizes
         )
         reshaped_grad_output = grad_output.view(
-            1, kernel_out_channel, feature_h, feature_w
+            1, kernel_out_channel, feature_h, feature_w  # TODO: Handle larger batch sizes
         )
 
         # Get the needs_input_grad
