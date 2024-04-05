@@ -30,6 +30,7 @@ if __name__ == "__main__":
     kernel_width = 7
     stride = 3
     padding = 0
+    batch_size = 1
     input_height = 28
     input_width = 28
 
@@ -45,34 +46,37 @@ if __name__ == "__main__":
         kernel_width
     )
     input_tensor = torch.randn(
-        in_channels, input_height, input_width
+        batch_size, in_channels, input_height, input_width
     )
 
     # Encrypt the input tensor
-    enc_input_tensor = ts.ckks_vector(context, input_tensor.view(-1).tolist())
+    enc_input_tensor = ts.ckks_tensor(
+        context, input_tensor.view(batch_size, -1).tolist()
+    )
 
     # Create the toeplitz matrix
     toeplitz_matrix = toeplitz_multiple_channels(
-        kernel, input_tensor.shape, stride=stride, padding=padding
+        kernel, input_tensor.shape[1:], stride=stride, padding=padding
     )
 
     # Multiply the toeplitz matrix with the encrypted input tensor
     start_time = time.perf_counter()
-    enc_output = enc_input_tensor.matmul(toeplitz_matrix.t().tolist())
+    enc_output = enc_input_tensor.mm(toeplitz_matrix.t().tolist())
     end_time = time.perf_counter()
 
     # Decrypt the output tensor
     dec_output = enc_output.decrypt()
-    dec_output_tensor = torch.tensor(dec_output).view(
-        1, out_channels, output_height, output_width
+    dec_output_tensor = torch.tensor(dec_output.tolist()).view(
+        batch_size, out_channels, output_height, output_width
     )
 
     # Compare the output with the target
-    output_tensor = toeplitz_matrix.matmul(
-        input_tensor.view(-1)
-    ).view(1, out_channels, output_height, output_width)
+    output_tensor = input_tensor.view(batch_size, -1).matmul(
+        toeplitz_matrix.t()
+    ).view(batch_size, out_channels, output_height, output_width)
+
     target = torch.nn.functional.conv2d(
-        input_tensor.view(1, in_channels, input_height, input_width), kernel, stride=stride, padding=padding
+        input_tensor.view(batch_size, in_channels, input_height, input_width), kernel, stride=stride, padding=padding
     )
 
     # Check the correctness of the convolution via the toeplitz matrix
@@ -83,11 +87,11 @@ if __name__ == "__main__":
     percent_of_enc_error = enc_error / sum_target * 100
 
     print(
-        f"Time taken for encrypted multiplication (without batch): {end_time - start_time:.6f} seconds"
+        f"Time taken for encrypted multiplication (with batch): {end_time - start_time:.6f} seconds"
     )
     print(
-        f"Percentage of plaintext convolution error (without batch): {percent_of_error:.6f}%"
+        f"Percentage of plaintext convolution error (with batch): {percent_of_error:.6f}%"
     )
     print(
-        f"Percentage of encrypted convolution error (without batch): {percent_of_enc_error:.6f}%"
+        f"Percentage of encrypted convolution error (with batch): {percent_of_enc_error:.6f}%"
     )
