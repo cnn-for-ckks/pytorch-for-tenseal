@@ -1,5 +1,6 @@
 from typing import Optional
 from tenseal import CKKSTensor
+from torchseal.utils import near_zeros
 
 import torch
 import tenseal as ts
@@ -71,7 +72,7 @@ class CKKSWrapper(torch.Tensor):
         self.ckks_data = new_ckks_tensor
 
         # Blur the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
+        tensor = near_zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
@@ -81,8 +82,10 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
         print("Linear with Bias" if bias is not None else "Linear without Bias")
-        print(f"Weight: {weight.shape}")
-        print(f"Data: {self.ckks_data.shape}")
+        print(f"Weight Shape: {weight.shape}")
+        print(f"Data Shape: {self.ckks_data.shape}")
+
+        print(f"Weight: {weight}")
 
         # Apply the linear transformation to the encrypted input
         start_time = time.perf_counter()
@@ -105,7 +108,7 @@ class CKKSWrapper(torch.Tensor):
         self.ckks_data = new_ckks_tensor
 
         # Change the shape of the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
+        tensor = near_zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data

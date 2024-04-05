@@ -1,4 +1,12 @@
+from typing import Sequence, Union
+
 import torch
+
+
+# This function generate a near-zero tensor with the given shape and scale
+# Useful for initializing toeplitz matrices
+def near_zeros(shape: Union[int, Sequence[int]], scale: float = 1e-3) -> torch.Tensor:
+    return torch.rand(shape) * scale
 
 
 # Source: https://stackoverflow.com/questions/68896578/pytorchs-torch-as-strided-with-negative-strides-for-making-a-toeplitz-matrix/68899386#68899386
@@ -29,13 +37,13 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
             torch.cat(
                 [
                     kernel[r, 0:1],
-                    torch.zeros(
+                    near_zeros(
                         padded_input_height - kernel_height
                     )
                 ]
             ),
             torch.cat(
-                [kernel[r, :], torch.zeros(padded_input_width - kernel_width)]
+                [kernel[r, :], near_zeros(padded_input_width - kernel_width)]
             )
         )[::stride, :][:output_height]
         for r in range(kernel_height)
@@ -46,7 +54,7 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
     block_height, block_width = toeplitz_matrices[0].shape
 
     # Initialize the final weight matrix with zeros
-    weight_matrix = torch.zeros(
+    weight_matrix = near_zeros(
         (num_blocks_height * block_height, padded_input_width * padded_input_height)
     )
 
@@ -79,7 +87,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Initialize the output tensor
-    weight_convolutions = torch.zeros(
+    weight_convolutions = near_zeros(
         (
             kernel_out_channel,
             output_height * output_width,

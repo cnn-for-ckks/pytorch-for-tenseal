@@ -13,7 +13,6 @@ import tenseal as ts
 import torchseal
 
 
-# BUG: There is a bug when using multiple convolution (ValueError: encrypted1 and encrypted2 parameter mismatch)
 class EncConvNet(torch.nn.Module):
     def __init__(self, hidden=16, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
