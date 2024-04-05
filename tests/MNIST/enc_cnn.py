@@ -14,7 +14,7 @@ import torchseal
 
 
 class EncConvNet(torch.nn.Module):
-    def __init__(self, hidden=32, output=10, torch_nn: Optional[ConvNet] = None) -> None:
+    def __init__(self, hidden=64, output=10, torch_nn: Optional[ConvNet] = None) -> None:
         super(EncConvNet, self).__init__()
 
         # Define the layers
@@ -30,20 +30,13 @@ class EncConvNet(torch.nn.Module):
                 kernel_size=(
                     torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]
                 ),
-                output_size=torch.Size([1, 28, 28]),
+                output_size=torch.Size([2, 1, 28, 28]),
                 stride=torch_nn.conv1.stride[0],
                 padding=0,
 
                 # Optional parameters
                 weight=torch_nn.conv1.weight.data,
                 bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
-            )
-
-            self.avg_pool = AvgPool2d(
-                n_channel=torch_nn.conv1.out_channels,
-                kernel_size=(2, 2),
-                output_size=torch.Size([2, 8, 8]),
-                stride=2,
             )
 
             self.fc1 = Linear(
@@ -62,26 +55,17 @@ class EncConvNet(torch.nn.Module):
 
         else:
             self.conv1 = Conv2d(
-                in_channel=1, out_channel=2, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
+                in_channel=1, out_channel=1, kernel_size=(7, 7), stride=3, output_size=torch.Size([2, 1, 28, 28])
             )
-            self.avg_pool = AvgPool2d(
-                n_channel=2,
-                kernel_size=(2, 2),
-                output_size=torch.Size([2, 8, 8]),
-                stride=2,
-            )
-            self.fc1 = Linear(32, hidden)
+            self.fc1 = Linear(64, hidden)
             self.fc2 = Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Convolutional layer
         first_result = self.conv1.forward(enc_x)
 
-        # Average pooling layer
-        first_result_averaged = self.avg_pool.forward(first_result)
-
         # Square activation function
-        first_result_squared = self.act1.forward(first_result_averaged)
+        first_result_squared = self.act1.forward(first_result)
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
@@ -95,19 +79,19 @@ class EncConvNet(torch.nn.Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, n_epochs: int = 10) -> EncConvNet:
+def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, batch_size: int, n_epochs: int = 10) -> EncConvNet:
     # Model in training mode
     enc_model.train()
 
     for epoch in range(n_epochs):
         train_loss = 0.
 
-        for raw_data, raw_target in train_loader:
+        for raw_data, target in train_loader:
             optimizer.zero_grad()
 
             # Encoding and encryption
             enc_data_wrapper = torchseal.ckks_wrapper(
-                context, raw_data.view(-1)
+                context, raw_data.view(batch_size, -1)
             )
 
             # Encrypted evaluation
@@ -117,7 +101,6 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             output = enc_output.do_decryption()
 
             # Compute loss
-            target = raw_target[0]  # TODO: Handle larger batch sizes
             loss = criterion.forward(output, target)
             loss.backward()
             optimizer.step()
@@ -136,7 +119,7 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
     return enc_model
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss) -> None:
+def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, batch_size: int) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
     class_correct = list(0. for _ in range(10))
@@ -148,7 +131,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     for raw_data, raw_target in test_loader:
         # Encoding and encryption
         enc_data_wrapper = torchseal.ckks_wrapper(
-            context, raw_data.view(-1)
+            context, raw_data.view(batch_size, -1)
         )
 
         # Encrypted evaluation
@@ -158,7 +141,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         output = enc_output.do_decryption()
 
         # Compute loss
-        target = raw_target[0]  # TODO: Handle larger batch sizes
+        target = raw_target.view(batch_size, -1)
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
@@ -169,9 +152,17 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         correct = np.squeeze(pred.eq(target.data.view_as(pred)))
 
         # Calculate test accuracy for each object class
-        label = target.data.item()
-        class_correct[label] += correct.item()
-        class_total[label] += 1
+        num_target = len(target)
+
+        if num_target > 1:
+            for i in range(num_target):
+                label = target.data[i]
+                class_correct[label] += correct[i].item()
+                class_total[label] += 1
+        else:
+            label = target.data.item()
+            class_correct[label] += correct.item()
+            class_total[label] += 1
 
     # Calculate and print avg test loss
     test_loss = test_loss / sum(class_total)
@@ -226,7 +217,7 @@ if __name__ == "__main__":
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
-    batch_size = 1  # TODO: Handle larger batch sizes
+    batch_size = 2
 
     # Create the data loaders
     subset_train_loader = DataLoader(
@@ -270,6 +261,7 @@ if __name__ == "__main__":
         enc_subset_train_loader,
         enc_criterion,
         enc_optimizer,
+        batch_size,
         n_epochs=10
     )
     print()
@@ -285,6 +277,7 @@ if __name__ == "__main__":
         enc_model,
         enc_subset_test_loader,
         enc_criterion,
+        batch_size
     )
 
     # Save the model

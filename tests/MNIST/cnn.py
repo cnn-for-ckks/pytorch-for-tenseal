@@ -8,23 +8,19 @@ import random
 
 
 class ConvNet(torch.nn.Module):
-    def __init__(self, hidden=32, output=10) -> None:
+    def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
-        self.conv1 = torch.nn.Conv2d(1, 2, kernel_size=(7, 7), stride=3)
-        self.avg_pool = torch.nn.AvgPool2d(kernel_size=(2, 2), stride=2)
-        self.fc1 = torch.nn.Linear(32, hidden)
+        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(7, 7), stride=3)
+        self.fc1 = torch.nn.Linear(64, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply the convolutional layer
         x = self.conv1.forward(x)
 
-        # Apply the average pooling layer
-        x = self.avg_pool.forward(x)
-
         # Flatten the data
-        x = x.view(-1, 32)
+        x = x.view(-1, 64)
 
         # Apply the activation function
         x = x * x
@@ -98,7 +94,7 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
                 class_correct[label] += correct[i].item()
                 class_total[label] += 1
         else:
-            label = target.data
+            label = target.data.item()
             class_correct[label] += correct.item()
             class_total[label] += 1
 
@@ -137,7 +133,7 @@ if __name__ == "__main__":
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
-    batch_size = 1
+    batch_size = 2
 
     # Create the data loaders
     subset_train_loader = DataLoader(

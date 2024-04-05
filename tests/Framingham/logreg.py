@@ -66,9 +66,11 @@ def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn
         loss = criterion.forward(output, target)
         test_loss += loss.item()
 
+        print(f"Current Test Loss (Plaintext): {loss.item():.6f}")
+
     # Calculate and print avg test loss
     test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
-    print(f"Average Test Loss (Plaintext): {test_loss:.6f}")
+    print(f"\nAverage Test Loss (Plaintext): {test_loss:.6f}")
 
 
 if __name__ == "__main__":
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     )
 
     # Set the batch size
-    batch_size = 1  # TODO: Handle larger batch sizes
+    batch_size = 2
 
     # Create the data loaders
     train_loader = DataLoader(

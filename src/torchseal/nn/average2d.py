@@ -6,6 +6,7 @@ from torchseal.utils import toeplitz_multiple_channels
 import torch
 
 
+# BUG: There is a bug (ValueError: encrypted1 and encrypted2 parameter mismatch)
 class AvgPool2d(torch.nn.Module):
     def __init__(self, n_channel: int, kernel_size: Tuple[int, int], output_size: torch.Size, stride: int = 1, padding: int = 0,) -> None:
         super(AvgPool2d, self).__init__()
@@ -27,7 +28,7 @@ class AvgPool2d(torch.nn.Module):
 
         # Efficiently calculate the toeplitz matrix
         self.toeplitz_avg_kernel = toeplitz_multiple_channels(
-            self.avg_kernel, output_size, stride=stride, padding=padding
+            self.avg_kernel, output_size[1:], stride=stride, padding=padding
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:

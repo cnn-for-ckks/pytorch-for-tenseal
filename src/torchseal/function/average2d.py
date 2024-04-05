@@ -34,7 +34,7 @@ class AvgPool2dFunction(torch.autograd.Function):
         avg_kernel, = saved_tensors
 
         # Unpack the tensor shapes
-        output_channel, output_height, output_width = output_size
+        batch_size, output_channel, output_height, output_width = output_size
         kernel_out_channel, _, kernel_height, kernel_width = avg_kernel.shape
 
         # Calculate feature dimension
@@ -47,10 +47,10 @@ class AvgPool2dFunction(torch.autograd.Function):
 
         # Decrypt the input
         reshaped_x = enc_x.do_decryption().view(
-            1, output_channel, output_height, output_width  # TODO: Handle larger batch sizes
+            batch_size, output_channel, output_height, output_width
         )
         reshaped_grad_output = grad_output.view(
-            1, kernel_out_channel, feature_h, feature_w  # TODO: Handle larger batch sizes
+            batch_size, kernel_out_channel, feature_h, feature_w
         )
 
         # Get the needs_input_grad
@@ -63,6 +63,6 @@ class AvgPool2dFunction(torch.autograd.Function):
         if result[0]:
             grad_input = conv2d_input(
                 reshaped_x.shape, avg_kernel, reshaped_grad_output, stride=stride, padding=padding
-            ).view(-1)
+            ).view(batch_size, -1)
 
         return grad_input, None, None, None, None, None

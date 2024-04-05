@@ -36,8 +36,8 @@ class LinearFunction(torch.autograd.Function):
         if result[0]:
             grad_input = grad_output.matmul(weight)
         if result[1]:
-            grad_weight = grad_output.unsqueeze(0).t().matmul(x.unsqueeze(0))
+            grad_weight = grad_output.t().matmul(x)
         if result[2]:
-            grad_bias = grad_output
+            grad_bias = grad_output.sum(0)
 
         return grad_input, grad_weight, grad_bias

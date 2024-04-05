@@ -1,18 +1,20 @@
-from tenseal import CKKSVector
+from tenseal import CKKSTensor
 
 import torch
 import tenseal as ts
+import numpy as np
+# import time
 
 
 class CKKSWrapper(torch.Tensor):
-    __ckks_data: CKKSVector
+    __ckks_data: CKKSTensor
 
     @property
-    def ckks_data(self) -> CKKSVector:
+    def ckks_data(self) -> CKKSTensor:
         return self.__ckks_data
 
     @ckks_data.setter
-    def ckks_data(self, ckks_data: CKKSVector) -> None:
+    def ckks_data(self, ckks_data: CKKSTensor) -> None:
         self.__ckks_data = ckks_data
 
     # # Logging method
@@ -24,7 +26,7 @@ class CKKSWrapper(torch.Tensor):
     #     return super(CKKSWrapper, cls).__torch_function__(func, types, *args, **kwargs)
 
     # Overridden methods
-    def __new__(cls, _data: torch.Tensor, _ckks_data: CKKSVector, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _data: torch.Tensor, _ckks_data: CKKSTensor, *args, **kwargs) -> "CKKSWrapper":
         # Create the tensor
         data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
 
@@ -34,7 +36,7 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Overridden methods
-    def __init__(self, data: torch.Tensor, ckks_data: CKKSVector, *args, **kwargs) -> None:
+    def __init__(self, data: torch.Tensor, ckks_data: CKKSTensor, *args, **kwargs) -> None:
         # Call the super constructor
         super(torch.Tensor, self).__init__(*args, **kwargs)
 
@@ -46,7 +48,7 @@ class CKKSWrapper(torch.Tensor):
     def clone(self, *args, **kwargs) -> "CKKSWrapper":
         # Clone the data
         data = super(torch.Tensor, self).clone(*args, **kwargs)
-        ckks_data: CKKSVector = self.ckks_data.copy()  # type: ignore
+        ckks_data: CKKSTensor = self.ckks_data.copy()  # type: ignore
 
         # Create the new instance
         instance = CKKSWrapper(data, ckks_data)
@@ -61,14 +63,14 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_encryption(self, context: ts.Context) -> "CKKSWrapper":
-        # Define the new CKKS vector
-        new_ckks_vector = ts.ckks_vector(context, self.data.tolist())
+        # Define the new CKKS tensor
+        new_ckks_tensor = ts.ckks_tensor(context, self.data.tolist())
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_vector
+        self.ckks_data = new_ckks_tensor
 
         # Blur the data
-        tensor = torch.zeros(new_ckks_vector.size())
+        tensor = torch.zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
@@ -77,16 +79,30 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_multiplication(self, matrix: torch.Tensor) -> "CKKSWrapper":
+        # Create the plaintext matrix
+        plaintext_matrix = ts.plain_tensor(matrix.t().tolist())
+
+        # print("MULTIPLICATION")
+        # print(self.ckks_data.shape)
+        # print(plaintext_matrix.shape)
+        # print()
+
         # Apply the multiplication to the encrypted input
-        new_ckks_vector: CKKSVector = self.ckks_data.matmul(
-            matrix.t().tolist()
+        # start_time = time.perf_counter()
+        new_ckks_tensor: CKKSTensor = self.ckks_data.mm(
+            plaintext_matrix
         )
+        # end_time = time.perf_counter()
+
+        # print(
+        #     f"Time taken for multiplication: {end_time - start_time:.6f} seconds\n"
+        # )
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_vector
+        self.ckks_data = new_ckks_tensor
 
         # Change the shape of the data
-        tensor = torch.zeros(new_ckks_vector.size())
+        tensor = torch.zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
@@ -95,18 +111,33 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: torch.Tensor) -> "CKKSWrapper":
+        # Create the plaintext weight and bias
+        plaintext_weight = ts.plain_tensor(weight.t().tolist())
+        plaintext_bias = ts.plain_tensor(bias.tolist())
+
+        # print("LINEAR")
+        # print(self.ckks_data.shape)
+        # print(plaintext_weight.shape)
+        # print()
+
         # Apply the linear transformation to the encrypted input
-        new_ckks_vector = self.ckks_data.matmul(
-            weight.t().tolist()
+        # start_time = time.perf_counter()
+        new_ckks_tensor = self.ckks_data.mm(
+            plaintext_weight
         ).add(
-            bias.tolist()
+            plaintext_bias
         )
+        # end_time = time.perf_counter()
+
+        # print(
+        #     f"Time taken for linear transformation: {end_time - start_time:.6f} seconds\n"
+        # )
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_vector
+        self.ckks_data = new_ckks_tensor
 
         # Change the shape of the data
-        tensor = torch.zeros(new_ckks_vector.size())
+        tensor = torch.zeros(new_ckks_tensor.shape)
 
         # Update the data
         self.data = tensor.data
@@ -117,22 +148,22 @@ class CKKSWrapper(torch.Tensor):
     def do_sigmoid(self) -> "CKKSWrapper":
         # Apply the sigmoid function to the data
         # TODO: Create an adjustable approximation to calculate the sigmoid function
-        new_ckks_vector: CKKSVector = self.ckks_data.polyval(
+        new_ckks_tensor: CKKSTensor = self.ckks_data.polyval(
             [0.5, 0.197, 0, -0.004]
         )  # type: ignore
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_vector
+        self.ckks_data = new_ckks_tensor
 
         return self
 
     # CKKS Operation
     def do_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
-        new_ckks_vector: CKKSVector = self.ckks_data.square()  # type: ignore
+        new_ckks_tensor: CKKSTensor = self.ckks_data.square()  # type: ignore
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_vector
+        self.ckks_data = new_ckks_tensor
 
         return self
 
@@ -140,7 +171,7 @@ class CKKSWrapper(torch.Tensor):
     def do_decryption(self) -> "CKKSWrapper":
         # Define the new tensor
         new_tensor = torch.tensor(
-            self.ckks_data.decrypt(), requires_grad=True
+            self.ckks_data.decrypt().tolist(), requires_grad=True
         )
 
         # Update the data
@@ -153,7 +184,7 @@ class CKKSWrapper(torch.Tensor):
         # Apply the sigmoid backward function to the data
         # TODO: Create an adjustable approximation to calculate the sigmoid backward function
         new_tensor = torch.tensor(
-            list(map(lambda x: 0.197 - 0.008 * x, self.data))
+            np.vectorize(lambda x: 0.197 - 0.008 * x)(self.data)
         )
 
         # Update the data
@@ -164,9 +195,7 @@ class CKKSWrapper(torch.Tensor):
     # Data Operation
     def do_square_backward(self) -> "CKKSWrapper":
         # Apply the square backward function to the data
-        new_tensor = torch.tensor(
-            list(map(lambda x: 2 * x, self.data))
-        )
+        new_tensor = torch.tensor(np.vectorize(lambda x: 2 * x)(self.data))
 
         # Update the data
         self.data = new_tensor.data

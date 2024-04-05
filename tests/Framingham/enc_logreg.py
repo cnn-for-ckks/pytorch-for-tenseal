@@ -14,7 +14,6 @@ import tenseal as ts
 import torchseal
 
 
-# NOTE: Decrypting the output of the model does not make it less secure
 class EncLogisticRegression(torch.nn.Module):
     def __init__(self, n_features: int, torch_nn: Optional[LogisticRegression] = None) -> None:
         super(EncLogisticRegression, self).__init__()
@@ -49,7 +48,7 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
 
             # Encrypt the data
             enc_data_wrapper = torchseal.ckks_wrapper(
-                context, raw_data[0]  # TODO: Handle larger batch sizes
+                context, raw_data
             )
 
             # Encrypted evaluation
@@ -59,8 +58,7 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             output = enc_output.do_decryption().clamp(0, 1)
 
             # Compute loss
-            target = raw_target[0]  # TODO: Handle larger batch sizes
-            loss = criterion.forward(output, target)
+            loss = criterion.forward(output, raw_target)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -92,7 +90,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
     for raw_data, raw_target in test_loader:
         # Encryption
         enc_data_wrapper = torchseal.ckks_wrapper(
-            context, raw_data[0]  # TODO: Handle larger batch sizes
+            context, raw_data
         )
 
         # Encrypted evaluation
@@ -102,8 +100,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         output = enc_output.do_decryption().clamp(0, 1)
 
         # Compute loss
-        target = raw_target[0]  # TODO: Handle larger batch sizes
-        loss = criterion.forward(output, target)
+        loss = criterion.forward(output, raw_target)
         test_loss += loss.item()
 
         print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
@@ -150,7 +147,7 @@ if __name__ == "__main__":
     )
 
     # Set the batch size
-    batch_size = 1  # TODO: Handle larger batch sizes
+    batch_size = 2
 
     # Create the data loaders
     train_loader = DataLoader(
