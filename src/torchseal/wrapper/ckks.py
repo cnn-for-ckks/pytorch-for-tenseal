@@ -5,7 +5,6 @@ from torchseal.utils import near_zeros
 import torch
 import tenseal as ts
 import numpy as np
-import time
 
 
 class CKKSWrapper(torch.Tensor):
@@ -81,27 +80,13 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
-        print("Linear with Bias" if bias is not None else "Linear without Bias")
-        print(f"Weight Shape: {weight.shape}")
-        print(f"Data Shape: {self.ckks_data.shape}")
-
-        print(f"Weight: {weight}")
-
         # Apply the linear transformation to the encrypted input
-        start_time = time.perf_counter()
-
         new_ckks_tensor = self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
         ).add(
             ts.plain_tensor(bias.tolist())
         ) if bias is not None else self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
-        )
-
-        end_time = time.perf_counter()
-
-        print(
-            f"Time taken for linear transformation: {end_time - start_time:.6f} seconds\n"
         )
 
         # Update the encrypted data
