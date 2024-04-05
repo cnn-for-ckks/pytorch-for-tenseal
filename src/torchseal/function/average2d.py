@@ -2,14 +2,13 @@ from typing import Tuple, Optional
 from torch.nn.grad import conv2d_input
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.wrapper.function import CKKSConvFunctionWrapper
-from torchseal.utils import toeplitz_multiple_channels
 
 import torch
 
 
 class AvgPool2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, avg_kernel: torch.Tensor, output_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
+    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, avg_kernel: torch.Tensor, toeplitz_avg_kernel: torch.Tensor, output_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(avg_kernel)
         ctx.enc_x = enc_x.clone()
@@ -17,19 +16,13 @@ class AvgPool2dFunction(torch.autograd.Function):
         ctx.stride = stride
         ctx.padding = padding
 
-        # Get the toeplitz weight
-        # TODO: Load the toeplitz weight only once when starting the program
-        toeplitz_weight = toeplitz_multiple_channels(
-            avg_kernel, output_size[1:], stride=stride, padding=padding
-        )
-
         # Apply the convolution to the encrypted input
-        out_x = enc_x.do_linear(toeplitz_weight)
+        out_x = enc_x.do_linear(toeplitz_avg_kernel)
 
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
         enc_x = ctx.enc_x
@@ -72,4 +65,4 @@ class AvgPool2dFunction(torch.autograd.Function):
                 reshaped_x.shape, avg_kernel, reshaped_grad_output, stride=stride, padding=padding
             ).view(batch_size, -1)
 
-        return grad_input, None, None, None, None
+        return grad_input, None, None, None, None, None
