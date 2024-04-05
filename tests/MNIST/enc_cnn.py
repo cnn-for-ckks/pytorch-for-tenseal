@@ -2,6 +2,7 @@ from typing import Optional
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.nn import Conv2d, AvgPool2d, Linear, Square
 from cnn import ConvNet
 from utils import seed_worker
 
@@ -17,12 +18,12 @@ class EncConvNet(torch.nn.Module):
         super(EncConvNet, self).__init__()
 
         # Define the layers
-        self.act1 = torchseal.nn.Square()
-        self.act2 = torchseal.nn.Square()
+        self.act1 = Square()
+        self.act2 = Square()
 
         # Create the encrypted model
         if torch_nn is not None:
-            self.conv1 = torchseal.nn.Conv2d(
+            self.conv1 = Conv2d(
                 # Required parameters
                 in_channel=torch_nn.conv1.in_channels,
                 out_channel=torch_nn.conv1.out_channels,
@@ -38,21 +39,21 @@ class EncConvNet(torch.nn.Module):
                 bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
             )
 
-            self.avg_pool = torchseal.nn.AvgPool2d(
+            self.avg_pool = AvgPool2d(
                 n_channel=torch_nn.conv1.out_channels,
                 kernel_size=(2, 2),
                 output_size=torch.Size([2, 8, 8]),
                 stride=2,
             )
 
-            self.fc1 = torchseal.nn.Linear(
+            self.fc1 = Linear(
                 torch_nn.fc1.in_features,
                 torch_nn.fc1.out_features,
                 torch_nn.fc1.weight.data,
                 torch_nn.fc1.bias.data,
             )
 
-            self.fc2 = torchseal.nn.Linear(
+            self.fc2 = Linear(
                 torch_nn.fc2.in_features,
                 torch_nn.fc2.out_features,
                 torch_nn.fc2.weight.data,
@@ -60,17 +61,17 @@ class EncConvNet(torch.nn.Module):
             )
 
         else:
-            self.conv1 = torchseal.nn.Conv2d(
+            self.conv1 = Conv2d(
                 in_channel=1, out_channel=2, kernel_size=(7, 7), stride=3, output_size=torch.Size([1, 28, 28])
             )
-            self.avg_pool = torchseal.nn.AvgPool2d(
+            self.avg_pool = AvgPool2d(
                 n_channel=2,
                 kernel_size=(2, 2),
                 output_size=torch.Size([2, 8, 8]),
                 stride=2,
             )
-            self.fc1 = torchseal.nn.Linear(32, hidden)
-            self.fc2 = torchseal.nn.Linear(hidden, output)
+            self.fc1 = Linear(32, hidden)
+            self.fc2 = Linear(hidden, output)
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Convolutional layer
@@ -105,10 +106,8 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             optimizer.zero_grad()
 
             # Encoding and encryption
-            data = raw_data.view(-1).tolist()
-            enc_data = ts.ckks_vector(context, data)
-            enc_data_wrapper = CKKSWrapper(
-                torch.zeros(enc_data.size()), enc_data
+            enc_data_wrapper = torchseal.ckks_wrapper(
+                context, raw_data.view(-1)
             )
 
             # Encrypted evaluation

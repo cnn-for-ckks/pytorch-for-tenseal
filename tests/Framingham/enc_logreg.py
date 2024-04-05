@@ -1,6 +1,7 @@
 from typing import Optional
 from torch.utils.data import DataLoader, Subset, random_split
 from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.nn import Linear, Sigmoid
 
 from logreg import LogisticRegression
 from dataloader import FraminghamDataset
@@ -18,13 +19,13 @@ class EncLogisticRegression(torch.nn.Module):
     def __init__(self, n_features: int, torch_nn: Optional[LogisticRegression] = None) -> None:
         super(EncLogisticRegression, self).__init__()
 
-        self.linear = torchseal.nn.Linear(
+        self.linear = Linear(
             n_features,
             1,
             torch_nn.linear.weight.data,
             torch_nn.linear.bias.data
-        ) if torch_nn is not None else torchseal.nn.Linear(n_features, 1)
-        self.activation_function = torchseal.nn.Sigmoid()
+        ) if torch_nn is not None else Linear(n_features, 1)
+        self.activation_function = Sigmoid()
 
     def forward(self, x: CKKSWrapper) -> CKKSWrapper:
         # Fully connected layer
@@ -47,10 +48,8 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             optimizer.zero_grad()
 
             # Encrypt the data
-            data = raw_data[0].tolist()  # TODO: Handle larger batch sizes
-            enc_data = ts.ckks_vector(context, data)
-            enc_data_wrapper = CKKSWrapper(
-                torch.rand(enc_data.size()), enc_data
+            enc_data_wrapper = torchseal.ckks_wrapper(
+                context, raw_data[0]  # TODO: Handle larger batch sizes
             )
 
             # Encrypted evaluation
