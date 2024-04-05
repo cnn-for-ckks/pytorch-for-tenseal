@@ -91,9 +91,9 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
 
     for raw_data, raw_target in test_loader:
         # Encryption
-        data = raw_data[0].tolist()  # TODO: Handle larger batch sizes
-        enc_data = ts.ckks_vector(context, data)
-        enc_data_wrapper = CKKSWrapper(torch.rand(enc_data.size()), enc_data)
+        enc_data_wrapper = torchseal.ckks_wrapper(
+            context, raw_data[0]  # TODO: Handle larger batch sizes
+        )
 
         # Encrypted evaluation
         enc_output = enc_model.forward(enc_data_wrapper)

@@ -147,10 +147,8 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
 
     for raw_data, raw_target in test_loader:
         # Encoding and encryption
-        data = raw_data.view(-1).tolist()
-        enc_data = ts.ckks_vector(context, data)
-        enc_data_wrapper = CKKSWrapper(
-            torch.rand(enc_data.size()), enc_data
+        enc_data_wrapper = torchseal.ckks_wrapper(
+            context, raw_data.view(-1)
         )
 
         # Encrypted evaluation
