@@ -1,4 +1,3 @@
-from typing import Optional
 from torch.utils.data import DataLoader, Subset, random_split
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.nn import Linear, Sigmoid
@@ -15,15 +14,15 @@ import torchseal
 
 
 class EncLogisticRegression(torch.nn.Module):
-    def __init__(self, n_features: int, torch_nn: Optional[LogisticRegression] = None) -> None:
+    def __init__(self, torch_nn: LogisticRegression) -> None:
         super(EncLogisticRegression, self).__init__()
 
         self.linear = Linear(
-            n_features,
-            1,
-            torch_nn.linear.weight.data,
-            torch_nn.linear.bias.data
-        ) if torch_nn is not None else Linear(n_features, 1)
+            in_features=torch_nn.linear.in_features,
+            out_features=torch_nn.linear.out_features,
+            weight=torch_nn.linear.weight.data,
+            bias=torch_nn.linear.bias.data
+        )
         self.activation_function = Sigmoid()
 
     def forward(self, x: CKKSWrapper) -> CKKSWrapper:
@@ -169,7 +168,7 @@ if __name__ == "__main__":
     )
 
     # Create the model, criterion, and optimizer
-    enc_model = EncLogisticRegression(n_features, torch_nn=original_model)
+    enc_model = EncLogisticRegression(torch_nn=original_model)
     enc_optim = torch.optim.SGD(enc_model.parameters(), lr=0.1)
     enc_criterion = torch.nn.BCELoss()
 
