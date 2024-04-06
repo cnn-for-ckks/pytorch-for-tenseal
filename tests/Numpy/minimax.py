@@ -1,4 +1,4 @@
-from numpy.polynomial import Chebyshev
+from numpy.polynomial import Polynomial, Chebyshev
 
 import numpy as np
 
@@ -12,10 +12,10 @@ if __name__ == "__main__":
     degree = 2
 
     # Perform least squares approximation
-    coeffs = Chebyshev.fit(x, y, degree).convert().coef
+    coeffs = Chebyshev.fit(x, y, degree).convert(kind=Polynomial).coef
 
     # Construct the polynomial approximation
-    approx_poly = Chebyshev(coeffs)
+    approx_poly = Polynomial(coeffs)
 
     # Evaluate the approximation at desired points
     approx_values = approx_poly(x)

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     degree = 2
 
     # Perform least squares approximation
-    coeffs = Polynomial.fit(x, y, degree).convert().coef
+    coeffs = Polynomial.fit(x, y, degree).convert(kind=Polynomial).coef
 
     # Construct the polynomial approximation
     approx_poly = Polynomial(coeffs)

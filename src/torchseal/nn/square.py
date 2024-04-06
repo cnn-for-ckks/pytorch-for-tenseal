@@ -18,12 +18,10 @@ class Square(torch.nn.Module):
         # Perform the polynomial approximation
         self.coeffs: np.ndarray = Polynomial.fit(
             x, y, degree
-        ).convert().coef if approximation_type == "least-squares" else Chebyshev.fit(x, y, degree).convert().coef
+        ).convert(kind=Polynomial).coef if approximation_type == "least-squares" else Chebyshev.fit(x, y, degree).convert(kind=Polynomial).coef
 
         # Construct the polynomial approximation
-        approx_poly = Polynomial(
-            self.coeffs
-        ) if approximation_type == "least-squares" else Chebyshev(self.coeffs)
+        approx_poly = Polynomial(self.coeffs)
 
         # Differentiate the polynomial approximation
         self.approx_poly_derivative: Callable[
