@@ -12,6 +12,7 @@ import tenseal as ts
 import torchseal
 
 
+# BUG: ValueError: scale out of bounds
 class EncConvNet(torch.nn.Module):
     def __init__(self, torch_nn: ConvNet) -> None:
         super(EncConvNet, self).__init__()

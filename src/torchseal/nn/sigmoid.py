@@ -28,8 +28,6 @@ class Sigmoid(torch.nn.Module):
             [float], float
         ] = approx_poly.deriv()
 
-        print(self.coeffs)
-
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         out_x: CKKSWrapper = SigmoidFunction.apply(
             enc_x, self.coeffs, self.approx_poly_derivative
