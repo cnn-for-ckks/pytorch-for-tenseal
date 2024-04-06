@@ -37,13 +37,15 @@ def train(model: LogisticRegression, train_loader: DataLoader, criterion: torch.
             optimizer.step()
             train_loss += loss.item()
 
+            print(f"Current Training Loss (Plaintext): {loss.item():.6f}")
+
         # Calculate average losses
         train_loss = 0 if len(
             train_loader
         ) == 0 else train_loss / len(train_loader)
 
         print(
-            "Epoch: {} \tTraining Loss (Plaintext): {:.6f}".format(
+            "Training Loss for Epoch {} (Plaintext): {:.6f}\n".format(
                 epoch + 1, train_loss
             )
         )
@@ -69,8 +71,10 @@ def test(model: LogisticRegression, test_loader: DataLoader, criterion: torch.nn
         print(f"Current Test Loss (Plaintext): {loss.item():.6f}")
 
     # Calculate and print avg test loss
-    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
-    print(f"\nAverage Test Loss (Plaintext): {test_loss:.6f}")
+    average_test_loss = 0 if len(
+        test_loader
+    ) == 0 else test_loss / len(test_loader)
+    print(f"Average Test Loss (Plaintext): {average_test_loss:.6f}\n")
 
 
 if __name__ == "__main__":
@@ -116,23 +120,11 @@ if __name__ == "__main__":
         "./parameters/framingham/original-model.pth"
     )
 
-    # Print the weights and biases of the model
-    print("Plaintext Model (Before Training):")
-    print("\n".join(list(map(str, model.parameters()))))
-    print()
-
     # Train the model
     model = train(model, train_loader, criterion, optim, n_epochs=10)
-    print()
-
-    # Print the weights and biases of the model
-    print("Plaintext Model (After Training):")
-    print("\n".join(list(map(str, model.parameters()))))
-    print()
 
     # Test the model
     test(model, test_loader, criterion)
-    print()
 
     # Save the model
     torch.save(model.state_dict(), "./parameters/framingham/trained-model.pth")

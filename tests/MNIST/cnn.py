@@ -56,12 +56,18 @@ def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEnt
             optimizer.step()
             train_loss += loss.item()
 
+            print(f"Current Training Loss (Plaintext): {loss.item():.6f}")
+
         # Calculate average losses
-        train_loss = 0 if len(
+        average_train_loss = 0 if len(
             train_loader
         ) == 0 else train_loss / len(train_loader)
 
-        print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch + 1, train_loss))
+        print(
+            "Average Training Loss for epoch {} (Plaintext): {:.6f}\n".format(
+                epoch + 1, average_train_loss
+            )
+        )
 
     # Model in evaluation mode
     model.eval()
@@ -102,9 +108,13 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
             class_correct[label] += correct.item()
             class_total[label] += 1
 
+        print(f"Current Test Loss (Plaintext): {loss.item():.6f}")
+
     # Calculate and print avg test loss
-    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
-    print(f"Test Loss: {test_loss:.6f}\n")
+    average_test_loss = 0 if sum(
+        class_total
+    ) == 0 else test_loss / sum(class_total)
+    print(f"Average Test Loss (Plaintext): {average_test_loss:.6f}\n")
 
     for label in range(10):
         print(
@@ -158,26 +168,13 @@ if __name__ == "__main__":
         "./parameters/MNIST/original-model.pth"
     )
 
-    # Print the weights and biases of the model
-    print("Plaintext Model (Before Training):")
-    print("Number of Parameters:", len(list(map(str, model.parameters()))))
-    print("\n".join(list(map(str, model.parameters()))))
-    print()
-
     # Train the model
     model = train(
         model, subset_train_loader, criterion, optimizer, n_epochs=10
     )
-    print()
-
-    # Print the weights and biases of the model
-    print("Plaintext Model (After Training):")
-    print("\n".join(list(map(str, model.parameters()))))
-    print()
 
     # Test the model
     test(model, subset_test_loader, criterion)
-    print()
 
     # Save the model
     torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")

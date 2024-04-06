@@ -108,12 +108,18 @@ def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoad
             optimizer.step()
             train_loss += loss.item()
 
+            print(f"Current Training Loss (Ciphertext): {loss.item():.6f}")
+
         # Calculate average losses
-        train_loss = 0 if len(
+        average_train_loss = 0 if len(
             train_loader
         ) == 0 else train_loss / len(train_loader)
 
-        print("Epoch: {} \tTraining Loss: {:.6f}".format(epoch + 1, train_loss))
+        print(
+            "Averagen Training Loss for epoch {} (Ciphertext): {:.6f}\n".format(
+                epoch + 1, average_train_loss
+            )
+        )
 
     # Model in evaluation mode
     enc_model.eval()
@@ -166,9 +172,13 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
             class_correct[label] += correct.item()
             class_total[label] += 1
 
+        print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
+
     # Calculate and print avg test loss
-    test_loss = test_loss / sum(class_total)
-    print(f"Test Loss for Encrypted Data: {test_loss:.6f}\n")
+    average_test_loss = 0 if sum(
+        class_total
+    ) == 0 else test_loss / sum(class_total)
+    print(f"Average Test Loss (Ciphertext): {average_test_loss:.6f}\n")
 
     for label in range(10):
         print(
@@ -250,12 +260,6 @@ if __name__ == "__main__":
     enc_criterion = torch.nn.CrossEntropyLoss()
     enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
 
-    # Print the weights and biases of the model
-    print("Ciphertext Model (Before Training):")
-    print("Number of Parameters:", len(list(map(str, enc_model.parameters()))))
-    print("\n".join(list(map(str, enc_model.parameters()))))
-    print()
-
     # Encrypted training
     enc_model = enc_train(
         context,
@@ -266,12 +270,6 @@ if __name__ == "__main__":
         batch_size,
         n_epochs=10
     )
-    print()
-
-    # Print the weights and biases of the model
-    print("Ciphertext Model (After Training):")
-    print("\n".join(list(map(str, enc_model.parameters()))))
-    print()
 
     # Encrypted evaluation
     enc_test(

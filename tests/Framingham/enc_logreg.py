@@ -62,13 +62,15 @@ def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loade
             optimizer.step()
             train_loss += loss.item()
 
+            print(f"Current Training Loss (Ciphertext): {loss.item():.6f}")
+
         # Calculate average losses
         train_loss = 0 if len(
             train_loader
         ) == 0 else train_loss / len(train_loader)
 
         print(
-            "Epoch: {} \tTraining Loss (Ciphertext): {:.6f}".format(
+            "Training Loss for Epoch {} (Ciphertext): {:.6f}\n".format(
                 epoch + 1, train_loss
             )
         )
@@ -105,8 +107,10 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
 
     # Calculate and print avg test loss
-    test_loss = 0 if len(test_loader) == 0 else test_loss / len(test_loader)
-    print(f"\nAverage Test Loss (Ciphertext): {test_loss:.6f}")
+    average_test_loss = 0 if len(
+        test_loader
+    ) == 0 else test_loss / len(test_loader)
+    print(f"\nAverage Test Loss (Ciphertext): {average_test_loss:.6f}")
 
 
 if __name__ == "__main__":
@@ -172,11 +176,6 @@ if __name__ == "__main__":
     enc_optim = torch.optim.SGD(enc_model.parameters(), lr=0.1)
     enc_criterion = torch.nn.BCELoss()
 
-    # Print the weights and biases of the model
-    print("Ciphertext Model (Before Training):")
-    print("\n".join(list(map(str, enc_model.parameters()))))
-    print()
-
     # Train the model
     enc_model = enc_train(
         context,
@@ -186,12 +185,6 @@ if __name__ == "__main__":
         enc_optim,
         n_epochs=10
     )
-    print()
-
-    # Print the weights and biases of the model
-    print("Ciphertext Model (After Training):")
-    print("\n".join(list(map(str, enc_model.parameters()))))
-    print()
 
     # Test the model
     enc_test(context, enc_model, test_loader, enc_criterion)
