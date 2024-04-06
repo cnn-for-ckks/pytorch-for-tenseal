@@ -25,7 +25,7 @@ class AvgPool2dFunction(torch.autograd.Function):
     def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
-        enc_x = ctx.enc_x
+        x = ctx.enc_x.do_decryption()
         output_size = ctx.output_size
         stride = ctx.stride
         padding = ctx.padding
@@ -46,7 +46,7 @@ class AvgPool2dFunction(torch.autograd.Function):
         ) // stride + 1
 
         # Decrypt the input
-        reshaped_x = enc_x.do_decryption().view(
+        reshaped_x = x.view(
             batch_size, output_channel, output_height, output_width
         )
         reshaped_grad_output = grad_output.view(
@@ -54,7 +54,9 @@ class AvgPool2dFunction(torch.autograd.Function):
         )
 
         # Get the needs_input_grad
-        result: Tuple[bool] = ctx.needs_input_grad  # type: ignore
+        result: Tuple[
+            bool, bool, bool, bool, bool, bool
+        ] = ctx.needs_input_grad  # type: ignore
 
         # Initialize the gradients
         grad_input = None

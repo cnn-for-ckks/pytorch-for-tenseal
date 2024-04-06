@@ -4,12 +4,12 @@ import numpy as np
 
 if __name__ == "__main__":
     # Generate sample data points
-    x = np.linspace(-1, 1, 100)
-    y = np.sin(x)
-    y_differential = np.cos(x)
+    x = np.linspace(-1, 1, 3)
+    y = x ** 2
+    y_differential = 2 * x
 
     # Define the degree of the polynomial approximation
-    degree = 5
+    degree = 2
 
     # Perform least squares approximation
     coeffs = Polynomial.fit(x, y, degree).convert().coef

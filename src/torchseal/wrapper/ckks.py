@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Callable, Optional
 from tenseal import CKKSTensor
 
 import torch
 import tenseal as ts
 import numpy as np
-# import time
+import time
 
 
 class CKKSWrapper(torch.Tensor):
@@ -80,11 +80,11 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
-        # print(f"Weight Shape: {weight.shape}")
-        # print(f"Input Shape: {self.ckks_data.shape}")
+        print(f"Weight Shape: {weight.shape}")
+        print(f"Input Shape: {self.ckks_data.shape}")
 
         # Apply the linear transformation to the encrypted input
-        # start_time = time.perf_counter()
+        start_time = time.perf_counter()
         new_ckks_tensor = self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
         ).add(
@@ -92,9 +92,9 @@ class CKKSWrapper(torch.Tensor):
         ) if bias is not None else self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
         )
-        # end_time = time.perf_counter()
+        end_time = time.perf_counter()
 
-        # print(f"Time taken: {end_time - start_time:.6f} seconds\n")
+        print(f"Time taken: {end_time - start_time:.6f} seconds\n")
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -108,22 +108,11 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_sigmoid(self) -> "CKKSWrapper":
-        # Apply the sigmoid function to the data
-        # TODO: Create an adjustable approximation to calculate the sigmoid function
+    def do_activation_function(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
+        # Apply the activation function to the encrypted input
         new_ckks_tensor: CKKSTensor = self.ckks_data.polyval(
-            [0.5, 0.197, 0, -0.004]
+            polyval_coeffs.tolist()
         )  # type: ignore
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        return self
-
-    # CKKS Operation
-    def do_square(self) -> "CKKSWrapper":
-        # Apply the square function to the encrypted input
-        new_ckks_tensor: CKKSTensor = self.ckks_data.square()  # type: ignore
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -143,22 +132,11 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # Data Operation
-    def do_sigmoid_backward(self) -> "CKKSWrapper":
-        # Apply the sigmoid backward function to the data
-        # TODO: Create an adjustable approximation to calculate the sigmoid backward function
+    def do_activation_function_backward(self, polyval_derivative: Callable[[float], float]) -> "CKKSWrapper":
+        # Apply the activation function backward to the data
         new_tensor = torch.tensor(
-            np.vectorize(lambda x: 0.197 - 0.008 * x)(self.data)
+            np.vectorize(polyval_derivative)(self.data)
         )
-
-        # Update the data
-        self.data = new_tensor.data
-
-        return self
-
-    # Data Operation
-    def do_square_backward(self) -> "CKKSWrapper":
-        # Apply the square backward function to the data
-        new_tensor = torch.tensor(np.vectorize(lambda x: 2 * x)(self.data))
 
         # Update the data
         self.data = new_tensor.data

@@ -23,7 +23,9 @@ class EncLogisticRegression(torch.nn.Module):
             weight=torch_nn.linear.weight.data,
             bias=torch_nn.linear.bias.data
         )
-        self.activation_function = Sigmoid()
+        self.activation_function = Sigmoid(
+            start=-5, stop=5, num_of_sample=5, degree=3, approximation_type="minimax"
+        )
 
     def forward(self, x: CKKSWrapper) -> CKKSWrapper:
         # Fully connected layer
