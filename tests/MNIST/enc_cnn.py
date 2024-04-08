@@ -12,7 +12,6 @@ import tenseal as ts
 import torchseal
 
 
-# BUG: ValueError: scale out of bounds
 class EncConvNet(torch.nn.Module):
     def __init__(self, torch_nn: ConvNet) -> None:
         super(EncConvNet, self).__init__()
@@ -42,9 +41,7 @@ class EncConvNet(torch.nn.Module):
             padding=0
         )
 
-        self.act1 = Square(
-            start=-1, stop=1, num_of_sample=3, degree=2, approximation_type="minimax"
-        )
+        self.act1 = Square()
 
         self.fc1 = Linear(
             in_features=torch_nn.fc1.in_features,
@@ -53,9 +50,7 @@ class EncConvNet(torch.nn.Module):
             bias=torch_nn.fc1.bias.data,
         )
 
-        self.act2 = Square(
-            start=-1, stop=1, num_of_sample=3, degree=2, approximation_type="minimax"
-        )
+        self.act2 = Square()
 
         self.fc2 = Linear(
             in_features=torch_nn.fc2.in_features,

@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.wrapper.function import CKKSActivationFunctionWrapper
 
@@ -8,18 +8,18 @@ import numpy as np
 
 class SquareFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_x: CKKSWrapper, coeffs: np.ndarray, approx_poly_derivative: Callable[[float], float]) -> CKKSWrapper:
+    def forward(ctx: CKKSActivationFunctionWrapper, enc_x: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.enc_x = enc_x.clone()
-        ctx.polyval_derivative = approx_poly_derivative
+        ctx.polyval_derivative = lambda x: 2 * x
 
         # Apply square function to the encrypted input
-        out_x = enc_x.do_activation_function(coeffs)
+        out_x = enc_x.do_square()
 
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
         # Get the saved tensors
         x = ctx.enc_x.do_decryption()
         polyval_derivative = ctx.polyval_derivative
@@ -37,4 +37,4 @@ class SquareFunction(torch.autograd.Function):
             # Compute the gradients
             grad_input = grad_output.mul(out)
 
-        return grad_input, None, None
+        return grad_input,
