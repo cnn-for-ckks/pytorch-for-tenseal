@@ -8,17 +8,17 @@ import torch
 
 class Conv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, output_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
+    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, input_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x.clone()
-        ctx.output_size = output_size
+        ctx.input_size = input_size
         ctx.stride = stride
         ctx.padding = padding
 
         # Get the toeplitz weight
         toeplitz_weight = toeplitz_multiple_channels(
-            weight, output_size[1:], stride=stride, padding=padding
+            weight, input_size[1:], stride=stride, padding=padding
         )
 
         # Get the bias
@@ -36,7 +36,7 @@ class Conv2dFunction(torch.autograd.Function):
         # Get the saved tensors
         saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
         x = ctx.enc_x.do_decryption()
-        output_size = ctx.output_size
+        input_size = ctx.input_size
         stride = ctx.stride
         padding = ctx.padding
 
@@ -44,7 +44,7 @@ class Conv2dFunction(torch.autograd.Function):
         weight, = saved_tensors
 
         # Unpack the tensor shapes
-        batch_size, output_channel, output_height, output_width = output_size
+        batch_size, output_channel, output_height, output_width = input_size
         kernel_out_channel, _, kernel_height, kernel_width = weight.shape
 
         # Calculate feature dimension

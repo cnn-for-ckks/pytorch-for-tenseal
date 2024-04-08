@@ -11,7 +11,7 @@ class CKKSFunctionWrapper(NestedIOFunction):
 
 class CKKSConvFunctionWrapper(NestedIOFunction):
     enc_x: CKKSWrapper
-    output_size: torch.Size
+    input_size: torch.Size
     stride: int
     padding: int
 
