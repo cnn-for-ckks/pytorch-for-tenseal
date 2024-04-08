@@ -93,3 +93,5 @@ def test_avgpool2d():
         atol=5e-2,
         rtol=0
     ), "Average pooling failed!"
+
+# TODO: Add gradient test

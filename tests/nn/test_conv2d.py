@@ -114,3 +114,5 @@ def test_conv2d():
         atol=5e-2,
         rtol=0
     ), "Convolution failed!"
+
+# TODO: Add gradient test
