@@ -1,6 +1,5 @@
-from typing import Literal, Union
 from torchseal.function import SquareFunction
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 
 import torch
 

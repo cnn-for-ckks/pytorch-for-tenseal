@@ -84,7 +84,7 @@ if __name__ == "__main__":
     random.seed(73)
 
     # Load the data
-    dataset = FraminghamDataset(csv_file="./data/framingham.csv")
+    dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
 
     # Take subset of the data
     subdataset = Subset(dataset, list(range(20)))
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     # Save the original model
     torch.save(
         model.state_dict(),
-        "./parameters/framingham/original-model.pth"
+        "./parameters/Framingham/original-model.pth"
     )
 
     # Train the model
@@ -127,4 +127,4 @@ if __name__ == "__main__":
     test(model, test_loader, criterion)
 
     # Save the model
-    torch.save(model.state_dict(), "./parameters/framingham/trained-model.pth")
+    torch.save(model.state_dict(), "./parameters/Framingham/trained-model.pth")

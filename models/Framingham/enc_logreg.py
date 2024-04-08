@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader, Subset, random_split
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 from torchseal.nn import Linear, Sigmoid
 
 from logreg import LogisticRegression
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Load the data
-    dataset = FraminghamDataset(csv_file="./data/framingham.csv")
+    dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
 
     # Take subset of the data
     subdataset = Subset(dataset, list(range(20)))
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     original_model = LogisticRegression(n_features)
     original_model.load_state_dict(
         torch.load(
-            "./parameters/framingham/original-model.pth"
+            "./parameters/Framingham/original-model.pth"
         )
     )
 
@@ -194,5 +194,5 @@ if __name__ == "__main__":
     # Save the model
     torch.save(
         enc_model.state_dict(),
-        "./parameters/framingham/enc-trained-model.pth"
+        "./parameters/Framingham/enc-trained-model.pth"
     )

@@ -1,0 +1,8 @@
+version: "3.9"
+
+services:
+  test:
+    image: 31z4/tox
+    platform: linux/amd64
+    volumes:
+      - .:/tests

@@ -7,12 +7,15 @@ name = "pypi"
 numpy = "*"
 tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git"}
 torch = "*"
-torchvision = "*"
 torchseal = {file = "."}
-pandas = "*"
-torchviz = "*"
 
 [dev-packages]
+pandas = "*"
+torchvision = "*"
+pytest = "*"
+pipenv = "*"
+build = "*"
+twine = "*"
 
 [requires]
 python_version = "3.9"

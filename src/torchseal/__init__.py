@@ -1,4 +1,4 @@
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 
 import torch
 import tenseal as ts

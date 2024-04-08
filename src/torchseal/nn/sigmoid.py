@@ -1,7 +1,7 @@
 from typing import Callable, Literal, Union
 from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.function import SigmoidFunction
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 
 import torch
 import numpy as np

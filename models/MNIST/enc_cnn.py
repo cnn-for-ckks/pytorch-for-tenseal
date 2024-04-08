@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 from torchseal.nn import Conv2d, AvgPool2d, Linear, Square
 from cnn import ConvNet
 from utils import seed_worker

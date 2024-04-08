@@ -1,5 +1,5 @@
 from typing import Tuple
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
 from torchseal.utils import toeplitz_multiple_channels
 

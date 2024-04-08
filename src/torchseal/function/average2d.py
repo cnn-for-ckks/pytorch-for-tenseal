@@ -1,7 +1,6 @@
 from typing import Tuple, Optional
 from torch.nn.grad import conv2d_input
-from torchseal.wrapper.ckks import CKKSWrapper
-from torchseal.wrapper.function import CKKSConvFunctionWrapper
+from torchseal.wrapper import CKKSWrapper, CKKSConvFunctionWrapper
 
 import torch
 

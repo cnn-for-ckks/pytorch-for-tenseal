@@ -1,6 +1,5 @@
 from typing import Callable, Optional, Tuple
-from torchseal.wrapper.ckks import CKKSWrapper
-from torchseal.wrapper.function import CKKSActivationFunctionWrapper
+from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
 
 import torch
 import numpy as np

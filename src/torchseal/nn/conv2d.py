@@ -1,5 +1,5 @@
 from typing import Tuple, Optional
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 from torchseal.function import Conv2dFunction
 
 import torch

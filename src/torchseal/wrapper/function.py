@@ -1,9 +1,8 @@
 from typing import Callable
 from torch.autograd.function import NestedIOFunction
-from torchseal.wrapper.ckks import CKKSWrapper
+from torchseal.wrapper import CKKSWrapper
 
 import torch
-import numpy as np
 
 
 class CKKSFunctionWrapper(NestedIOFunction):
