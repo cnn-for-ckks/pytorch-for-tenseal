@@ -6,17 +6,17 @@ import math
 # Function to compute the multiplicative inverse of an encrypted value using TenSEAL
 # Works best on the interval [0.5, 1]
 # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
-# TODO: Add scaling factor to improve accuracy
-def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKSTensor, P=32):
+def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKSTensor, P=32, scale=1):
     # Start with an initial guess (encoded as a scalar)
     # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
     # This should be based on some estimation method
+    encrypted_value_scaled = encrypted_value.mul(1 / scale)
     inverse = ts.ckks_tensor(
         context, torch.ones(
-            encrypted_value.shape
+            encrypted_value_scaled.shape
         ).mul(48 / 17).tolist()
     ).sub(
-        encrypted_value.mul(32 / 17)
+        encrypted_value_scaled.mul(32 / 17)
     )
 
     # Number of iterations required to achieve desired precision
@@ -24,11 +24,11 @@ def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKS
 
     # Newton-Raphson iteration to refine the inverse
     for _ in range(iterations):
-        prod = encrypted_value.mul(inverse)  # d * x_n
+        prod = encrypted_value_scaled.mul(inverse)  # d * x_n
 
         correction = ts.ckks_tensor(
             context, torch.ones(
-                encrypted_value.shape
+                encrypted_value_scaled.shape
             ).mul(2).tolist()
         ).sub(
             prod
@@ -36,7 +36,7 @@ def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKS
 
         inverse = inverse.mul(correction)  # x_n * (2 - d * x_n)
 
-    return inverse
+    return inverse.mul(1 / scale)
 
 
 if __name__ == "__main__":
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         ts.SCHEME_TYPE.CKKS,
         poly_modulus_degree=16384,
         coeff_mod_bit_sizes=[
-            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
+            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
         ]
     )
 
@@ -60,10 +60,10 @@ if __name__ == "__main__":
 
     # Example: Encrypted value
     encrypted_value = ts.ckks_tensor(
-        context, [1, 0.8, 0.5]
+        context, [50, 80, 100]
     )
     inverse_encrypted = compute_multiplicative_inverse(
-        context, encrypted_value
+        context, encrypted_value, scale=100
     )
 
     # Decrypt to verify
