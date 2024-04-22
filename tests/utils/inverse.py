@@ -1,3 +1,5 @@
+from tenseal import CKKSTensor
+
 import tenseal as ts
 import torch
 import math
@@ -6,7 +8,7 @@ import math
 # Function to compute the multiplicative inverse of an encrypted value using TenSEAL
 # Works best on the interval [0.5, 1]
 # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
-def compute_multiplicative_inverse(encrypted_value: ts.CKKSTensor, P=32, scale=1):
+def compute_multiplicative_inverse(encrypted_value: CKKSTensor, P=32, scale=1):
     # Start with an initial guess (encoded as a scalar)
     # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
     # This should be based on some estimation method
@@ -57,10 +59,10 @@ if __name__ == "__main__":
 
     # Example: Encrypted value
     encrypted_value = ts.ckks_tensor(
-        context, [1, 0.8, 0.5]
+        context, [100, 80, 50]
     )
     inverse_encrypted = compute_multiplicative_inverse(
-        encrypted_value
+        encrypted_value, scale=100
     )
 
     # Decrypt to verify
