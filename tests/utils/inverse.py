@@ -3,14 +3,19 @@ import torch
 
 
 # Function to compute the multiplicative inverse of an encrypted value using TenSEAL
-def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKSTensor, iterations=5):
+# Works best on the interval [0.5, 1]
+# TODO: Add scaling factor to improve accuracy
+def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKSTensor, iterations=3, scale=1):
     # Start with an initial guess (encoded as a scalar)
     # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
     # This should be based on some estimation method
+    # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
     inverse = ts.ckks_tensor(
         context, torch.ones(
             encrypted_value.shape
-        ).tolist()
+        ).mul(48 / 17).tolist()
+    ).sub(
+        encrypted_value.mul(32 / 17)
     )
 
     # Newton-Raphson iteration to refine the inverse
@@ -21,8 +26,8 @@ def compute_multiplicative_inverse(context: ts.Context, encrypted_value: ts.CKKS
             context, torch.ones(
                 encrypted_value.shape
             ).mul(2).tolist()
-        ).add(
-            prod.neg()
+        ).sub(
+            prod
         )  # 2 - d * x_n
 
         inverse = inverse.mul(correction)  # x_n * (2 - d * x_n)
@@ -49,12 +54,12 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
-    # Example: Encrypted value of 0.5
+    # Example: Encrypted value
     encrypted_value = ts.ckks_tensor(
-        context, [1.0, 0.5, 0.25]
+        context, [1, 0.8, 0.5]
     )
     inverse_encrypted = compute_multiplicative_inverse(
-        context, encrypted_value
+        context, encrypted_value, scale=2
     )
 
     # Decrypt to verify
