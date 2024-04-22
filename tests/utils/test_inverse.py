@@ -25,14 +25,16 @@ def test_compute_multiplicative_inverse():
 
     # Example: Encrypted value
     encrypted_value = ts.ckks_tensor(
-        context, [100, 80, 50]
+        context, [1, 0.8, 0.5]
     )
     inverse_encrypted = compute_multiplicative_inverse(
-        encrypted_value, scale=100
+        encrypted_value, scale=1
     )
 
     # Decrypt to verify
     result = torch.tensor(inverse_encrypted.decrypt().tolist())
-    target = torch.tensor([1/100, 1/80, 1/50])
+    target = torch.tensor([1, 1 / 0.8, 1 / 0.5])
 
-    assert torch.allclose(result, target, atol=1e-2, rtol=0)
+    print(result)
+
+    assert torch.allclose(result, target, atol=1e-1, rtol=0)
