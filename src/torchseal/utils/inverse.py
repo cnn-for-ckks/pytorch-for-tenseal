@@ -5,13 +5,15 @@ import math
 
 
 # Function to compute the multiplicative inverse of an encrypted value using TenSEAL
-# TODO: Add polynomial approximation for initial guess
 # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
 def compute_multiplicative_inverse(encrypted_value: CKKSTensor, P=32, scale=1):
     # Start with an initial guess (encoded as a scalar)
     # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
     # This should be based on some estimation method
     encrypted_value_scaled = encrypted_value.mul(1 / scale)
+
+    # TODO: Add polynomial approximation for initial guess
+    # This only works for interval [0.5, 1)
     inverse: CKKSTensor = encrypted_value_scaled.polyval(
         [48 / 17, -32 / 17]
     )  # type: ignore
