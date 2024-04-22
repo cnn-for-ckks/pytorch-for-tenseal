@@ -6,7 +6,7 @@ import math
 
 
 # Function to compute the multiplicative inverse of an encrypted value using TenSEAL
-# Works best on the interval [0.5, 1]
+# Works best on the interval [0.5, 1)
 # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
 def compute_multiplicative_inverse(encrypted_value: CKKSTensor, P=32, scale=1):
     # Start with an initial guess (encoded as a scalar)
