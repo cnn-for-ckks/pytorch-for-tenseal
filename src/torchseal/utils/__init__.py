@@ -1,1 +1,2 @@
 from .toeplitz import toeplitz_multiple_channels
+from .inverse import compute_multiplicative_inverse
