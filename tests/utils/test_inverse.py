@@ -1,7 +1,9 @@
-from torchseal.utils import compute_multiplicative_inverse
+from numpy.polynomial import Polynomial
 
-import tenseal as ts
+import numpy as np
 import torch
+import tenseal as ts
+import torchseal
 
 
 def test_compute_multiplicative_inverse():
@@ -23,16 +25,31 @@ def test_compute_multiplicative_inverse():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
-    # Example: Encrypted value
-    encrypted_value = ts.ckks_tensor(
-        context, [1, 0.8, 0.5]
-    )
-    inverse_encrypted = compute_multiplicative_inverse(
-        encrypted_value, scale=1
+    # Create the polynomial
+    start = 0.5
+    stop = 1.0
+    num_of_sample = 5
+
+    x = np.linspace(start, stop, num_of_sample)
+    y = (lambda x: 1 / x)(x)
+    degree = 1
+
+    # Compute the polynomial approximation
+    polyval_coeffs: np.ndarray = Polynomial.fit(
+        x, y, degree
+    ).convert(kind=Polynomial).coef
+
+    # Encrypt the value
+    encrypted_value = torchseal.ckks_wrapper(
+        context, torch.tensor([1, 0.8, 0.5])
     )
 
+    # Compute the multiplicative inverse
+    iterations = 4
+    encrypted_value.do_multiplicative_inverse(polyval_coeffs, iterations)
+
     # Decrypt to verify
-    result = torch.tensor(inverse_encrypted.decrypt().tolist())
+    result = encrypted_value.do_decryption()
     target = torch.tensor([1, 1 / 0.8, 1 / 0.5])
 
     print(result)

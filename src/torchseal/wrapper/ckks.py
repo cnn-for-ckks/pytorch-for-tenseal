@@ -129,6 +129,37 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
+    # CKKS Operation
+    def do_multiplicative_inverse(self, polyval_coeffs: np.ndarray, iterations: int) -> "CKKSWrapper":
+        # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
+
+        # Start with an initial guess (encoded as a scalar)
+        # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
+        # This should be based on some estimation method
+        new_ckks_tensor: CKKSTensor = self.ckks_data.polyval(
+            polyval_coeffs.tolist()
+        )  # type: ignore
+
+        # Newton-Raphson iteration to refine the inverse
+        for _ in range(iterations):
+            prod = self.ckks_data.mul(new_ckks_tensor)  # d * x_n
+
+            neg_prod: CKKSTensor = prod.neg()  # type: ignore
+            correction = neg_prod.add(
+                torch.ones(
+                    self.ckks_data.shape
+                ).mul(2).tolist()
+            )  # 2 - d * x_n
+
+            new_ckks_tensor = new_ckks_tensor.mul(
+                correction
+            )  # x_n * (2 - d * x_n)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
     # Data Operation
     def do_decryption(self) -> "CKKSWrapper":
         # Define the new tensor
