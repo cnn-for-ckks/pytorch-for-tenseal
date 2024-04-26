@@ -8,7 +8,7 @@ import numpy as np
 
 
 class Tanh(torch.nn.Module):
-    def __init__(self, start: int, stop: int, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
+    def __init__(self, start: float, stop: float, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
         super(Tanh, self).__init__()
 
         # Create the polynomial

@@ -38,7 +38,6 @@ def test_linear():
 
     # Declare input dimensions
     batch_size = 1
-    input_length = 8
 
     # Create weight and bias
     weight = torch.randn(out_features, in_features, requires_grad=True)

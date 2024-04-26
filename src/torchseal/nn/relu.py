@@ -8,7 +8,7 @@ import numpy as np
 
 
 class ReLU(torch.nn.Module):
-    def __init__(self, start: int, stop: int, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
+    def __init__(self, start: float, stop: float, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
         super(ReLU, self).__init__()
 
         # Create the polynomial
