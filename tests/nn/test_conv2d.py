@@ -82,7 +82,7 @@ def test_conv2d():
     conv2d.bias = torch.nn.Parameter(bias)  # Set the bias
 
     # Create the encrypted convolution layer
-    encrypted_conv2d = EncryptedConv2d(
+    enc_conv2d = EncryptedConv2d(
         in_channel=in_channels,
         out_channel=out_channels,
         kernel_size=(kernel_height, kernel_width),
@@ -91,15 +91,13 @@ def test_conv2d():
         ),
         stride=stride,
         padding=padding,
-
-        # Pass the weight and bias
         weight=kernel,
         bias=bias,
     )
 
     # Calculate the output
     output = conv2d.forward(input_tensor)
-    enc_output = encrypted_conv2d.forward(enc_input_tensor)
+    enc_output = enc_conv2d.forward(enc_input_tensor)
 
     # Decrypt the output
     dec_output = enc_output.do_decryption()
@@ -113,6 +111,6 @@ def test_conv2d():
         output,
         atol=5e-2,
         rtol=0
-    ), "Convolution failed!"
+    ), "Convolution layer failed!"
 
 # TODO: Add gradient test

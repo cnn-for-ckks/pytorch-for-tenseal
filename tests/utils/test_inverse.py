@@ -54,4 +54,6 @@ def test_compute_multiplicative_inverse():
 
     print(result)
 
-    assert torch.allclose(result, target, atol=1e-1, rtol=0)
+    assert torch.allclose(
+        result, target, atol=1e-1, rtol=0
+    ), "Inverse computation failed!"
