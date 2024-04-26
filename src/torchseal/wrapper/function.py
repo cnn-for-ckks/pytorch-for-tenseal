@@ -19,3 +19,7 @@ class CKKSConvFunctionWrapper(NestedIOFunction):
 class CKKSActivationFunctionWrapper(NestedIOFunction):
     enc_x: CKKSWrapper
     polyval_derivative: Callable[[float], float]
+
+
+class CKKSSoftmaxFunctionWrapper(NestedIOFunction):
+    out_x: CKKSWrapper

@@ -4,7 +4,6 @@ from tenseal import CKKSTensor
 import torch
 import tenseal as ts
 import numpy as np
-# import time
 
 
 class CKKSWrapper(torch.Tensor):
@@ -49,6 +48,8 @@ class CKKSWrapper(torch.Tensor):
     def clone(self, *args, **kwargs) -> "CKKSWrapper":
         # Clone the data
         data = super(torch.Tensor, self).clone(*args, **kwargs)
+
+        # Clone the ckks_data
         ckks_data: CKKSTensor = self.ckks_data.copy()  # type: ignore
 
         # Create the new instance
@@ -62,7 +63,7 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
-    # CKKS Operation
+    # CKKS Operation (with shape change)
     def do_encryption(self, context: ts.Context) -> "CKKSWrapper":
         # Define the new CKKS tensor
         new_ckks_tensor = ts.ckks_tensor(context, self.data.tolist())
@@ -78,7 +79,7 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
-    # CKKS Operation
+    # CKKS Operation (with shape change)
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
         new_ckks_tensor = self.ckks_data.mm(
@@ -100,12 +101,28 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
-    # CKKS Operation
+    # CKKS Operation (with shape change)
     def do_sum(self, axis: int) -> "CKKSWrapper":
         # Apply the sum function to the encrypted input
         new_ckks_tensor: CKKSTensor = self.ckks_data.sum(
             axis=axis
         )  # type: ignore
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        # Change the shape of the data
+        tensor = torch.zeros(new_ckks_tensor.shape)
+
+        # Update the data
+        self.data = tensor.data
+
+        return self
+
+    # CKKS Operation
+    def do_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the multiplication function to the encrypted input
+        new_ckks_tensor: CKKSTensor = self.ckks_data.mul(other.ckks_data)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

@@ -2,7 +2,6 @@ from typing import Optional, Tuple
 from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
 
 import torch
-import numpy as np
 
 
 class SquareFunction(torch.autograd.Function):
