@@ -15,8 +15,7 @@ import torchseal
 
 # NOTE: The weights and biases are not encrypted in this example (the secret key must be used in the training process for calculating convolution).
 # NOTE: To create a secure model, the weights and biases must be transferred from plaintext model to encrypted model.
-# NOTE: Because of this, we have to redefine the research sequence (discuss this with Pak Rin about this problem).
-# TODO: Discuss with Pak Rin.
+# NOTE: Because of this, we have to redefine the research sequencem).
 class EncLogisticRegression(torch.nn.Module):
     def __init__(self, torch_nn: LogisticRegression) -> None:
         super(EncLogisticRegression, self).__init__()
@@ -41,52 +40,6 @@ class EncLogisticRegression(torch.nn.Module):
         return first_result_activated
 
 
-def enc_train(context: ts.Context, enc_model: EncLogisticRegression, train_loader: DataLoader, criterion: torch.nn.BCELoss, optimizer: torch.optim.SGD, n_epochs: int = 10) -> EncLogisticRegression:
-    # Model in training mode
-    enc_model.train()
-
-    for epoch in range(n_epochs):
-        train_loss = 0.
-
-        for raw_data, raw_target in train_loader:
-            optimizer.zero_grad()
-
-            # Encrypt the data
-            enc_data_wrapper = torchseal.ckks_wrapper(
-                context, raw_data
-            )
-
-            # Encrypted evaluation
-            enc_output = enc_model.forward(enc_data_wrapper)
-
-            # Decryption of result
-            output = enc_output.do_decryption().clamp(0, 1)
-
-            # Compute loss
-            loss = criterion.forward(output, raw_target)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-
-            print(f"Current Training Loss (Ciphertext): {loss.item():.6f}")
-
-        # Calculate average losses
-        train_loss = 0 if len(
-            train_loader
-        ) == 0 else train_loss / len(train_loader)
-
-        print(
-            "Training Loss for Epoch {} (Ciphertext): {:.6f}\n".format(
-                epoch + 1, train_loss
-            )
-        )
-
-    # Model in evaluation mode
-    enc_model.eval()
-
-    return enc_model
-
-
 def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader: DataLoader, criterion: torch.nn.BCELoss) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
@@ -109,8 +62,6 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
         # Compute loss
         loss = criterion.forward(output, raw_target)
         test_loss += loss.item()
-
-        print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
 
     # Calculate and print avg test loss
     average_test_loss = 0 if len(
@@ -147,12 +98,12 @@ if __name__ == "__main__":
     dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
 
     # Take subset of the data
-    subdataset = Subset(dataset, list(range(20)))
+    subdataset = Subset(dataset, list(range(100)))
 
     # Split the data into training and testing
     generator = torch.Generator().manual_seed(73)
     train_dataset, test_dataset = random_split(
-        subdataset, [0.5, 0.5], generator=generator
+        subdataset, [0.8, 0.2], generator=generator
     )
 
     # Set the batch size
@@ -170,33 +121,17 @@ if __name__ == "__main__":
     n_features = dataset.features.shape[1]
 
     # Create the original model
-    original_model = LogisticRegression(n_features)
-    original_model.load_state_dict(
+    trained_model = LogisticRegression(n_features)
+    trained_model.load_state_dict(
         torch.load(
-            "./parameters/Framingham/original-model.pth"
+            "./parameters/Framingham/trained-model.pth"
         )
     )
 
     # Create the model, criterion, and optimizer
-    enc_model = EncLogisticRegression(torch_nn=original_model)
+    enc_model = EncLogisticRegression(torch_nn=trained_model)
     enc_optim = torch.optim.SGD(enc_model.parameters(), lr=0.1)
     enc_criterion = torch.nn.BCELoss()
 
-    # Train the model
-    enc_model = enc_train(
-        context,
-        enc_model,
-        train_loader,
-        enc_criterion,
-        enc_optim,
-        n_epochs=10
-    )
-
     # Test the model
     enc_test(context, enc_model, test_loader, enc_criterion)
-
-    # Save the model
-    torch.save(
-        enc_model.state_dict(),
-        "./parameters/Framingham/enc-trained-model.pth"
-    )

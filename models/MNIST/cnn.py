@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from utils import seed_worker
 
@@ -56,8 +56,6 @@ def train(model: ConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEnt
             optimizer.step()
             train_loss += loss.item()
 
-            print(f"Current Training Loss (Plaintext): {loss.item():.6f}")
-
         # Calculate average losses
         average_train_loss = 0 if len(
             train_loader
@@ -90,6 +88,7 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
         test_loss += loss.item()
 
         # Convert output probabilities to predicted class
+        print("output.shape", output.shape)
         _, pred = torch.max(output, 1)
 
         # Compare predictions to true label
@@ -107,8 +106,6 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
             label = target.data.item()
             class_correct[label] += correct.item()
             class_total[label] += 1
-
-        print(f"Current Test Loss (Plaintext): {loss.item():.6f}")
 
     # Calculate and print avg test loss
     average_test_loss = 0 if sum(
@@ -142,19 +139,15 @@ if __name__ == "__main__":
         "data", train=False, download=True, transform=transforms.ToTensor()
     )
 
-    # Subset the data
-    subset_train_data = Subset(train_data, list(range(20)))
-    subset_test_data = Subset(test_data, list(range(20)))
-
     # Set the batch size
     batch_size = 2
 
     # Create the data loaders
-    subset_train_loader = DataLoader(
-        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
+    train_loader = DataLoader(
+        train_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
-    subset_test_loader = DataLoader(
-        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
+    test_loader = DataLoader(
+        test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer
@@ -162,19 +155,13 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    # Save the original model
-    torch.save(
-        model.state_dict(),
-        "./parameters/MNIST/original-model.pth"
-    )
-
     # Train the model
     model = train(
-        model, subset_train_loader, criterion, optimizer, n_epochs=10
+        model, train_loader, criterion, optimizer, n_epochs=10
     )
 
     # Test the model
-    test(model, subset_test_loader, criterion)
+    test(model, test_loader, criterion)
 
     # Save the model
     torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")

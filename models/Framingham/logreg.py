@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader, Subset, random_split
+from torch.utils.data import DataLoader, random_split
 
 from dataloader import FraminghamDataset
 from utils import seed_worker
@@ -36,8 +36,6 @@ def train(model: LogisticRegression, train_loader: DataLoader, criterion: torch.
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
-
-            print(f"Current Training Loss (Plaintext): {loss.item():.6f}")
 
         # Calculate average losses
         train_loss = 0 if len(
@@ -86,13 +84,10 @@ if __name__ == "__main__":
     # Load the data
     dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
 
-    # Take subset of the data
-    subdataset = Subset(dataset, list(range(20)))
-
     # Split the data into training and testing
     generator = torch.Generator().manual_seed(73)
     train_dataset, test_dataset = random_split(
-        subdataset, [0.5, 0.5], generator=generator
+        dataset, [0.8, 0.2], generator=generator
     )
 
     # Set the batch size
@@ -113,12 +108,6 @@ if __name__ == "__main__":
     model = LogisticRegression(n_features)
     optim = torch.optim.SGD(model.parameters(), lr=0.1)
     criterion = torch.nn.BCELoss()
-
-    # Save the original model
-    torch.save(
-        model.state_dict(),
-        "./parameters/Framingham/original-model.pth"
-    )
 
     # Train the model
     model = train(model, train_loader, criterion, optim, n_epochs=10)

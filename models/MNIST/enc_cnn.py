@@ -14,8 +14,7 @@ import torchseal
 
 # NOTE: The weights and biases are not encrypted in this example (the secret key must be used in the training process for calculating convolution).
 # NOTE: To create a secure model, the weights and biases must be transferred from plaintext model to encrypted model.
-# NOTE: Because of this, we have to redefine the research sequence (discuss this with Pak Rin about this problem).
-# TODO: Discuss with Pak Rin.
+# NOTE: Because of this, we have to redefine the research sequence.
 class EncConvNet(torch.nn.Module):
     def __init__(self, torch_nn: ConvNet) -> None:
         super(EncConvNet, self).__init__()
@@ -85,52 +84,6 @@ class EncConvNet(torch.nn.Module):
         return third_result
 
 
-def enc_train(context: ts.Context, enc_model: EncConvNet, train_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, optimizer: torch.optim.Adam, batch_size: int, n_epochs: int = 10) -> EncConvNet:
-    # Model in training mode
-    enc_model.train()
-
-    for epoch in range(n_epochs):
-        train_loss = 0.
-
-        for raw_data, target in train_loader:
-            optimizer.zero_grad()
-
-            # Encoding and encryption
-            enc_data_wrapper = torchseal.ckks_wrapper(
-                context, raw_data.view(batch_size, -1)
-            )
-
-            # Encrypted evaluation
-            enc_output = enc_model.forward(enc_data_wrapper)
-
-            # Decryption of result
-            output = enc_output.do_decryption()
-
-            # Compute loss
-            loss = criterion.forward(output, target)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-
-            print(f"Current Training Loss (Ciphertext): {loss.item():.6f}")
-
-        # Calculate average losses
-        average_train_loss = 0 if len(
-            train_loader
-        ) == 0 else train_loss / len(train_loader)
-
-        print(
-            "Averagen Training Loss for epoch {} (Ciphertext): {:.6f}\n".format(
-                epoch + 1, average_train_loss
-            )
-        )
-
-    # Model in evaluation mode
-    enc_model.eval()
-
-    return enc_model
-
-
 def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, batch_size: int) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
@@ -153,26 +106,25 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
         output = enc_output.do_decryption()
 
         # Compute loss
-        target = raw_target.view(batch_size, -1)
-        loss = criterion.forward(output, target)
+        loss = criterion.forward(output, raw_target)
         test_loss += loss.item()
 
         # Convert output probabilities to predicted class
-        _, pred = torch.max(output, 0)
+        _, pred = torch.max(output, 1)
 
         # Compare predictions to true label
-        correct = np.squeeze(pred.eq(target.data.view_as(pred)))
+        correct = np.squeeze(pred.eq(raw_target.data.view_as(pred)))
 
         # Calculate test accuracy for each object class
-        num_target = len(target)
+        num_target = len(raw_target)
 
         if num_target > 1:
             for i in range(num_target):
-                label = target.data[i]
+                label = raw_target.data[i]
                 class_correct[label] += correct[i].item()
                 class_total[label] += 1
         else:
-            label = target.data.item()
+            label = raw_target.data.item()
             class_correct[label] += correct.item()
             class_total[label] += 1
 
@@ -229,51 +181,33 @@ if __name__ == "__main__":
     )
 
     # Subset the data
-    subset_train_data = Subset(train_data, list(range(20)))
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size
     batch_size = 2
 
     # Create the data loaders
-    subset_train_loader = DataLoader(
-        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
-    )
     subset_test_loader = DataLoader(
         subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the original model
-    original_model = ConvNet()
-    original_model.load_state_dict(
+    trained_model = ConvNet()
+    trained_model.load_state_dict(
         torch.load(
-            "./parameters/MNIST/original-model.pth"
+            "./parameters/MNIST/trained-model.pth"
         )
     )
 
     # Create the encrypted data loaders
-    enc_subset_train_loader = DataLoader(
-        subset_train_data, batch_size=batch_size, worker_init_fn=seed_worker
-    )
     enc_subset_test_loader = DataLoader(
         subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer
-    enc_model = EncConvNet(torch_nn=original_model)
+    enc_model = EncConvNet(torch_nn=trained_model)
     enc_criterion = torch.nn.CrossEntropyLoss()
     enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
-
-    # Encrypted training
-    enc_model = enc_train(
-        context,
-        enc_model,
-        enc_subset_train_loader,
-        enc_criterion,
-        enc_optimizer,
-        batch_size,
-        n_epochs=10
-    )
 
     # Encrypted evaluation
     enc_test(
@@ -282,10 +216,4 @@ if __name__ == "__main__":
         enc_subset_test_loader,
         enc_criterion,
         batch_size
-    )
-
-    # Save the model
-    torch.save(
-        enc_model.state_dict(),
-        "./parameters/MNIST/enc-trained-model.pth"
     )
