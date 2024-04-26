@@ -80,11 +80,7 @@ class CKKSWrapper(torch.Tensor):
 
     # CKKS Operation
     def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
-        # print(f"Weight Shape: {weight.shape}")
-        # print(f"Input Shape: {self.ckks_data.shape}")
-
         # Apply the linear transformation to the encrypted input
-        # start_time = time.perf_counter()
         new_ckks_tensor = self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
         ).add(
@@ -92,9 +88,24 @@ class CKKSWrapper(torch.Tensor):
         ) if bias is not None else self.ckks_data.mm(
             ts.plain_tensor(weight.t().tolist())
         )
-        # end_time = time.perf_counter()
 
-        # print(f"Time taken: {end_time - start_time:.6f} seconds\n")
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        # Change the shape of the data
+        tensor = torch.zeros(new_ckks_tensor.shape)
+
+        # Update the data
+        self.data = tensor.data
+
+        return self
+
+    # CKKS Operation
+    def do_sum(self, axis: int) -> "CKKSWrapper":
+        # Apply the sum function to the encrypted input
+        new_ckks_tensor: CKKSTensor = self.ckks_data.sum(
+            axis=axis
+        )  # type: ignore
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

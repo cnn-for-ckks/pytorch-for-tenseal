@@ -1,5 +1,3 @@
-from numpy.polynomial import Polynomial
-
 import torch
 import numpy as np
 import random
@@ -7,7 +5,7 @@ import tenseal as ts
 import torchseal
 
 
-def test_compute_multiplicative_inverse():
+def test_sum():
     # Set the seed for reproducibility
     torch.manual_seed(73)
     np.random.seed(73)
@@ -32,45 +30,28 @@ def test_compute_multiplicative_inverse():
     context.generate_galois_keys()
 
     # Declare parameters
-    start = 0.5
-    stop = 1.0
-    num_of_sample = 5
-    degree = 3
+    axis = 1
 
     # Declare input dimensions
     input_length = 10
     batch_size = 1
 
-    # Calculate the sample points
-    x = np.linspace(start, stop, num_of_sample)
-    y = (lambda x: 1 / x)(x)
-
-    # Fit the polynomial
-    polyval_coeffs: np.ndarray = Polynomial.fit(
-        x, y, degree
-    ).convert(kind=Polynomial).coef
-
     # Create the input tensor
-    input_tensor = start + (stop - start) * torch.rand(
-        batch_size, input_length
-    )
+    input_tensor = torch.randn(batch_size, input_length)
 
     # Encrypt the value
     enc_input_tensor = torchseal.ckks_wrapper(
         context, input_tensor
     )
 
-    # Compute the multiplicative inverse
-    iterations = 4
-    enc_input_tensor = enc_input_tensor.do_multiplicative_inverse(
-        polyval_coeffs, iterations
-    )
+    # Do the sum
+    enc_input_tensor = enc_input_tensor.do_sum(axis=axis)
 
     # Decrypt to verify
     result = enc_input_tensor.do_decryption()
-    target = input_tensor.pow(-1)
+    target = torch.sum(input_tensor, axis)
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         result, target, atol=5e-2, rtol=0
-    ), "Inverse operation failed!"
+    ), "Sum operation failed!"
