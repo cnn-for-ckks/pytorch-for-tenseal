@@ -27,7 +27,7 @@ class SquareFunction(torch.autograd.Function):
         out = x.do_activation_function_backward(polyval_derivative)
 
         # Get the needs_input_grad
-        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
+        result = typing.cast(Tuple[bool], ctx.needs_input_grad)
 
         # Initialize the gradients
         grad_input = None
