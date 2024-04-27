@@ -36,6 +36,7 @@ def test_compute_multiplicative_inverse():
     stop = 1.0
     num_of_sample = 5
     degree = 3
+    iterations = 4
 
     # Declare input dimensions
     input_length = 10
@@ -61,7 +62,6 @@ def test_compute_multiplicative_inverse():
     )
 
     # Compute the multiplicative inverse
-    iterations = 4
     enc_input_tensor = enc_input_tensor.do_multiplicative_inverse(
         polyval_coeffs, iterations
     )
