@@ -88,7 +88,6 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
         test_loss += loss.item()
 
         # Convert output probabilities to predicted class
-        print("output.shape", output.shape)
         _, pred = torch.max(output, 1)
 
         # Compare predictions to true label
