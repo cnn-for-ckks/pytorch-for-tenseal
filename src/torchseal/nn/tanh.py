@@ -3,8 +3,9 @@ from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.function import TanhFunction
 from torchseal.wrapper import CKKSWrapper
 
-import torch
+import typing
 import numpy as np
+import torch
 
 
 class Tanh(torch.nn.Module):
@@ -29,8 +30,11 @@ class Tanh(torch.nn.Module):
         ] = approx_poly.deriv()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = TanhFunction.apply(
-            enc_x, self.coeffs, self.approx_poly_derivative
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            TanhFunction.apply(
+                enc_x, self.coeffs, self.approx_poly_derivative
+            )
+        )
 
         return out_x

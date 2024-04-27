@@ -3,6 +3,7 @@ from torch.nn.grad import conv2d_input, conv2d_weight
 from torchseal.wrapper import CKKSWrapper, CKKSConvFunctionWrapper
 from torchseal.utils import toeplitz_multiple_channels
 
+import typing
 import torch
 
 
@@ -34,7 +35,7 @@ class Conv2dFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
-        saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
+        saved_tensors = typing.cast(Tuple[torch.Tensor], ctx.saved_tensors)
         x = ctx.enc_x.do_decryption()
         input_size = ctx.input_size
         stride = ctx.stride
@@ -64,9 +65,10 @@ class Conv2dFunction(torch.autograd.Function):
         )
 
         # Get the needs_input_grad
-        result: Tuple[
-            bool, bool, bool, bool, bool, bool
-        ] = ctx.needs_input_grad  # type: ignore
+        result = typing.cast(
+            Tuple[bool, bool, bool, bool, bool, bool],
+            ctx.needs_input_grad
+        )
 
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None

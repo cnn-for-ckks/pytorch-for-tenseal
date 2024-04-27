@@ -3,8 +3,9 @@ from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.function import SoftmaxFunction
 from torchseal.wrapper import CKKSWrapper
 
-import torch
+import typing
 import numpy as np
+import torch
 
 
 class Softmax(torch.nn.Module):
@@ -54,8 +55,11 @@ class Softmax(torch.nn.Module):
         self.iterations = inverse_iterations
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = SoftmaxFunction.apply(
-            enc_x, self.exp_coeffs, self.inverse_coeffs, self.iterations
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            SoftmaxFunction.apply(
+                enc_x, self.exp_coeffs, self.inverse_coeffs, self.iterations
+            )
+        )
 
         return out_x

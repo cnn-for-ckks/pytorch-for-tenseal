@@ -3,8 +3,9 @@ from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.function import SigmoidFunction
 from torchseal.wrapper import CKKSWrapper
 
-import torch
+import typing
 import numpy as np
+import torch
 
 
 class Sigmoid(torch.nn.Module):
@@ -29,8 +30,11 @@ class Sigmoid(torch.nn.Module):
         ] = approx_poly.deriv()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = SigmoidFunction.apply(
-            enc_x, self.coeffs, self.approx_poly_derivative
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            SigmoidFunction.apply(
+                enc_x, self.coeffs, self.approx_poly_derivative
+            )
+        )
 
         return out_x

@@ -1,9 +1,10 @@
 from typing import Callable, Optional
 from tenseal import CKKSTensor
 
+import typing
+import numpy as np
 import torch
 import tenseal as ts
-import numpy as np
 
 
 class CKKSWrapper(torch.Tensor):
@@ -50,7 +51,7 @@ class CKKSWrapper(torch.Tensor):
         data = super(torch.Tensor, self).clone(*args, **kwargs)
 
         # Clone the ckks_data
-        ckks_data: CKKSTensor = self.ckks_data.copy()  # type: ignore
+        ckks_data = typing.cast(CKKSTensor, self.ckks_data.copy())
 
         # Create the new instance
         instance = CKKSWrapper(data, ckks_data)
@@ -104,9 +105,10 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation (with shape change)
     def do_sum(self, axis: int) -> "CKKSWrapper":
         # Apply the sum function to the encrypted input
-        new_ckks_tensor: CKKSTensor = self.ckks_data.sum(
-            axis=axis
-        )  # type: ignore
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.sum(axis=axis)
+        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -138,7 +140,10 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation
     def do_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
-        new_ckks_tensor: CKKSTensor = self.ckks_data.square()  # type: ignore
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.square()
+        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -148,9 +153,12 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation
     def do_activation_function(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
         # Apply the activation function to the encrypted input
-        new_ckks_tensor: CKKSTensor = self.ckks_data.polyval(
-            polyval_coeffs.tolist()
-        )  # type: ignore
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.polyval(
+                polyval_coeffs.tolist()
+            )
+        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -164,16 +172,20 @@ class CKKSWrapper(torch.Tensor):
         # Start with an initial guess (encoded as a scalar)
         # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
         # This should be based on some estimation method
-        new_ckks_tensor: CKKSTensor = self.ckks_data.polyval(
-            polyval_coeffs.tolist()
-        )  # type: ignore
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.polyval(
+                polyval_coeffs.tolist()
+            )
+        )
 
         # Newton-Raphson iteration to refine the inverse
         for _ in range(iterations):
             prod = self.ckks_data.mul(new_ckks_tensor)  # d * x_n
 
-            neg_prod: CKKSTensor = prod.neg()  # type: ignore
-            correction = neg_prod.add(
+            correction = typing.cast(
+                CKKSTensor, prod.neg()
+            ).add(
                 torch.ones(
                     self.ckks_data.shape
                 ).mul(2).tolist()

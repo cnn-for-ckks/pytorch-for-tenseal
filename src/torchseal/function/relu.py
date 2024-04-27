@@ -1,8 +1,9 @@
 from typing import Callable, Optional, Tuple
 from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
 
-import torch
+import typing
 import numpy as np
+import torch
 
 
 class ReLUFunction(torch.autograd.Function):
@@ -27,7 +28,7 @@ class ReLUFunction(torch.autograd.Function):
         out = x.do_activation_function_backward(polyval_derivative)
 
         # Get the needs_input_grad
-        result: Tuple[bool, bool, bool] = ctx.needs_input_grad  # type: ignore
+        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
 
         # Initialize the gradients
         grad_input = None

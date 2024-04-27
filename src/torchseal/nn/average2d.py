@@ -3,6 +3,7 @@ from torchseal.wrapper import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
 from torchseal.utils import toeplitz_multiple_channels
 
+import typing
 import torch
 
 
@@ -29,8 +30,11 @@ class AvgPool2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = AvgPool2dFunction.apply(
-            enc_x, self.avg_kernel, self.toeplitz_avg_kernel, self.input_size, self.stride, self.padding
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            AvgPool2dFunction.apply(
+                enc_x, self.avg_kernel, self.toeplitz_avg_kernel, self.input_size, self.stride, self.padding
+            )
+        )
 
         return out_x

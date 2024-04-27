@@ -2,6 +2,7 @@ from typing import Tuple, Optional
 from torch.nn.grad import conv2d_input
 from torchseal.wrapper import CKKSWrapper, CKKSConvFunctionWrapper
 
+import typing
 import torch
 
 
@@ -23,7 +24,7 @@ class AvgPool2dFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
-        saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
+        saved_tensors = typing.cast(Tuple[torch.Tensor], ctx.saved_tensors)
         x = ctx.enc_x.do_decryption()
         input_size = ctx.input_size
         stride = ctx.stride
@@ -53,9 +54,10 @@ class AvgPool2dFunction(torch.autograd.Function):
         )
 
         # Get the needs_input_grad
-        result: Tuple[
-            bool, bool, bool, bool, bool, bool
-        ] = ctx.needs_input_grad  # type: ignore
+        result = typing.cast(
+            Tuple[bool, bool, bool, bool, bool, bool],
+            ctx.needs_input_grad
+        )
 
         # Initialize the gradients
         grad_input = None

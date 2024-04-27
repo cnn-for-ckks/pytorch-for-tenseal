@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 from torchseal.wrapper import CKKSWrapper, CKKSFunctionWrapper
 
+import typing
 import torch
 
 
@@ -19,14 +20,17 @@ class LinearFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
-        saved_tensors: Tuple[torch.Tensor] = ctx.saved_tensors  # type: ignore
+        saved_tensors = typing.cast(
+            Tuple[torch.Tensor],
+            ctx.saved_tensors
+        )
         x = ctx.enc_x.do_decryption()
 
         # Unpack the saved tensors
         weight, = saved_tensors
 
         # Get the needs_input_grad
-        result: Tuple[bool, bool, bool] = ctx.needs_input_grad  # type: ignore
+        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
 
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None

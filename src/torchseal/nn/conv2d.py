@@ -2,6 +2,7 @@ from typing import Tuple, Optional
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import Conv2dFunction
 
+import typing
 import torch
 
 
@@ -28,8 +29,11 @@ class Conv2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = Conv2dFunction.apply(
-            enc_x, self.weight, self.bias, self.input_size, self.stride, self.padding
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            Conv2dFunction.apply(
+                enc_x, self.weight, self.bias, self.input_size, self.stride, self.padding
+            )
+        )
 
         return out_x

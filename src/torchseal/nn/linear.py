@@ -2,6 +2,7 @@ from typing import Optional
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import LinearFunction
 
+import typing
 import torch
 
 
@@ -17,8 +18,11 @@ class Linear(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x: CKKSWrapper = LinearFunction.apply(
-            enc_x, self.weight, self.bias
-        )  # type: ignore
+        out_x = typing.cast(
+            CKKSWrapper,
+            LinearFunction.apply(
+                enc_x, self.weight, self.bias
+            )
+        )
 
         return out_x

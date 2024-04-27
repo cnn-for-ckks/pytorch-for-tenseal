@@ -1,8 +1,9 @@
 from typing import Optional, Tuple
 from torchseal.wrapper import CKKSWrapper, CKKSSoftmaxFunctionWrapper
 
-import torch
+import typing
 import numpy as np
+import torch
 
 
 class SoftmaxFunction(torch.autograd.Function):
@@ -35,9 +36,10 @@ class SoftmaxFunction(torch.autograd.Function):
         out_x = ctx.out_x.do_decryption()
 
         # Get the needs_input_grad
-        result: Tuple[
-            bool, bool, bool, bool
-        ] = ctx.needs_input_grad  # type: ignore
+        result = typing.cast(
+            Tuple[bool, bool, bool, bool],
+            ctx.needs_input_grad
+        )
 
         # Initialize the gradients
         grad_input = None
