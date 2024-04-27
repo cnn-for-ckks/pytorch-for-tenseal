@@ -1,6 +1,5 @@
 from torchseal.nn import Softmax as EncryptedSoftmax
 from torch.nn import Softmax as PlainSoftmax
-from numpy.polynomial import Polynomial
 
 import torch
 import numpy as np
@@ -23,7 +22,7 @@ def test_softmax():
         ts.SCHEME_TYPE.CKKS,
         poly_modulus_degree=16384,
         coeff_mod_bit_sizes=[
-            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
+            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
         ]
     )
 
@@ -83,9 +82,6 @@ def test_softmax():
 
     # Decrypt the output
     dec_output = enc_output.do_decryption()
-
-    print("result: ", dec_output)
-    print("target: ", output)
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(

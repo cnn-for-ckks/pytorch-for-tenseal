@@ -9,4 +9,5 @@ def ckks_wrapper(context: ts.Context, data: torch.Tensor) -> CKKSWrapper:
     enc_data_wrapper = CKKSWrapper(
         torch.zeros(enc_data.shape), enc_data
     )
+
     return enc_data_wrapper
