@@ -33,7 +33,7 @@ def test_conv2d():
     context.generate_galois_keys()
 
     # Declare parameters
-    out_channels = 1
+    out_channels = 2
     in_channels = 1
     kernel_height = 7
     kernel_width = 7
@@ -61,7 +61,7 @@ def test_conv2d():
 
     # Create the input tensor
     input_tensor = torch.randn(
-        batch_size, in_channels, input_height, input_width, requires_grad=True
+        batch_size, in_channels, input_height, input_width
     )
 
     # Encrypt the input tensor

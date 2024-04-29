@@ -12,9 +12,7 @@ import tenseal as ts
 import torchseal
 
 
-# NOTE: The weights and biases are not encrypted in this example (the secret key must be used in the training process for calculating convolution).
-# NOTE: To create a secure model, the weights and biases must be transferred from plaintext model to encrypted model.
-# NOTE: Because of this, we have to redefine the research sequence.
+# TODO: Encrypt the weights and biases when training the model
 class EncConvNet(torch.nn.Module):
     def __init__(self, torch_nn: ConvNet) -> None:
         super(EncConvNet, self).__init__()
