@@ -326,22 +326,26 @@ def test_convmtx2():
     print("Correct grad_weight:\n", conv2d_weight_grad_expanded)
     print()
 
-    # assert torch.allclose(
-    #     sparse_conv2d.weight.grad,
-    #     conv2d_weight_grad_expanded,
-    #     atol=1e-3,
-    #     rtol=0
-    # ), "Weight gradients are incorrect!"
+    assert torch.allclose(
+        sparse_conv2d.weight.grad,
+        conv2d_weight_grad_expanded,
+        atol=1e-3,
+        rtol=0
+    ), "Weight gradients are incorrect!"
 
     # Check the correctness of the bias gradients (with a tolerance of 1e-3)
     assert conv2d.bias.grad is not None and sparse_conv2d.bias.grad is not None, "Bias gradients are None!"
 
-    print("Calculated grad_bias:\n", sparse_conv2d.bias.grad)
-    print("Correct grad_bias:\n", conv2d.bias.grad)
+    conv2d_bias_grad_expanded = conv2d.bias.grad.repeat_interleave(
+        output_height * output_width
+    )
 
-    # assert torch.allclose(
-    #     sparse_conv2d.bias.grad,
-    #     conv2d.bias.grad,
-    #     atol=1e-3,
-    #     rtol=0
-    # ), "Bias gradients are incorrect!"
+    print("Calculated grad_bias:\n", sparse_conv2d.bias.grad)
+    print("Correct grad_bias:\n", conv2d_bias_grad_expanded)
+
+    assert torch.allclose(
+        sparse_conv2d.bias.grad,
+        conv2d_bias_grad_expanded,
+        atol=1e-3,
+        rtol=0
+    ), "Bias gradients are incorrect!"
