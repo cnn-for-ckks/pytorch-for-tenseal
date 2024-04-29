@@ -142,6 +142,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             # TODO: Redefine this function in order to emulate the convolution operation
             grad_weight = grad_output.t().mm(x)
         if result[2]:
+            # TODO: Redefine this function in order to emulate the convolution operation
             grad_bias = grad_output.sum(0)
 
         return grad_input, grad_weight, grad_bias
