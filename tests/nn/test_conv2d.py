@@ -86,8 +86,8 @@ def test_conv2d():
         in_channels=in_channels,
         out_channels=out_channels,
         kernel_size=(kernel_height, kernel_width),
-        input_size=torch.Size(
-            [batch_size, in_channels, input_height, input_width]
+        input_size_with_channel=(
+            batch_size, in_channels, input_height, input_width
         ),
         stride=stride,
         padding=padding,

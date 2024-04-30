@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from typing import Sequence, Tuple, Union
 
 import torch
 
@@ -20,7 +20,7 @@ def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: int = 1, padding: int = 0) -> torch.Tensor:
+def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     kernel_height, kernel_width = kernel.shape
     input_height, input_width = input_size
 
@@ -74,10 +74,10 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, stride: int = 1, padding: int = 0) -> torch.Tensor:
+def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tuple[int, int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     kernel_out_channel, _, kernel_height, kernel_width = kernel.shape
-    input_in_channel, input_height, input_width = input_size
+    input_in_channel, input_height, input_width = input_size_with_channel
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
@@ -101,7 +101,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     for i, kernel_output in enumerate(kernel):
         for j, kernel_input in enumerate(kernel_output):
             weight_convolutions[i, :, j, :] = toeplitz_one_channel(
-                kernel_input, input_size[1:], padding=padding, stride=stride
+                kernel_input, input_size_with_channel[1:], padding=padding, stride=stride
             )
 
     # Reshape the output tensor

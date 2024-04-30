@@ -8,11 +8,11 @@ import torch
 
 
 class AvgPool2d(torch.nn.Module):
-    def __init__(self, n_channel: int, kernel_size: Tuple[int, int], input_size: torch.Size, stride: int = 1, padding: int = 0,) -> None:
+    def __init__(self, n_channel: int, kernel_size: Tuple[int, int], input_size_with_channel: Tuple[int, int, int, int], stride: int = 1, padding: int = 0,) -> None:
         super(AvgPool2d, self).__init__()
 
         # Save the parameters
-        self.input_size = input_size
+        self.input_size_with_channel = input_size_with_channel
         self.stride = stride
         self.padding = padding
 
@@ -26,14 +26,14 @@ class AvgPool2d(torch.nn.Module):
             kernel_n_cols * kernel_n_rows
         )
         self.toeplitz_avg_kernel = toeplitz_multiple_channels(
-            self.avg_kernel, input_size[1:], stride=stride, padding=padding
+            self.avg_kernel, input_size_with_channel[1:], stride=stride, padding=padding
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         out_x = typing.cast(
             CKKSWrapper,
             AvgPool2dFunction.apply(
-                enc_x, self.avg_kernel, self.toeplitz_avg_kernel, self.input_size, self.stride, self.padding
+                enc_x, self.avg_kernel, self.toeplitz_avg_kernel, self.input_size_with_channel, self.stride, self.padding
             )
         )
 

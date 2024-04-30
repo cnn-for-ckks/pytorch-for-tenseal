@@ -9,17 +9,17 @@ import torch
 
 class Conv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, input_size: torch.Size, stride: int, padding: int) -> CKKSWrapper:
+    def forward(ctx: CKKSConvFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, input_size_with_channel: Tuple[int, int, int, int], stride: int, padding: int) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
         ctx.enc_x = enc_x.clone()
-        ctx.input_size = input_size
+        ctx.input_size_with_channel = input_size_with_channel
         ctx.stride = stride
         ctx.padding = padding
 
         # Get the toeplitz weight
         toeplitz_weight = toeplitz_multiple_channels(
-            weight, input_size[1:], stride=stride, padding=padding
+            weight, input_size_with_channel[1:], stride=stride, padding=padding
         )
 
         # Get the bias
@@ -39,7 +39,7 @@ class Conv2dFunction(torch.autograd.Function):
         # Get the saved tensors
         saved_tensors = typing.cast(Tuple[torch.Tensor], ctx.saved_tensors)
         x = ctx.enc_x.do_decryption()
-        input_size = ctx.input_size
+        input_size_with_channel = ctx.input_size_with_channel
         stride = ctx.stride
         padding = ctx.padding
 
@@ -47,20 +47,20 @@ class Conv2dFunction(torch.autograd.Function):
         weight, = saved_tensors
 
         # Unpack the tensor shapes
-        batch_size, output_channel, output_height, output_width = input_size
+        batch_size, input_channel, input_height, input_width = input_size_with_channel
         kernel_out_channel, _, kernel_height, kernel_width = weight.shape
 
         # Calculate feature dimension
         feature_h = (
-            output_height - kernel_height + 2 * padding
+            input_height - kernel_height + 2 * padding
         ) // stride + 1
         feature_w = (
-            output_width - kernel_width + 2 * padding
+            input_width - kernel_width + 2 * padding
         ) // stride + 1
 
         # Decrypt the input
         reshaped_x = x.view(
-            batch_size, output_channel, output_height, output_width
+            batch_size, input_channel, input_height, input_width
         )
         reshaped_grad_output = grad_output.view(
             batch_size, kernel_out_channel, feature_h, feature_w

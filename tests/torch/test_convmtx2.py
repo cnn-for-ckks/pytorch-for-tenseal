@@ -18,7 +18,7 @@ def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: int = 1, padding: int = 0) -> torch.Tensor:
+def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     kernel_height, kernel_width = kernel.shape
     input_height, input_width = input_size
 
@@ -72,10 +72,10 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: torch.Size, stride: i
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, stride: int = 1, padding: int = 0) -> torch.Tensor:
+def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tuple[int, int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     kernel_out_channel, _, kernel_height, kernel_width = kernel.shape
-    input_in_channel, input_height, input_width = input_size
+    input_in_channel, input_height, input_width = input_size_with_channel
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
@@ -99,7 +99,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     for i, kernel_output in enumerate(kernel):
         for j, kernel_input in enumerate(kernel_output):
             weight_convolutions[i, :, j, :] = toeplitz_one_channel(
-                kernel_input, input_size[1:], padding=padding, stride=stride
+                kernel_input, input_size_with_channel[1:], padding=padding, stride=stride
             )
 
     # Reshape the output tensor
@@ -111,43 +111,73 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     return weight_convolutions
 
 
+class ToeplitzConv2dFunctionWrapper(NestedIOFunction):
+    stride: int
+    padding: int
+    input_size_with_channel: Tuple[int, int, int]
+
+
 class ToeplitzConv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: NestedIOFunction, x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor) -> torch.Tensor:
+    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, stride: int, padding: int, input_size_with_channel: Tuple[int, int, int]) -> torch.Tensor:
         # Save the context for the backward method
-        ctx.save_for_backward(x, weight)
+        ctx.save_for_backward(padded_x, weight)
+        ctx.stride = stride
+        ctx.padding = padding
+        ctx.input_size_with_channel = input_size_with_channel
 
         # Apply the linear transformation to the input
-        out_x = x.mm(weight.t()).add(bias)
+        out_x = padded_x.mm(weight.t()).add(bias)
 
         return out_x
 
     @staticmethod
-    def backward(ctx: NestedIOFunction, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
-        x, weight = typing.cast(
+        padded_x, weight = typing.cast(
             Tuple[torch.Tensor, torch.Tensor],
             ctx.saved_tensors
         )
+        batch_size, _ = padded_x.shape
+
+        # Get the saved context
+        stride = ctx.stride
+        padding = ctx.padding
+        input_size_with_channel = ctx.input_size_with_channel
 
         # Get the needs_input_grad
-        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
+        result = typing.cast(
+            Tuple[
+                bool, bool, bool, bool, bool, bool
+            ],
+            ctx.needs_input_grad
+        )
 
         # Initialize the gradients
         grad_input = grad_weight = grad_bias = None
 
         # Compute the gradients
         if result[0]:
-            # TODO: Mask the input gradient to remove the padding
-            grad_input = grad_output.mm(weight)
+            # Create binary mask to remove padding
+            binary_mask = torch.nn.functional.pad(
+                torch.ones(
+                    input_size_with_channel, dtype=torch.bool
+                ),
+                (padding, padding, padding, padding),
+            ).view(-1).unsqueeze(0).repeat(batch_size, 1)
+
+            # Calculate the gradients for the input tensor
+            grad_input = grad_output.mm(weight).mul(binary_mask)
+
         if result[1]:
             # TODO: Calculate the toeplitz matrix for the input tensor and apply it to transposed grad_output
-            grad_weight = grad_output.t().mm(x)
+            grad_weight = grad_output.t().mm(padded_x)
+
         if result[2]:
             # TODO: Sum and replace the gradients in the same channel
             grad_bias = grad_output.sum(0)
 
-        return grad_input, grad_weight, grad_bias
+        return grad_input, grad_weight, grad_bias, None, None, None
 
 
 class ToeplitzConv2d(torch.nn.Module):
@@ -168,13 +198,18 @@ class ToeplitzConv2d(torch.nn.Module):
         output_height = (padded_input_height - kernel_height) // stride + 1
         output_width = (padded_input_width - kernel_width) // stride + 1
 
+        # Save the parameters
+        self.stride = stride
+        self.padding = padding
+        self.input_size_with_channel = (in_channels, input_height, input_width)
+
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
             toeplitz_multiple_channels(
                 torch.randn(
                     out_channels, in_channels, kernel_height, kernel_width
                 ),
-                torch.Size([in_channels, input_height, input_width]),
+                self.input_size_with_channel,
                 stride=stride,
                 padding=padding
             )
@@ -187,11 +222,11 @@ class ToeplitzConv2d(torch.nn.Module):
             )
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, padded_x: torch.Tensor) -> torch.Tensor:
         out_x = typing.cast(
             torch.Tensor,
             ToeplitzConv2dFunction.apply(
-                x, self.weight, self.bias
+                padded_x, self.weight, self.bias, self.stride, self.padding, self.input_size_with_channel
             )
         )
 
@@ -206,7 +241,7 @@ def test_convmtx2():
 
     # Declare parameters
     out_channels = 2
-    in_channels = 1
+    in_channels = 2
     kernel_height = 3
     kernel_width = 3
     stride = 1
@@ -237,7 +272,7 @@ def test_convmtx2():
     # Create the sparse kernel
     sparse_kernel = toeplitz_multiple_channels(
         kernel,
-        torch.Size([in_channels, input_height, input_width]),
+        (in_channels, input_height, input_width),
         stride=stride,
         padding=padding
     )
@@ -348,9 +383,7 @@ def test_convmtx2():
 
     conv2d_weight_grad_expanded = toeplitz_multiple_channels(
         conv2d.weight.grad,
-        torch.Size(
-            [in_channels, input_height, input_width]
-        ),
+        (in_channels, input_height, input_width),
         stride=stride,
         padding=padding
     )

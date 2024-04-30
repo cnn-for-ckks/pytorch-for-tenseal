@@ -68,8 +68,8 @@ def test_avgpool2d():
     # Create the encrypted average pooling layer
     enc_avgpool2d = EncryptedAvgPool2d(
         n_channel=n_channels,
-        input_size=torch.Size(
-            [batch_size, n_channels, input_height, input_width]
+        input_size_with_channel=(
+            batch_size, n_channels, input_height, input_width
         ),
         kernel_size=(kernel_height, kernel_width),
         stride=stride,
