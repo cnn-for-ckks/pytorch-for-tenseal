@@ -138,6 +138,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
         # Compute the gradients
         if result[0]:
+            # TODO: Mask the input gradient to remove the padding
             grad_input = grad_output.mm(weight)
         if result[1]:
             # TODO: Calculate the toeplitz matrix for the input tensor and apply it to transposed grad_output
@@ -183,12 +184,12 @@ def test_convmtx2():
     kernel_height = 3
     kernel_width = 3
     stride = 1
-    padding = 0
+    padding = 1
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 5
-    input_width = 5
+    input_height = 3
+    input_width = 3
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
@@ -305,23 +306,19 @@ def test_convmtx2():
     # Check the correctness of the input gradients (with a tolerance of 1e-3)
     assert input_tensor.grad is not None and sparse_input_tensor.grad is not None, "Input gradients are None!"
 
-    sparse_input_tensor_grad_reshaped = sparse_input_tensor.grad.view(
-        batch_size, in_channels, padded_input_height, padded_input_width
+    input_tensor_grad_expanded = torch.nn.functional.pad(
+        input_tensor.grad, (padding, padding, padding, padding)
+    ).view(
+        batch_size, -1
     )
-    sparse_input_tensor_grad_unpadded = sparse_input_tensor_grad_reshaped[
-        :, :, padding:padded_input_height - padding, padding:padded_input_width - padding
-    ]
 
-    print(
-        "Calculated grad_input:\n",
-        sparse_input_tensor_grad_unpadded
-    )
-    print("Correct grad_input:\n", input_tensor.grad)
+    print("Calculated grad_input:\n", sparse_input_tensor.grad)
+    print("Correct grad_input:\n", input_tensor_grad_expanded)
     print()
 
     assert torch.allclose(
-        sparse_input_tensor_grad_unpadded,
-        input_tensor.grad,
+        sparse_input_tensor.grad,
+        input_tensor_grad_expanded,
         atol=1e-3,
         rtol=0
     ), "Input gradients are incorrect!"
