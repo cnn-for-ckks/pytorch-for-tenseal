@@ -7,7 +7,7 @@ import torch
 
 
 class Conv2d(torch.nn.Module):
-    def __init__(self, in_channel: int, out_channel: int, kernel_size: Tuple[int, int], input_size: torch.Size, stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: torch.Size, stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Save the parameters
@@ -21,11 +21,11 @@ class Conv2d(torch.nn.Module):
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
             torch.rand(
-                out_channel, in_channel, kernel_n_rows, kernel_n_cols
+                out_channels, in_channels, kernel_n_rows, kernel_n_cols
             ) if weight is None else weight
         )
         self.bias = torch.nn.Parameter(
-            torch.rand(out_channel) if bias is None else bias
+            torch.rand(out_channels) if bias is None else bias
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:

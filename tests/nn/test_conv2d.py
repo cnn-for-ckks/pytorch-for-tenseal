@@ -83,8 +83,8 @@ def test_conv2d():
 
     # Create the encrypted convolution layer
     enc_conv2d = EncryptedConv2d(
-        in_channel=in_channels,
-        out_channel=out_channels,
+        in_channels=in_channels,
+        out_channels=out_channels,
         kernel_size=(kernel_height, kernel_width),
         input_size=torch.Size(
             [batch_size, in_channels, input_height, input_width]

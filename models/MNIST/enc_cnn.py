@@ -20,8 +20,8 @@ class EncConvNet(torch.nn.Module):
         # Define the layers
         self.conv1 = Conv2d(
             # Required parameters
-            in_channel=torch_nn.conv1.in_channels,
-            out_channel=torch_nn.conv1.out_channels,
+            in_channels=torch_nn.conv1.in_channels,
+            out_channels=torch_nn.conv1.out_channels,
             kernel_size=(
                 torch_nn.conv1.kernel_size[0], torch_nn.conv1.kernel_size[1]
             ),

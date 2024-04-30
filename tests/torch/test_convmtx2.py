@@ -151,14 +151,40 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
 
 class ToeplitzConv2d(torch.nn.Module):
-    def __init__(self, in_features: int, out_features: int) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
         super().__init__()
 
+        # Unpack the kernel size
+        kernel_height, kernel_width = kernel_size
+
+        # Unpack the input size
+        input_height, input_width = input_size
+
+        # Adjust for padding
+        padded_input_height = input_height + 2 * padding
+        padded_input_width = input_width + 2 * padding
+
+        # Count the output dimensions
+        output_height = (padded_input_height - kernel_height) // stride + 1
+        output_width = (padded_input_width - kernel_width) // stride + 1
+
+        # Create the weight and bias
         self.weight = torch.nn.Parameter(
-            torch.rand(out_features, in_features)
+            toeplitz_multiple_channels(
+                torch.randn(
+                    out_channels, in_channels, kernel_height, kernel_width
+                ),
+                torch.Size([in_channels, input_height, input_width]),
+                stride=stride,
+                padding=padding
+            )
         )
+
         self.bias = torch.nn.Parameter(
-            torch.rand(out_features)
+            torch.repeat_interleave(
+                torch.randn(out_channels),
+                output_height * output_width
+            )
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -187,7 +213,7 @@ def test_convmtx2():
     padding = 1
 
     # Declare input dimensions
-    batch_size = 1
+    batch_size = 2
     input_height = 3
     input_width = 3
 
@@ -217,15 +243,6 @@ def test_convmtx2():
     )
     sparse_bias = bias.repeat_interleave(output_height * output_width)
 
-    # Print the kernels
-    print("Expanded kernel:\n", sparse_kernel)
-    print("Normal kernel:\n", kernel)
-    print()
-
-    print("Expanded bias:\n", sparse_bias)
-    print("Normal bias:\n", bias)
-    print()
-
     # Create the input tensor
     input_tensor = torch.randn(
         batch_size, in_channels, input_height, input_width, requires_grad=True
@@ -250,36 +267,42 @@ def test_convmtx2():
     conv2d.weight = torch.nn.Parameter(kernel)
     conv2d.bias = torch.nn.Parameter(bias)
 
+    # Print the normal kernel and bias
+    print("Normal kernel:\n", conv2d.weight)
+    print("Normal bias:\n", conv2d.bias)
+    print()
+
     # Create the sparse convolution layer
     sparse_conv2d = ToeplitzConv2d(
-        in_features=in_channels * input_height * input_width,
-        out_features=out_channels * output_height * output_width
+        in_channels=in_channels,
+        out_channels=out_channels,
+        kernel_size=(kernel_height, kernel_width),
+        input_size=(input_height, input_width),
+        stride=stride,
+        padding=padding,
     )
     sparse_conv2d.weight = torch.nn.Parameter(sparse_kernel)
     sparse_conv2d.bias = torch.nn.Parameter(sparse_bias)
+
+    # Print the sparse kernel and bias
+    print("Expanded kernel:\n", sparse_conv2d.weight)
+    print("Expanded bias:\n", sparse_conv2d.bias)
+    print()
 
     # Perform the forward pass
     output_conv2d = conv2d.forward(input_tensor)
     output_sparse_conv2d = sparse_conv2d.forward(sparse_input_tensor)
 
     # Check the correctness of the convolution (with a tolerance of 1e-3)
-    print(
-        "Calculated output:\n",
-        output_sparse_conv2d.view(
-            batch_size, out_channels, output_height, output_width
-        )
-    )
-    print(
-        "Correct output:\n",
-        output_conv2d
-    )
+    output_conv2d_expanded = output_conv2d.view(batch_size, -1)
+
+    print("Calculated output:\n", output_sparse_conv2d)
+    print("Correct output:\n", output_conv2d_expanded)
     print()
 
     assert torch.allclose(
-        output_sparse_conv2d.view(
-            batch_size, out_channels, output_height, output_width
-        ),
-        output_conv2d,
+        output_sparse_conv2d,
+        output_conv2d_expanded,
         atol=1e-3,
         rtol=0
     ), "Convmtx2 forward pass is incorrect!"
@@ -293,10 +316,7 @@ def test_convmtx2():
     # Calculate the loss
     loss_conv2d = criterion.forward(output_conv2d, target)
     loss_sparse_conv2d = criterion.forward(
-        output_sparse_conv2d.view(
-            batch_size, out_channels, output_height, output_width
-        ),
-        target
+        output_sparse_conv2d, target.view(batch_size, -1)
     )
 
     # Perform the backward pass
