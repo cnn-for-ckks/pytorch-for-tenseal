@@ -91,7 +91,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
             kernel_out_channel,
             output_height * output_width,
             input_in_channel,
-            input_height * input_width
+            padded_input_height * padded_input_width
         )
     )
 
@@ -105,7 +105,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     # Reshape the output tensor
     weight_convolutions = weight_convolutions.view(
         kernel_out_channel * output_height * output_width,
-        input_in_channel * input_height * input_width
+        input_in_channel * padded_input_height * padded_input_width
     )
 
     return weight_convolutions
@@ -124,6 +124,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx: NestedIOFunction, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+        # Get the saved tensors
         x, weight = typing.cast(
             Tuple[torch.Tensor, torch.Tensor],
             ctx.saved_tensors
@@ -139,10 +140,10 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         if result[0]:
             grad_input = grad_output.mm(weight)
         if result[1]:
-            # TODO: Redefine this function in order to emulate the convolution operation
+            # TODO: Calculate the toeplitz matrix for the input tensor and apply it to transposed grad_output
             grad_weight = grad_output.t().mm(x)
         if result[2]:
-            # TODO: Redefine this function in order to emulate the convolution operation
+            # TODO: Sum and replace the gradients in the same channel
             grad_bias = grad_output.sum(0)
 
         return grad_input, grad_weight, grad_bias
@@ -186,12 +187,16 @@ def test_convmtx2():
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 4
-    input_width = 4
+    input_height = 5
+    input_width = 5
+
+    # Adjust for padding
+    padded_input_height = input_height + 2 * padding
+    padded_input_width = input_width + 2 * padding
 
     # Count the output dimensions
-    output_height = (input_height - kernel_height) // stride + 1
-    output_width = (input_width - kernel_width) // stride + 1
+    output_height = (padded_input_height - kernel_height) // stride + 1
+    output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Create weight and bias
     kernel = torch.randn(
@@ -204,7 +209,10 @@ def test_convmtx2():
 
     # Create the sparse kernel
     sparse_kernel = toeplitz_multiple_channels(
-        kernel, torch.Size([in_channels, input_height, input_width]), stride=stride, padding=padding
+        kernel,
+        torch.Size([in_channels, input_height, input_width]),
+        stride=stride,
+        padding=padding
     )
     sparse_bias = bias.repeat_interleave(output_height * output_width)
 
@@ -221,7 +229,11 @@ def test_convmtx2():
     input_tensor = torch.randn(
         batch_size, in_channels, input_height, input_width, requires_grad=True
     )
-    sparse_input_tensor = input_tensor.view(
+
+    # Create the sparse input tensor (with padding)
+    sparse_input_tensor = torch.nn.functional.pad(
+        input_tensor, (padding, padding, padding, padding)
+    ).view(
         batch_size, -1
     ).clone().detach().requires_grad_(True)
 
@@ -294,18 +306,21 @@ def test_convmtx2():
     assert input_tensor.grad is not None and sparse_input_tensor.grad is not None, "Input gradients are None!"
 
     sparse_input_tensor_grad_reshaped = sparse_input_tensor.grad.view(
-        batch_size, in_channels, input_height, input_width
+        batch_size, in_channels, padded_input_height, padded_input_width
     )
+    sparse_input_tensor_grad_unpadded = sparse_input_tensor_grad_reshaped[
+        :, :, padding:padded_input_height - padding, padding:padded_input_width - padding
+    ]
 
     print(
         "Calculated grad_input:\n",
-        sparse_input_tensor_grad_reshaped
+        sparse_input_tensor_grad_unpadded
     )
     print("Correct grad_input:\n", input_tensor.grad)
     print()
 
     assert torch.allclose(
-        sparse_input_tensor_grad_reshaped,
+        sparse_input_tensor_grad_unpadded,
         input_tensor.grad,
         atol=1e-3,
         rtol=0
@@ -315,7 +330,8 @@ def test_convmtx2():
     assert conv2d.weight.grad is not None and sparse_conv2d.weight.grad is not None, "Weight gradients are None!"
 
     conv2d_weight_grad_expanded = toeplitz_multiple_channels(
-        conv2d.weight.grad, torch.Size(
+        conv2d.weight.grad,
+        torch.Size(
             [in_channels, input_height, input_width]
         ),
         stride=stride,

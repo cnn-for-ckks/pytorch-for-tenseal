@@ -93,7 +93,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
             kernel_out_channel,
             output_height * output_width,
             input_in_channel,
-            input_height * input_width
+            padded_input_height * padded_input_width
         )
     )
 
@@ -107,7 +107,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size: torch.Size, str
     # Reshape the output tensor
     weight_convolutions = weight_convolutions.view(
         kernel_out_channel * output_height * output_width,
-        input_in_channel * input_height * input_width
+        input_in_channel * padded_input_height * padded_input_width
     )
 
     return weight_convolutions
