@@ -97,9 +97,12 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tu
 
     # Fill the output tensor
     for i, kernel_output in enumerate(kernel):
-        for j, kernel_input in enumerate(kernel_output):
+        for j, kernel_single_channel in enumerate(kernel_output):
             weight_convolutions[i, :, j, :] = toeplitz_one_channel(
-                kernel_input, input_size_with_channel[1:], padding=padding, stride=stride
+                kernel_single_channel,
+                (input_height, input_width),
+                padding=padding,
+                stride=stride
             )
 
     # Reshape the output tensor
@@ -115,16 +118,18 @@ class ToeplitzConv2dFunctionWrapper(NestedIOFunction):
     stride: int
     padding: int
     input_size_with_channel: Tuple[int, int, int]
+    kernel_size_with_channel: Tuple[int, int, int, int]
 
 
 class ToeplitzConv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, stride: int, padding: int, input_size_with_channel: Tuple[int, int, int]) -> torch.Tensor:
+    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, stride: int, padding: int, input_size_with_channel: Tuple[int, int, int], kernel_size_with_channel: Tuple[int, int, int, int]) -> torch.Tensor:
         # Save the context for the backward method
         ctx.save_for_backward(padded_x, weight)
         ctx.stride = stride
         ctx.padding = padding
         ctx.input_size_with_channel = input_size_with_channel
+        ctx.kernel_size_with_channel = kernel_size_with_channel
 
         # Apply the linear transformation to the input
         out_x = padded_x.mm(weight.t()).add(bias)
@@ -132,23 +137,38 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         padded_x, weight = typing.cast(
             Tuple[torch.Tensor, torch.Tensor],
             ctx.saved_tensors
         )
-        batch_size, _ = padded_x.shape
 
         # Get the saved context
         stride = ctx.stride
         padding = ctx.padding
         input_size_with_channel = ctx.input_size_with_channel
+        kernel_size_with_channel = ctx.kernel_size_with_channel
+
+        # Unpack the padded input size
+        batch_size, _ = padded_x.shape
+
+        # Get the shapes
+        out_channels, _, kernel_height, kernel_width = kernel_size_with_channel
+        in_channels, input_height, input_width = input_size_with_channel
+
+        # Add padding to the input size
+        padded_input_height = input_height + 2 * padding
+        padded_input_width = input_width + 2 * padding
+
+        # Count the output dimensions
+        output_height = (padded_input_height - kernel_height) // stride + 1
+        output_width = (padded_input_width - kernel_width) // stride + 1
 
         # Get the needs_input_grad
         result = typing.cast(
             Tuple[
-                bool, bool, bool, bool, bool, bool
+                bool, bool, bool, bool, bool, bool, bool
             ],
             ctx.needs_input_grad
         )
@@ -161,7 +181,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             # Create binary mask to remove padding
             binary_mask = torch.nn.functional.pad(
                 torch.ones(
-                    input_size_with_channel, dtype=torch.bool
+                    in_channels, input_height, input_width, dtype=torch.bool
                 ),
                 (padding, padding, padding, padding),
             ).view(-1).unsqueeze(0).repeat(batch_size, 1)
@@ -171,13 +191,15 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
         if result[1]:
             # TODO: Calculate the toeplitz matrix for the input tensor and apply it to transposed grad_output
+
             grad_weight = grad_output.t().mm(padded_x)
 
         if result[2]:
             # TODO: Sum and replace the gradients in the same channel
+
             grad_bias = grad_output.sum(0)
 
-        return grad_input, grad_weight, grad_bias, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None, None
 
 
 class ToeplitzConv2d(torch.nn.Module):
@@ -202,6 +224,9 @@ class ToeplitzConv2d(torch.nn.Module):
         self.stride = stride
         self.padding = padding
         self.input_size_with_channel = (in_channels, input_height, input_width)
+        self.kernel_size_with_channel = (
+            out_channels, in_channels, kernel_height, kernel_width
+        )
 
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
@@ -226,7 +251,7 @@ class ToeplitzConv2d(torch.nn.Module):
         out_x = typing.cast(
             torch.Tensor,
             ToeplitzConv2dFunction.apply(
-                padded_x, self.weight, self.bias, self.stride, self.padding, self.input_size_with_channel
+                padded_x, self.weight, self.bias, self.stride, self.padding, self.input_size_with_channel, self.kernel_size_with_channel
             )
         )
 
@@ -240,17 +265,17 @@ def test_convmtx2():
     random.seed(73)
 
     # Declare parameters
-    out_channels = 2
+    out_channels = 3
     in_channels = 2
-    kernel_height = 3
-    kernel_width = 3
-    stride = 1
+    kernel_height = 2
+    kernel_width = 2
+    stride = 2
     padding = 1
 
     # Declare input dimensions
-    batch_size = 2
-    input_height = 3
-    input_width = 3
+    batch_size = 4
+    input_height = 2
+    input_width = 2
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
