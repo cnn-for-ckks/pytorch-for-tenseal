@@ -114,6 +114,22 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tu
     return weight_convolutions
 
 
+def create_transformation_matrix(repeat: int, length: int):
+    # Calculate the number of groups
+    num_groups = length // repeat
+
+    # Create the transformation matrix
+    transformation_matrix = torch.zeros((length, length))
+
+    for i in range(num_groups):
+        for j in range(repeat):
+            row = i * repeat + j
+            group_start = i * repeat
+            transformation_matrix[row, group_start:group_start + repeat] = 1
+
+    return transformation_matrix
+
+
 class ToeplitzConv2dFunctionWrapper(NestedIOFunction):
     stride: int
     padding: int
@@ -156,6 +172,14 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         # Get the shapes
         out_channels, _, kernel_height, kernel_width = kernel_size_with_channel
         in_channels, input_height, input_width = input_size_with_channel
+
+        # Add padding to the input size
+        padded_input_height = input_height + 2 * padding
+        padded_input_width = input_width + 2 * padding
+
+        # Count the output dimensions
+        output_height = (padded_input_height - kernel_height) // stride + 1
+        output_width = (padded_input_width - kernel_width) // stride + 1
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -208,8 +232,8 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             # Create the fully connected gradient weight tensor (this will be encrypted)
             unfiltered_grad_weight = grad_output.t().mm(padded_x)
 
-            # Initialize the gradient weight tensor (this will be encrypted)
-            grad_weight = weight.clone().mul(0)
+            # Initialize the gradient weight tensor (this will be encrypted, probably going to need context with public keys)
+            grad_weight = torch.zeros_like(weight)
 
             # Apply the binary tensor to the gradient weight (this will be encrypted)
             for binary_mask in binary_tensor:
@@ -226,9 +250,12 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
                 grad_weight += current_gradient_weight
 
         if result[2]:
-            # TODO: Sum and replace the gradients in the same channel
+            binary_transformation = create_transformation_matrix(
+                repeat=output_height * output_width,
+                length=out_channels * output_height * output_width
+            )
 
-            grad_bias = grad_output.sum(0)
+            grad_bias = binary_transformation.matmul(grad_output.sum(0))
 
         return grad_input, grad_weight, grad_bias, None, None, None, None
 
@@ -296,17 +323,17 @@ def test_convmtx2():
     random.seed(73)
 
     # Declare parameters
-    out_channels = 2
-    in_channels = 1
+    out_channels = 3
+    in_channels = 2
     kernel_height = 3
     kernel_width = 3
     stride = 1
-    padding = 0
+    padding = 1
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 4
-    input_width = 4
+    input_height = 5
+    input_width = 5
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
@@ -358,11 +385,6 @@ def test_convmtx2():
     conv2d.weight = torch.nn.Parameter(kernel)
     conv2d.bias = torch.nn.Parameter(bias)
 
-    # Print the normal kernel and bias
-    print("Normal kernel:\n", conv2d.weight)
-    print("Normal bias:\n", conv2d.bias)
-    print()
-
     # Create the sparse convolution layer
     sparse_conv2d = ToeplitzConv2d(
         in_channels=in_channels,
@@ -375,21 +397,12 @@ def test_convmtx2():
     sparse_conv2d.weight = torch.nn.Parameter(sparse_kernel)
     sparse_conv2d.bias = torch.nn.Parameter(sparse_bias)
 
-    # Print the sparse kernel and bias
-    print("Expanded kernel:\n", sparse_conv2d.weight)
-    print("Expanded bias:\n", sparse_conv2d.bias)
-    print()
-
     # Perform the forward pass
     output_conv2d = conv2d.forward(input_tensor)
     output_sparse_conv2d = sparse_conv2d.forward(sparse_input_tensor)
 
     # Check the correctness of the convolution (with a tolerance of 1e-3)
     output_conv2d_expanded = output_conv2d.view(batch_size, -1)
-
-    print("Calculated output:\n", output_sparse_conv2d)
-    print("Correct output:\n", output_conv2d_expanded)
-    print()
 
     assert torch.allclose(
         output_sparse_conv2d,
@@ -421,10 +434,6 @@ def test_convmtx2():
         input_tensor.grad, (padding, padding, padding, padding)
     ).view(batch_size, -1)
 
-    print("Calculated grad_input:\n", sparse_input_tensor.grad)
-    print("Correct grad_input:\n", input_tensor_grad_expanded)
-    print()
-
     assert torch.allclose(
         sparse_input_tensor.grad,
         input_tensor_grad_expanded,
@@ -442,10 +451,6 @@ def test_convmtx2():
         padding=padding
     )
 
-    print("Calculated grad_weight:\n", sparse_conv2d.weight.grad)
-    print("Correct grad_weight:\n", conv2d_weight_grad_expanded)
-    print()
-
     assert torch.allclose(
         sparse_conv2d.weight.grad,
         conv2d_weight_grad_expanded,
@@ -459,9 +464,6 @@ def test_convmtx2():
     conv2d_bias_grad_expanded = conv2d.bias.grad.repeat_interleave(
         output_height * output_width
     )
-
-    print("Calculated grad_bias:\n", sparse_conv2d.bias.grad)
-    print("Correct grad_bias:\n", conv2d_bias_grad_expanded)
 
     assert torch.allclose(
         sparse_conv2d.bias.grad,
