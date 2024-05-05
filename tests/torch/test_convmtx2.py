@@ -157,14 +157,6 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         out_channels, _, kernel_height, kernel_width = kernel_size_with_channel
         in_channels, input_height, input_width = input_size_with_channel
 
-        # Add padding to the input size
-        padded_input_height = input_height + 2 * padding
-        padded_input_width = input_width + 2 * padding
-
-        # Count the output dimensions
-        output_height = (padded_input_height - kernel_height) // stride + 1
-        output_width = (padded_input_width - kernel_width) // stride + 1
-
         # Get the needs_input_grad
         result = typing.cast(
             Tuple[
@@ -186,7 +178,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
                 (padding, padding, padding, padding),
             ).view(-1).unsqueeze(0).repeat(batch_size, 1)
 
-            # Calculate the gradients for the input tensor
+            # Calculate the gradients for the input tensor (this will be encrypted)
             grad_input = grad_output.mm(weight).mul(binary_mask)
 
         if result[1]:
@@ -203,30 +195,34 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
                 padding=padding
             )
 
-            # Create the fully connected gradient weight tensor
-            unfiltered_grad_weight = grad_output.t().mm(padded_x)
-
-            # Initialize the gradient weight tensor
-            grad_weight = torch.zeros_like(weight)
-
-            for i in range(1, index_length + 1):
-                # Create the binary mask
-                binary_mask = torch.tensor(
+            # Create the binary tensor
+            binary_tensor = torch.stack([
+                torch.tensor(
                     np.vectorize(
                         lambda x: x == i
                     )(index_tensor)
                 )
+                for i in range(1, index_length + 1)
+            ])
 
-                # Apply the binary mask to the gradient weight
+            # Create the fully connected gradient weight tensor (this will be encrypted)
+            unfiltered_grad_weight = grad_output.t().mm(padded_x)
+
+            # Initialize the gradient weight tensor (this will be encrypted)
+            grad_weight = weight.clone().mul(0)
+
+            # Apply the binary tensor to the gradient weight (this will be encrypted)
+            for binary_mask in binary_tensor:
+                # Apply the binary mask to the gradient weight (this will be encrypted)
                 filtered_grad_weight = unfiltered_grad_weight.mul(binary_mask)
 
-                # Calculate the sum of all elements
-                sum_all_element = filtered_grad_weight.sum()
+                # Calculate the sum of all elements (this will be encrypted)
+                sum_all_element = filtered_grad_weight.sum(1).sum(0)
 
-                # Create the new current gradient weight
+                # Create the new current gradient weight (this will be encrypted)
                 current_gradient_weight = binary_mask.mul(sum_all_element)
 
-                # Add the current gradient weight to the final gradient weight
+                # Add the current gradient weight to the final gradient weight (this will be encrypted)
                 grad_weight += current_gradient_weight
 
         if result[2]:
@@ -423,9 +419,7 @@ def test_convmtx2():
 
     input_tensor_grad_expanded = torch.nn.functional.pad(
         input_tensor.grad, (padding, padding, padding, padding)
-    ).view(
-        batch_size, -1
-    )
+    ).view(batch_size, -1)
 
     print("Calculated grad_input:\n", sparse_input_tensor.grad)
     print("Correct grad_input:\n", input_tensor_grad_expanded)
