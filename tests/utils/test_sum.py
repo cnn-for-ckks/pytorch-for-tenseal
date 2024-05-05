@@ -49,7 +49,7 @@ def test_sum():
 
     # Decrypt to verify
     result = enc_input_tensor.do_decryption()
-    target = torch.sum(input_tensor, axis)
+    target = input_tensor.sum(axis)
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(

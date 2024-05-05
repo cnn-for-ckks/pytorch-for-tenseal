@@ -181,7 +181,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             # Create binary mask to remove padding
             binary_mask = torch.nn.functional.pad(
                 torch.ones(
-                    in_channels, input_height, input_width, dtype=torch.bool
+                    in_channels, input_height, input_width
                 ),
                 (padding, padding, padding, padding),
             ).view(-1).unsqueeze(0).repeat(batch_size, 1)
@@ -190,9 +190,44 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             grad_input = grad_output.mm(weight).mul(binary_mask)
 
         if result[1]:
-            # TODO: Calculate the toeplitz matrix for the input tensor and apply it to transposed grad_output
+            # Calculate the length of the index tensor
+            index_length = out_channels * in_channels * kernel_height * kernel_width
 
-            grad_weight = grad_output.t().mm(padded_x)
+            # Create the index tensor
+            index_tensor = toeplitz_multiple_channels(
+                torch.arange(1, index_length + 1).view(
+                    out_channels, in_channels, kernel_height, kernel_width
+                ),
+                (in_channels, input_height, input_width),
+                stride=stride,
+                padding=padding
+            )
+
+            # Create the fully connected gradient weight tensor
+            unfiltered_grad_weight = grad_output.t().mm(padded_x)
+
+            # Initialize the gradient weight tensor
+            grad_weight = torch.zeros_like(weight)
+
+            for i in range(1, index_length + 1):
+                # Create the binary mask
+                binary_mask = torch.tensor(
+                    np.vectorize(
+                        lambda x: x == i
+                    )(index_tensor)
+                )
+
+                # Apply the binary mask to the gradient weight
+                filtered_grad_weight = unfiltered_grad_weight.mul(binary_mask)
+
+                # Calculate the sum of all elements
+                sum_all_element = filtered_grad_weight.sum()
+
+                # Create the new current gradient weight
+                current_gradient_weight = binary_mask.mul(sum_all_element)
+
+                # Add the current gradient weight to the final gradient weight
+                grad_weight += current_gradient_weight
 
         if result[2]:
             # TODO: Sum and replace the gradients in the same channel
@@ -265,17 +300,17 @@ def test_convmtx2():
     random.seed(73)
 
     # Declare parameters
-    out_channels = 3
-    in_channels = 2
-    kernel_height = 2
-    kernel_width = 2
-    stride = 2
-    padding = 1
+    out_channels = 2
+    in_channels = 1
+    kernel_height = 3
+    kernel_width = 3
+    stride = 1
+    padding = 0
 
     # Declare input dimensions
-    batch_size = 4
-    input_height = 2
-    input_width = 2
+    batch_size = 1
+    input_height = 4
+    input_width = 4
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
