@@ -82,7 +82,7 @@ if __name__ == "__main__":
     random.seed(73)
 
     # Load the data
-    dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
+    dataset = FraminghamDataset(csv_file="./data/Framingham/framingham.csv")
 
     # Split the data into training and testing
     generator = torch.Generator().manual_seed(73)

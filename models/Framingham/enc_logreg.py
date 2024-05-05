@@ -93,7 +93,7 @@ if __name__ == "__main__":
     context.generate_galois_keys()
 
     # Load the data
-    dataset = FraminghamDataset(csv_file="./data/Framingham.csv")
+    dataset = FraminghamDataset(csv_file="./data/Framingham/framingham.csv")
 
     # Take subset of the data
     # TODO: Remove subset to use the entire dataset
