@@ -250,11 +250,13 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
                 grad_weight += current_gradient_weight
 
         if result[2]:
+            # Create the binary transformation matrix
             binary_transformation = create_transformation_matrix(
                 repeat=output_height * output_width,
                 length=out_channels * output_height * output_width
             )
 
+            # Apply the binary transformation to the gradient output (this will be encrypted)
             grad_bias = binary_transformation.matmul(grad_output.sum(0))
 
         return grad_input, grad_weight, grad_bias, None, None, None, None
