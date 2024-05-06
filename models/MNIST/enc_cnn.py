@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
+from torchseal.utils import approximate_toeplitz_multiple_channels
 from torchseal.wrapper import CKKSWrapper
 from torchseal.nn import Conv2d, AvgPool2d, Linear, Square
 from cnn import ConvNet
@@ -28,8 +29,15 @@ class EncConvNet(torch.nn.Module):
             padding=0,
 
             # Optional parameters
-            weight=torch_nn.conv1.weight.data,
-            bias=torch_nn.conv1.bias.data if torch_nn.conv1.bias is not None else None,
+            weight=approximate_toeplitz_multiple_channels(
+                torch_nn.conv1.weight.data,
+                (torch_nn.conv1.in_channels, 28, 28),
+                stride=3,
+                padding=0
+            ),
+            bias=torch.repeat_interleave(
+                torch_nn.conv1.bias.data, 8 * 8
+            ) if torch_nn.conv1.bias is not None else None,
         )
 
         self.avg_pool = AvgPool2d(
