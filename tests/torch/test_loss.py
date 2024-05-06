@@ -37,6 +37,9 @@ class CrossEntropyLossFunction(torch.autograd.Function):
             ctx.saved_tensors
         )
 
+        # Unpack the target shape
+        batch_size, = target.shape
+
         # Create the subtraction mask
         # TODO: Model this so that it can be used on encrypted data
         subtraction_mask = torch.zeros_like(
@@ -59,7 +62,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
 
         if result[0]:
             # Multiply by the grad_output
-            grad_input = grad_output.mul(output_subtracted).div(target.size(0))
+            grad_input = grad_output.mul(output_subtracted).div(batch_size)
 
         return grad_input, None
 
@@ -78,12 +81,19 @@ def test_cross_entropy():
     np.random.seed(73)
     random.seed(73)
 
+    # Declare input dimensions
+    batch_size = 3
+    num_classes = 5
+
     # Create the input tensors
-    input = torch.randn(3, 5, requires_grad=True)
+    input = torch.randn(batch_size, num_classes, requires_grad=True)
     custom_input = input.clone().detach().requires_grad_(True)
 
     # Create the target tensor
-    target = torch.randint(high=5, size=(3, ), dtype=torch.int64)
+    target = torch.randint(
+        high=num_classes,
+        size=(batch_size, ),
+    )
 
     # Instantiate the custom function
     loss_layer = torch.nn.CrossEntropyLoss()
