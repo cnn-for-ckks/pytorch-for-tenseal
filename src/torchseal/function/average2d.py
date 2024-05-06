@@ -22,7 +22,7 @@ class AvgPool2dFunction(torch.autograd.Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSConvFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None, None, None]:
         # Get the saved tensors
         saved_tensors = typing.cast(Tuple[torch.Tensor], ctx.saved_tensors)
         x = ctx.enc_x.do_decryption()

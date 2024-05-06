@@ -30,7 +30,7 @@ class SoftmaxFunction(torch.autograd.Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSSoftmaxFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSSoftmaxFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors
         out_x = ctx.out_x.do_decryption()
 

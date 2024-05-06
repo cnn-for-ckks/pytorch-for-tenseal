@@ -19,7 +19,7 @@ class SigmoidFunction(torch.autograd.Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:
         # Get the saved tensors
         x = ctx.enc_x.do_decryption()
         polyval_derivative = ctx.polyval_derivative
