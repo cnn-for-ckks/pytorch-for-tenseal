@@ -53,7 +53,7 @@ class Conv2dFunction(torch.autograd.Function):
             # Initialize the gradient weight tensor (this will be encrypted, probably going to need context with public keys)
             grad_weight = torch.zeros_like(weight)
 
-            # Apply the binary tensor to the gradient weight (this will be encrypted)
+            # Apply the binary tensor to the gradient weight
             for binary_mask in conv2d_weight_mask:
                 # Apply the binary mask to the gradient weight (this will be encrypted)
                 filtered_grad_weight = unfiltered_grad_weight.mul(binary_mask)
