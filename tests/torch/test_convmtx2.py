@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from torch.nn import Conv2d
 from torch.autograd.function import NestedIOFunction
-from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
+from torchseal.utils import precise_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
 
 import typing
 import torch
@@ -104,7 +104,7 @@ class ToeplitzConv2d(torch.nn.Module):
 
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
-            approximate_toeplitz_multiple_channels(
+            precise_toeplitz_multiple_channels(
                 torch.randn(
                     out_channels, in_channels, kernel_height, kernel_width
                 ),
@@ -188,7 +188,7 @@ def test_convmtx2():
     bias = torch.randn(out_channels)
 
     # Create the sparse kernel
-    sparse_kernel = approximate_toeplitz_multiple_channels(
+    sparse_kernel = precise_toeplitz_multiple_channels(
         kernel,
         (in_channels, input_height, input_width),
         stride=stride,
@@ -236,13 +236,13 @@ def test_convmtx2():
     output_conv2d = conv2d.forward(input_tensor)
     output_sparse_conv2d = sparse_conv2d.forward(sparse_input_tensor)
 
-    # Check the correctness of the convolution (with a tolerance of 5e-2)
+    # Check the correctness of the convolution (with a tolerance of 1e-3)
     output_conv2d_expanded = output_conv2d.view(batch_size, -1)
 
     assert torch.allclose(
         output_sparse_conv2d,
         output_conv2d_expanded,
-        atol=5e-2,
+        atol=1e-3,
         rtol=0
     ), "Convmtx2 forward pass is incorrect!"
 
@@ -262,7 +262,7 @@ def test_convmtx2():
     loss_conv2d.backward()
     loss_sparse_conv2d.backward()
 
-    # Check the correctness of the input gradients (with a tolerance of 5e-2)
+    # Check the correctness of the input gradients (with a tolerance of 1e-3)
     assert input_tensor.grad is not None and sparse_input_tensor.grad is not None, "Input gradients are None!"
 
     input_tensor_grad_expanded = torch.nn.functional.pad(
@@ -272,14 +272,14 @@ def test_convmtx2():
     assert torch.allclose(
         sparse_input_tensor.grad,
         input_tensor_grad_expanded,
-        atol=5e-2,
+        atol=1e-3,
         rtol=0
     ), "Input gradients are incorrect!"
 
-    # Check the correctness of the weight gradients (with a tolerance of 5e-2)
+    # Check the correctness of the weight gradients (with a tolerance of 1e-3)
     assert conv2d.weight.grad is not None and sparse_conv2d.weight.grad is not None, "Weight gradients are None!"
 
-    conv2d_weight_grad_expanded = approximate_toeplitz_multiple_channels(
+    conv2d_weight_grad_expanded = precise_toeplitz_multiple_channels(
         conv2d.weight.grad,
         (in_channels, input_height, input_width),
         stride=stride,
@@ -289,11 +289,11 @@ def test_convmtx2():
     assert torch.allclose(
         sparse_conv2d.weight.grad,
         conv2d_weight_grad_expanded,
-        atol=5e-2,
+        atol=1e-3,
         rtol=0
     ), "Weight gradients are incorrect!"
 
-    # Check the correctness of the bias gradients (with a tolerance of 5e-2)
+    # Check the correctness of the bias gradients (with a tolerance of 1e-3)
     assert conv2d.bias.grad is not None and sparse_conv2d.bias.grad is not None, "Bias gradients are None!"
 
     conv2d_bias_grad_expanded = conv2d.bias.grad.repeat_interleave(
@@ -303,6 +303,6 @@ def test_convmtx2():
     assert torch.allclose(
         sparse_conv2d.bias.grad,
         conv2d_bias_grad_expanded,
-        atol=5e-2,
+        atol=1e-3,
         rtol=0
     ), "Bias gradients are incorrect!"
