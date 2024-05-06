@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from torch.nn.grad import conv2d_input, conv2d_weight
 from torchseal.wrapper import CKKSWrapper, CKKSConvFunctionWrapper
-from torchseal.utils import toeplitz_multiple_channels
+from torchseal.utils import approximate_toeplitz_multiple_channels
 
 import typing
 import torch
@@ -18,7 +18,7 @@ class Conv2dFunction(torch.autograd.Function):
         ctx.padding = padding
 
         # Get the toeplitz weight
-        toeplitz_weight = toeplitz_multiple_channels(
+        toeplitz_weight = approximate_toeplitz_multiple_channels(
             weight, input_size_with_channel[1:], stride=stride, padding=padding
         )
 

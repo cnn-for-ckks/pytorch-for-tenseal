@@ -1,7 +1,7 @@
 from typing import Tuple
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
-from torchseal.utils import toeplitz_multiple_channels
+from torchseal.utils import approximate_toeplitz_multiple_channels
 
 import typing
 import torch
@@ -25,7 +25,7 @@ class AvgPool2d(torch.nn.Module):
         ).div(
             kernel_n_cols * kernel_n_rows
         )
-        self.toeplitz_avg_kernel = toeplitz_multiple_channels(
+        self.toeplitz_avg_kernel = approximate_toeplitz_multiple_channels(
             self.avg_kernel, input_size_with_channel[1:], stride=stride, padding=padding
         )
 

@@ -2,8 +2,6 @@ from typing import Callable, Tuple
 from torch.autograd.function import NestedIOFunction
 from torchseal.wrapper import CKKSWrapper
 
-import torch
-
 
 class CKKSFunctionWrapper(NestedIOFunction):
     enc_x: CKKSWrapper

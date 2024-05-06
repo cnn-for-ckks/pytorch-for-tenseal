@@ -1,17 +1,11 @@
-from typing import Sequence, Tuple, Union
+from typing import Tuple
+from torchseal.utils import generate_near_zeros
 
 import torch
 
 
-# This function generate a near-zero tensor with the given shape and scale
-# Useful for initializing toeplitz matrices
-def near_zeros(shape: Union[int, Sequence[int]], scale: float = 1e-3) -> torch.Tensor:
-    # Randomized with range [0, scale)
-    return torch.rand(shape) * scale
-
-
 # Source: https://stackoverflow.com/questions/68896578/pytorchs-torch-as-strided-with-negative-strides-for-making-a-toeplitz-matrix/68899386#68899386
-def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+def approximate_toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
     vals = torch.cat((r, c[1:].flip(0)))
     shape = len(c), len(r)
     i, j = torch.ones(*shape).nonzero().T
@@ -20,7 +14,7 @@ def toeplitz(c: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
+def approximate_toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     kernel_height, kernel_width = kernel.shape
     input_height, input_width = input_size
 
@@ -34,17 +28,18 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stri
     # Stack and reshape the matrices to form the final weight matrix
     toeplitz_matrices = torch.stack([
         # Construct 1D convolution toeplitz matrices for each row of the kernel considering stride
-        toeplitz(
+        approximate_toeplitz(
             torch.cat(
                 [
                     kernel[r, 0:1],
-                    near_zeros(
+                    generate_near_zeros(
                         padded_input_height - kernel_height
                     )
                 ]
             ),
             torch.cat(
-                [kernel[r, :], near_zeros(padded_input_width - kernel_width)]
+                [kernel[r, :], generate_near_zeros(
+                    padded_input_width - kernel_width)]
             )
         )[::stride, :][:output_height]
         for r in range(kernel_height)
@@ -55,7 +50,7 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stri
     block_height, block_width = toeplitz_matrices[0].shape
 
     # Initialize the final weight matrix with zeros
-    weight_matrix = near_zeros(
+    weight_matrix = generate_near_zeros(
         (num_blocks_height * block_height, padded_input_width * padded_input_height)
     )
 
@@ -74,7 +69,7 @@ def toeplitz_one_channel(kernel: torch.Tensor, input_size: Tuple[int, int], stri
 
 
 # Source: https://stackoverflow.com/questions/56702873/is-there-an-function-in-pytorch-for-converting-convolutions-to-fully-connected-n
-def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tuple[int, int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
+def approximate_toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tuple[int, int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     kernel_out_channel, _, kernel_height, kernel_width = kernel.shape
     input_in_channel, input_height, input_width = input_size_with_channel
@@ -88,7 +83,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tu
     output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Initialize the output tensor
-    weight_convolutions = near_zeros(
+    weight_convolutions = generate_near_zeros(
         (
             kernel_out_channel,
             output_height * output_width,
@@ -100,7 +95,7 @@ def toeplitz_multiple_channels(kernel: torch.Tensor, input_size_with_channel: Tu
     # Fill the output tensor
     for i, kernel_output in enumerate(kernel):
         for j, kernel_input in enumerate(kernel_output):
-            weight_convolutions[i, :, j, :] = toeplitz_one_channel(
+            weight_convolutions[i, :, j, :] = approximate_toeplitz_one_channel(
                 kernel_input, input_size_with_channel[1:], padding=padding, stride=stride
             )
 

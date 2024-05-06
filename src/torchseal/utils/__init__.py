@@ -1,1 +1,5 @@
-from .toeplitz import toeplitz_multiple_channels
+from .near_zeros import generate_near_zeros
+from .toeplitz import approximate_toeplitz_multiple_channels
+from .transformation import create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
+
+# TODO: Remove precise_toeplitz_multiple_channels
