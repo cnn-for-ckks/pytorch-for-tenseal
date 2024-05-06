@@ -37,7 +37,7 @@ def test_avgpool2d():
     kernel_height = 4
     kernel_width = 4
     stride = 4
-    padding = 0
+    padding = 1
 
     # Declare input dimensions
     batch_size = 1
@@ -55,7 +55,9 @@ def test_avgpool2d():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        context, torch.nn.functional.pad(
+            input_tensor, (padding, padding, padding, padding)
+        ).view(batch_size, -1)
     )
 
     # Create the plaintext average pooling layer
@@ -67,10 +69,8 @@ def test_avgpool2d():
 
     # Create the encrypted average pooling layer
     enc_avgpool2d = EncryptedAvgPool2d(
-        n_channel=n_channels,
-        input_size_with_channel=(
-            batch_size, n_channels, input_height, input_width
-        ),
+        n_channels=n_channels,
+        input_size=(input_height, input_width),
         kernel_size=(kernel_height, kernel_width),
         stride=stride,
         padding=padding

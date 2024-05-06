@@ -1,4 +1,5 @@
 from torchseal.nn import Conv2d as EncryptedConv2d
+from torchseal.utils import approximate_toeplitz_multiple_channels
 from torch.nn import Conv2d as PlainConv2d
 
 import torch
@@ -38,7 +39,7 @@ def test_conv2d():
     kernel_height = 7
     kernel_width = 7
     stride = 3
-    padding = 0
+    padding = 1
 
     # Declare input dimensions
     batch_size = 1
@@ -66,7 +67,9 @@ def test_conv2d():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        context, torch.nn.functional.pad(
+            input_tensor, (padding, padding, padding, padding)
+        ).view(batch_size, -1)
     )
 
     # Create the plaintext convolution layer
@@ -82,17 +85,24 @@ def test_conv2d():
     conv2d.bias = torch.nn.Parameter(bias)  # Set the bias
 
     # Create the encrypted convolution layer
+    enc_weight = approximate_toeplitz_multiple_channels(
+        kernel,
+        (in_channels, input_height, input_width),
+        stride=stride,
+        padding=padding
+    )
+    enc_bias = torch.repeat_interleave(
+        bias, output_height * output_width
+    )
     enc_conv2d = EncryptedConv2d(
         in_channels=in_channels,
         out_channels=out_channels,
         kernel_size=(kernel_height, kernel_width),
-        input_size_with_channel=(
-            batch_size, in_channels, input_height, input_width
-        ),
+        input_size=(input_height, input_width),
         stride=stride,
         padding=padding,
-        weight=kernel,
-        bias=bias,
+        weight=enc_weight,
+        bias=enc_bias,
     )
 
     # Calculate the output
@@ -104,6 +114,9 @@ def test_conv2d():
     dec_output_resized = dec_output.view(
         batch_size, out_channels, output_height, output_width
     )
+
+    print("output:", output)
+    print("dec_output_resized:", dec_output_resized)
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(

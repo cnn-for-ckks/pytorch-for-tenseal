@@ -1,38 +1,73 @@
 from typing import Tuple, Optional
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import Conv2dFunction
+from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
 
 import typing
 import torch
 
 
 class Conv2d(torch.nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size_with_channel: Tuple[int, int, int, int], stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], batch_size: int = 1, stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
-        # Save the parameters
-        self.input_size_with_channel = input_size_with_channel
-        self.stride = stride
-        self.padding = padding
-
         # Unpack the kernel size
-        kernel_n_rows, kernel_n_cols = kernel_size
+        kernel_height, kernel_width = kernel_size
+
+        # Unpack the input size
+        input_height, input_width = input_size
+
+        # Adjust for padding
+        padded_input_height = input_height + 2 * padding
+        padded_input_width = input_width + 2 * padding
+
+        # Count the output dimensions
+        output_height = (padded_input_height - kernel_height) // stride + 1
+        output_width = (padded_input_width - kernel_width) // stride + 1
 
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
-            torch.rand(
-                out_channels, in_channels, kernel_n_rows, kernel_n_cols
+            approximate_toeplitz_multiple_channels(
+                torch.randn(
+                    out_channels, in_channels, kernel_height, kernel_width
+                ),
+                (in_channels, input_height, input_width),
+                stride=stride,
+                padding=padding
             ) if weight is None else weight
         )
+
         self.bias = torch.nn.Parameter(
-            torch.rand(out_channels) if bias is None else bias
+            torch.repeat_interleave(
+                torch.randn(out_channels),
+                output_height * output_width
+            ) if bias is None else bias
+        )
+
+        # Create the binary masking for training
+        self.conv2d_input_mask = create_conv2d_input_mask(
+            (in_channels, input_height, input_width),
+            batch_size=batch_size,
+            padding=padding
+        )
+
+        self.conv2d_weight_mask = create_conv2d_weight_mask(
+            (in_channels, input_height, input_width),
+            (out_channels, in_channels, kernel_height, kernel_width),
+            stride=stride,
+            padding=padding
+        )
+
+        self.conv2d_bias_transformation = create_conv2d_bias_transformation(
+            repeat=output_height * output_width,
+            length=out_channels * output_height * output_width
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         out_x = typing.cast(
             CKKSWrapper,
             Conv2dFunction.apply(
-                enc_x, self.weight, self.bias, self.input_size_with_channel, self.stride, self.padding
+                enc_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation
             )
         )
 

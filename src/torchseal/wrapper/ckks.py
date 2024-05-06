@@ -122,7 +122,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+    def do_element_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the multiplication function to the encrypted input
         new_ckks_tensor: CKKSTensor = self.ckks_data.mul(other.ckks_data)
 

@@ -1,2 +1,2 @@
 from .ckks import CKKSWrapper
-from .function import CKKSFunctionWrapper, CKKSActivationFunctionWrapper, CKKSSoftmaxFunctionWrapper, CKKSConvFunctionWrapper
+from .function import CKKSFunctionWrapper, CKKSPoolingFunctionWrapper, CKKSActivationFunctionWrapper, CKKSSoftmaxFunctionWrapper

@@ -22,7 +22,7 @@ class SoftmaxFunction(torch.autograd.Function):
         )
 
         # Apply the division function to the encrypted input
-        out_x = act_x_copy.do_multiplication(inverse_sum_x)
+        out_x = act_x_copy.do_element_multiplication(inverse_sum_x)
 
         # Save the ctx for the backward method
         ctx.out_x = out_x.clone()

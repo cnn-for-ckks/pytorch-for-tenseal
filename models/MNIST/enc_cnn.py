@@ -23,7 +23,7 @@ class EncConvNet(torch.nn.Module):
             in_channels=torch_nn.conv1.in_channels,
             out_channels=torch_nn.conv1.out_channels,
             kernel_size=(7, 7),
-            input_size_with_channel=(2, 1, 28, 28),
+            input_size=(28, 28),
             stride=3,
             padding=0,
 
@@ -33,8 +33,8 @@ class EncConvNet(torch.nn.Module):
         )
 
         self.avg_pool = AvgPool2d(
-            n_channel=torch_nn.conv1.out_channels,
-            input_size_with_channel=(2, 1, 8, 8),
+            n_channels=torch_nn.conv1.out_channels,
+            input_size=(8, 8),
             kernel_size=(2, 2),
             stride=2,
             padding=0
