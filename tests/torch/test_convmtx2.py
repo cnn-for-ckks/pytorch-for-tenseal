@@ -10,21 +10,20 @@ import random
 
 
 class ToeplitzConv2dFunctionWrapper(NestedIOFunction):
-    stride: int
-    padding: int
-    input_size_with_channel: Tuple[int, int, int]
-    kernel_size_with_channel: Tuple[int, int, int, int]
+    pass
 
 
 class ToeplitzConv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, stride: int, padding: int, input_size_with_channel: Tuple[int, int, int], kernel_size_with_channel: Tuple[int, int, int, int]) -> torch.Tensor:
+    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> torch.Tensor:
         # Save the context for the backward method
-        ctx.save_for_backward(padded_x, weight)
-        ctx.stride = stride
-        ctx.padding = padding
-        ctx.input_size_with_channel = input_size_with_channel
-        ctx.kernel_size_with_channel = kernel_size_with_channel
+        ctx.save_for_backward(
+            padded_x,
+            weight,
+            conv2d_input_mask,
+            conv2d_weight_mask,
+            conv2d_bias_transformation
+        )
 
         # Apply the linear transformation to the input
         out_x = padded_x.matmul(weight.t()).add(bias)
@@ -32,38 +31,19 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         return out_x
 
     @staticmethod
-    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors
-        padded_x, weight = typing.cast(
-            Tuple[torch.Tensor, torch.Tensor],
+        padded_x, weight, conv2d_input_mask, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
+            Tuple[
+                torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            ],
             ctx.saved_tensors
         )
-
-        # Get the saved context
-        stride = ctx.stride
-        padding = ctx.padding
-        input_size_with_channel = ctx.input_size_with_channel
-        kernel_size_with_channel = ctx.kernel_size_with_channel
-
-        # Unpack the padded input size
-        batch_size, _ = padded_x.shape
-
-        # Get the shapes
-        out_channels, _, kernel_height, kernel_width = kernel_size_with_channel
-        _, input_height, input_width = input_size_with_channel
-
-        # Add padding to the input size
-        padded_input_height = input_height + 2 * padding
-        padded_input_width = input_width + 2 * padding
-
-        # Count the output dimensions
-        output_height = (padded_input_height - kernel_height) // stride + 1
-        output_width = (padded_input_width - kernel_width) // stride + 1
 
         # Get the needs_input_grad
         result = typing.cast(
             Tuple[
-                bool, bool, bool, bool, bool, bool, bool
+                bool, bool, bool, bool, bool, bool
             ],
             ctx.needs_input_grad
         )
@@ -73,20 +53,10 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
         # Compute the gradients
         if result[0]:
-            # Create binary mask to remove padding
-            binary_mask = create_conv2d_input_mask(
-                input_size_with_channel, padding=padding, batch_size=batch_size
-            )
-
             # Calculate the gradients for the input tensor (this will be encrypted)
-            grad_input = grad_output.matmul(weight).mul(binary_mask)
+            grad_input = grad_output.matmul(weight).mul(conv2d_input_mask)
 
         if result[1]:
-            # Create the binary tensor
-            binary_tensor = create_conv2d_weight_mask(
-                input_size_with_channel, kernel_size_with_channel, stride=stride, padding=padding
-            )
-
             # Create the fully connected gradient weight tensor (this will be encrypted)
             unfiltered_grad_weight = grad_output.t().matmul(padded_x)
 
@@ -94,7 +64,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             grad_weight = torch.zeros_like(weight)
 
             # Apply the binary tensor to the gradient weight (this will be encrypted)
-            for binary_mask in binary_tensor:
+            for binary_mask in conv2d_weight_mask:
                 # Apply the binary mask to the gradient weight (this will be encrypted)
                 filtered_grad_weight = unfiltered_grad_weight.mul(binary_mask)
 
@@ -108,23 +78,14 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
                 grad_weight += current_gradient_weight
 
         if result[2]:
-            # Define the parameter
-            repeat = output_height * output_width
-            length = out_channels * output_height * output_width
-
-            # Create the transformation matrix
-            binary_transformation = create_conv2d_bias_transformation(
-                repeat, length
-            )
-
             # Apply the binary transformation to the gradient output (this will be encrypted)
-            grad_bias = binary_transformation.matmul(grad_output.sum(0))
+            grad_bias = conv2d_bias_transformation.matmul(grad_output.sum(0))
 
-        return grad_input, grad_weight, grad_bias, None, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None
 
 
 class ToeplitzConv2d(torch.nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], batch_size: int = 1, stride: int = 1, padding: int = 0) -> None:
         super().__init__()
 
         # Unpack the kernel size
@@ -141,21 +102,13 @@ class ToeplitzConv2d(torch.nn.Module):
         output_height = (padded_input_height - kernel_height) // stride + 1
         output_width = (padded_input_width - kernel_width) // stride + 1
 
-        # Save the parameters
-        self.stride = stride
-        self.padding = padding
-        self.input_size_with_channel = (in_channels, input_height, input_width)
-        self.kernel_size_with_channel = (
-            out_channels, in_channels, kernel_height, kernel_width
-        )
-
         # Create the weight and bias
         self.weight = torch.nn.Parameter(
             approximate_toeplitz_multiple_channels(
                 torch.randn(
                     out_channels, in_channels, kernel_height, kernel_width
                 ),
-                self.input_size_with_channel,
+                (in_channels, input_height, input_width),
                 stride=stride,
                 padding=padding
             )
@@ -168,11 +121,30 @@ class ToeplitzConv2d(torch.nn.Module):
             )
         )
 
+        # Create the binary masking for training
+        self.conv2d_input_mask = create_conv2d_input_mask(
+            (in_channels, input_height, input_width),
+            batch_size=batch_size,
+            padding=padding
+        )
+
+        self.conv2d_weight_mask = create_conv2d_weight_mask(
+            (in_channels, input_height, input_width),
+            (out_channels, in_channels, kernel_height, kernel_width),
+            stride=stride,
+            padding=padding
+        )
+
+        self.conv2d_bias_transformation = create_conv2d_bias_transformation(
+            repeat=output_height * output_width,
+            length=out_channels * output_height * output_width
+        )
+
     def forward(self, padded_x: torch.Tensor) -> torch.Tensor:
         out_x = typing.cast(
             torch.Tensor,
             ToeplitzConv2dFunction.apply(
-                padded_x, self.weight, self.bias, self.stride, self.padding, self.input_size_with_channel, self.kernel_size_with_channel
+                padded_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation
             )
         )
 
@@ -186,17 +158,17 @@ def test_convmtx2():
     random.seed(73)
 
     # Declare parameters
-    out_channels = 3
-    in_channels = 2
-    kernel_height = 3
-    kernel_width = 3
-    stride = 1
-    padding = 1
+    out_channels = 2
+    in_channels = 1
+    kernel_height = 7
+    kernel_width = 7
+    stride = 3
+    padding = 0
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 5
-    input_width = 5
+    input_height = 28
+    input_width = 28
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 
-def create_conv2d_input_mask(input_size_with_channel: Tuple[int, int, int], padding: int = 0, batch_size: int = 1) -> torch.Tensor:
+def create_conv2d_input_mask(input_size_with_channel: Tuple[int, int, int], batch_size: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     in_channels, input_height, input_width = input_size_with_channel
 
@@ -15,7 +15,7 @@ def create_conv2d_input_mask(input_size_with_channel: Tuple[int, int, int], padd
             in_channels, input_height, input_width
         ),
         (padding, padding, padding, padding),
-        value=0  # NOTE: Possibility of parameter mismatch when setting value=0
+        value=0  # TODO: Possibility of parameter mismatch when setting value=0
     ).view(-1).unsqueeze(0).repeat(batch_size, 1)
 
     return binary_mask
