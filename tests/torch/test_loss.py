@@ -98,12 +98,12 @@ def test_cross_entropy():
     ).scatter(1, target.unsqueeze(1), 1)
 
     # Instantiate the custom function
-    loss_layer = torch.nn.CrossEntropyLoss()
-    custom_loss_layer = CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss()
+    custom_criterion = CrossEntropyLoss()
 
     # Compute the loss and gradients
-    loss = loss_layer.forward(input, target)
-    custom_loss = custom_loss_layer.forward(custom_input, sparse_target)
+    loss = criterion.forward(input, target)
+    custom_loss = custom_criterion.forward(custom_input, sparse_target)
 
     # Check the correctness of the results (with a tolerance of 1e-3)
     assert torch.allclose(
