@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable
 from torch.autograd.function import NestedIOFunction
 from torchseal.wrapper import CKKSWrapper
 

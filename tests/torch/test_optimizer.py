@@ -104,3 +104,11 @@ def test_optimizer():
         atol=1e-3,
         rtol=0
     ), "Weights are not equal"
+
+    # Compare the biases
+    assert torch.allclose(
+        custom_model.bias,
+        model.bias,
+        atol=1e-3,
+        rtol=0
+    ), "Biases are not equal"
