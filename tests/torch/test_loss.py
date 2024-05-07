@@ -17,21 +17,18 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         # Apply softmax to the input to get probabilities (will be approximated for encrypted data)
         output = torch.nn.functional.softmax(input, dim=1)
 
+        # Save input and target for backward pass
+        ctx.save_for_backward(output, sparse_target)
+
+        # Get the number of classes
+        batch_size, _ = input.shape
+
         # Apply log softmax to the output (will be approximated for encrypted data)
         log_output = torch.log(output)
 
-        # Get the number of classes
-        _, num_classes = input.shape
-
-        # Get the target (will be approximated for encrypted data)
-        target = sparse_target.matmul(torch.arange(num_classes))
-
-        # Calculate the loss (negative log likelihood) (will be approximated for encrypted data)
-        # TODO: Model this so that it can be used on encrypted data
-        loss = torch.nn.functional.nll_loss(log_output, target)
-
-        # Save input and target for backward pass
-        ctx.save_for_backward(output, sparse_target)
+        # Calculate the negative log likelihood loss (will be approximated for encrypted data)
+        log_probs = log_output.mul(sparse_target).sum(dim=1)
+        loss = log_probs.sum(dim=0).mul(-1 / batch_size)
 
         return loss
 
@@ -62,7 +59,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
 
         if result[0]:
             # Multiply by the grad_output (will be approximated for encrypted data)
-            grad_input = grad_output.mul(output_subtracted).div(batch_size)
+            grad_input = grad_output.mul(output_subtracted).mul(1 / batch_size)
 
         return grad_input, None
 
