@@ -13,41 +13,41 @@ class CrossEntropyLossFunctionWrapper(NestedIOFunction):
 
 class CrossEntropyLossFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CrossEntropyLossFunctionWrapper, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(ctx: CrossEntropyLossFunctionWrapper, input: torch.Tensor, sparse_target: torch.Tensor) -> torch.Tensor:
         # Apply softmax to the input to get probabilities (will be approximated for encrypted data)
         output = torch.nn.functional.softmax(input, dim=1)
 
         # Apply log softmax to the output (will be approximated for encrypted data)
         log_output = torch.log(output)
 
-        # Calculate the loss (negative log likelihood)
+        # Get the number of classes
+        _, num_classes = input.shape
+
+        # Get the target (will be approximated for encrypted data)
+        target = sparse_target.matmul(torch.arange(num_classes))
+
+        # Calculate the loss (negative log likelihood) (will be approximated for encrypted data)
         # TODO: Model this so that it can be used on encrypted data
         loss = torch.nn.functional.nll_loss(log_output, target)
 
         # Save input and target for backward pass
-        ctx.save_for_backward(output, target)
+        ctx.save_for_backward(output, sparse_target)
 
         return loss
 
     @staticmethod
     def backward(ctx: CrossEntropyLossFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None]:
         # Retrieve saved tensors
-        output, target = typing.cast(
+        output, sparse_target = typing.cast(
             Tuple[torch.Tensor, torch.Tensor],
             ctx.saved_tensors
         )
 
         # Unpack the target shape
-        batch_size, = target.shape
+        batch_size, _ = sparse_target.shape
 
-        # Create the subtraction mask
-        # TODO: Model this so that it can be used on encrypted data
-        subtraction_mask = torch.zeros_like(
-            output
-        ).scatter(1, target.unsqueeze(1), -1)
-
-        # Add the subtraction mask to the output
-        output_subtracted = output.add(subtraction_mask)
+        # Add the subtraction mask to the output (will be approximated for encrypted data)
+        output_subtracted = output.subtract(sparse_target)
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -61,7 +61,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         grad_input = None
 
         if result[0]:
-            # Multiply by the grad_output
+            # Multiply by the grad_output (will be approximated for encrypted data)
             grad_input = grad_output.mul(output_subtracted).div(batch_size)
 
         return grad_input, None
@@ -95,13 +95,18 @@ def test_cross_entropy():
         size=(batch_size, ),
     )
 
+    # Create the sparse target tensor (one-hot encoding then encrypt the target)
+    sparse_target = torch.zeros(
+        batch_size, num_classes, dtype=torch.long
+    ).scatter(1, target.unsqueeze(1), 1)
+
     # Instantiate the custom function
     loss_layer = torch.nn.CrossEntropyLoss()
     custom_loss_layer = CrossEntropyLoss()
 
     # Compute the loss and gradients
     loss = loss_layer.forward(input, target)
-    custom_loss = custom_loss_layer.forward(custom_input, target)
+    custom_loss = custom_loss_layer.forward(custom_input, sparse_target)
 
     # Check the correctness of the results (with a tolerance of 1e-3)
     assert torch.allclose(
