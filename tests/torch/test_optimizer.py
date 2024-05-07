@@ -13,15 +13,15 @@ class SGD(torch.optim.Optimizer):
     def step(self) -> None:
         for group in self.param_groups:
             for param in group["params"]:
-                # Get the parameter
-                lr = typing.cast(float, group["lr"])
-
                 # Cast the parameter to a tensor
                 param_tensor = typing.cast(torch.Tensor, param)
 
                 # If the parameter does not require gradients, skip it
                 if param_tensor.grad is None:
                     continue
+
+                # Get the parameter
+                lr = typing.cast(float, group["lr"])
 
                 # Update the parameter
                 param_tensor.data = param_tensor.data.subtract(
@@ -45,6 +45,7 @@ def test_optimizer():
     # Create the weight and bias tensors
     weight = torch.randn(out_features, in_features, requires_grad=True)
     bias = torch.randn(out_features, requires_grad=True)
+
     custom_weight = weight.clone().detach().requires_grad_(True)
     custom_bias = bias.clone().detach().requires_grad_(True)
 
@@ -69,16 +70,12 @@ def test_optimizer():
     custom_criterion = torch.nn.MSELoss()
 
     # Create the optimizer
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
-    custom_optimizer = SGD(custom_model.parameters(), lr=1e-3)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    custom_optimizer = SGD(custom_model.parameters(), lr=0.1)
 
     # Set the training mode
     model.train()
     custom_model.train()
-
-    # Set the gradients to zero
-    optimizer.zero_grad()
-    custom_optimizer.zero_grad()
 
     # Forward pass
     output = model.forward(input)
@@ -87,6 +84,10 @@ def test_optimizer():
     # Calculate the loss
     loss = criterion.forward(output, target)
     custom_loss = custom_criterion.forward(custom_output, target)
+
+    # Set the gradients to none
+    optimizer.zero_grad()
+    custom_optimizer.zero_grad()
 
     # Backward pass
     loss.backward()
