@@ -1,5 +1,5 @@
 from typing import Optional, Tuple
-from torchseal.wrapper import CKKSWrapper, CKKSFunctionWrapper
+from torchseal.wrapper import CKKSWrapper, CKKSLinearFunctionWrapper
 
 import typing
 import torch
@@ -7,24 +7,24 @@ import torch
 
 class LinearFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight)
-        ctx.enc_x = enc_x.clone()
+        ctx.enc_input = enc_input.clone()
 
         # Apply the linear transformation to the encrypted input
-        out_x = enc_x.do_linear(weight, bias)
+        enc_output = enc_input.do_linear(weight, bias)
 
-        return out_x
+        return enc_output
 
     @staticmethod
-    def backward(ctx: CKKSFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
         # Get the saved tensors
         saved_tensors = typing.cast(
             Tuple[torch.Tensor],
             ctx.saved_tensors
         )
-        x = ctx.enc_x.do_decryption()
+        input = ctx.enc_input.do_decryption()
 
         # Unpack the saved tensors
         weight, = saved_tensors
@@ -39,7 +39,7 @@ class LinearFunction(torch.autograd.Function):
         if result[0]:
             grad_input = grad_output.matmul(weight)
         if result[1]:
-            grad_weight = grad_output.t().matmul(x)
+            grad_weight = grad_output.t().matmul(input)
         if result[2]:
             grad_bias = grad_output.sum(0)
 

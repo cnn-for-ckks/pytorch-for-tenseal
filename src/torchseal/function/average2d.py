@@ -7,14 +7,14 @@ import torch
 
 class AvgPool2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSPoolingFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, conv2d_input_mask: torch.Tensor) -> CKKSWrapper:
+    def forward(ctx: CKKSPoolingFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, conv2d_input_mask: torch.Tensor) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(weight, conv2d_input_mask)
 
         # Apply the convolution to the encrypted input
-        out_x = enc_x.do_linear(weight)
+        enc_output = enc_input.do_linear(weight)
 
-        return out_x
+        return enc_output
 
     @staticmethod
     def backward(ctx: CKKSPoolingFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:

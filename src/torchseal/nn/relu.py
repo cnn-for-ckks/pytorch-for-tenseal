@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 
+# NOTE: ReLU is a non-linear activation function that is used in neural networks, so it's hard to model on the CKKS scheme.
 class ReLU(torch.nn.Module):
     def __init__(self, start: float, stop: float, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
         super(ReLU, self).__init__()
@@ -30,11 +31,11 @@ class ReLU(torch.nn.Module):
         ] = approx_poly.deriv()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             ReLUFunction.apply(
                 enc_x, self.coeffs, self.approx_poly_derivative
             )
         )
 
-        return out_x
+        return enc_output

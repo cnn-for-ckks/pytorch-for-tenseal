@@ -18,11 +18,11 @@ class Linear(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             LinearFunction.apply(
                 enc_x, self.weight, self.bias
             )
         )
 
-        return out_x
+        return enc_output

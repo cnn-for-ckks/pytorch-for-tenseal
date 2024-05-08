@@ -26,9 +26,9 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         )
 
         # Apply the linear transformation to the input
-        out_x = padded_x.matmul(weight.t()).add(bias)
+        enc_output = padded_x.matmul(weight.t()).add(bias)
 
-        return out_x
+        return enc_output
 
     @staticmethod
     def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
@@ -141,14 +141,14 @@ class ToeplitzConv2d(torch.nn.Module):
         )
 
     def forward(self, padded_x: torch.Tensor) -> torch.Tensor:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             torch.Tensor,
             ToeplitzConv2dFunction.apply(
                 padded_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation
             )
         )
 
-        return out_x
+        return enc_output
 
 
 def test_convmtx2():

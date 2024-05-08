@@ -64,11 +64,11 @@ class Conv2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             Conv2dFunction.apply(
                 enc_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation
             )
         )
 
-        return out_x
+        return enc_output

@@ -10,11 +10,11 @@ class Square(torch.nn.Module):
         super(Square, self).__init__()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             SquareFunction.apply(
                 enc_x
             )
         )
 
-        return out_x
+        return enc_output

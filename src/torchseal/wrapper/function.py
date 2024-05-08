@@ -3,18 +3,23 @@ from torch.autograd.function import NestedIOFunction
 from torchseal.wrapper import CKKSWrapper
 
 
-class CKKSFunctionWrapper(NestedIOFunction):
-    enc_x: CKKSWrapper
+class CKKSLinearFunctionWrapper(NestedIOFunction):
+    enc_input: CKKSWrapper
 
 
 class CKKSPoolingFunctionWrapper(NestedIOFunction):
     pass
 
 
+class CKKSLossFunctionWrapper(NestedIOFunction):
+    enc_output: CKKSWrapper
+    enc_target: CKKSWrapper
+
+
 class CKKSActivationFunctionWrapper(NestedIOFunction):
-    enc_x: CKKSWrapper
+    enc_input: CKKSWrapper
     polyval_derivative: Callable[[float], float]
 
 
 class CKKSSoftmaxFunctionWrapper(NestedIOFunction):
-    out_x: CKKSWrapper
+    enc_output: CKKSWrapper

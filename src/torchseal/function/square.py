@@ -7,24 +7,26 @@ import torch
 
 class SquareFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_x: CKKSWrapper) -> CKKSWrapper:
+    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
-        ctx.enc_x = enc_x.clone()
+        ctx.enc_input = enc_input.clone()
         ctx.polyval_derivative = lambda x: 2 * x
 
         # Apply square function to the encrypted input
-        out_x = enc_x.do_square()
+        enc_output = enc_input.do_square()
 
-        return out_x
+        return enc_output
 
     @staticmethod
     def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
         # Get the saved tensors
-        x = ctx.enc_x.do_decryption()
+        input = ctx.enc_input.do_decryption()
         polyval_derivative = ctx.polyval_derivative
 
         # Do the backward operation
-        out = x.do_activation_function_backward(polyval_derivative)
+        backward_output = input.do_activation_function_backward(
+            polyval_derivative
+        )
 
         # Get the needs_input_grad
         result = typing.cast(Tuple[bool], ctx.needs_input_grad)
@@ -34,6 +36,6 @@ class SquareFunction(torch.autograd.Function):
 
         if result[0]:
             # Compute the gradients
-            grad_input = grad_output.mul(out)
+            grad_input = grad_output.mul(backward_output)
 
         return grad_input,

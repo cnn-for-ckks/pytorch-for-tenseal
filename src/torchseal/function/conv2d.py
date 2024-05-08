@@ -1,5 +1,5 @@
 from typing import Tuple, Optional
-from torchseal.wrapper import CKKSWrapper, CKKSFunctionWrapper
+from torchseal.wrapper import CKKSWrapper, CKKSLinearFunctionWrapper
 
 import typing
 import torch
@@ -7,7 +7,7 @@ import torch
 
 class Conv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSFunctionWrapper, enc_x: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(
             weight,
@@ -15,15 +15,15 @@ class Conv2dFunction(torch.autograd.Function):
             conv2d_weight_mask,
             conv2d_bias_transformation
         )
-        ctx.enc_x = enc_x.clone()
+        ctx.enc_input = enc_input.clone()
 
         # Apply the convolution to the encrypted input
-        out_x = enc_x.do_linear(weight, bias)
+        enc_output = enc_input.do_linear(weight, bias)
 
-        return out_x
+        return enc_output
 
     @staticmethod
-    def backward(ctx: CKKSFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
+    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors
         weight, conv2d_input_mask, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
             Tuple[
@@ -31,7 +31,7 @@ class Conv2dFunction(torch.autograd.Function):
             ],
             ctx.saved_tensors
         )
-        x = ctx.enc_x.do_decryption()
+        input = ctx.enc_input.do_decryption()
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -48,7 +48,7 @@ class Conv2dFunction(torch.autograd.Function):
 
         if result[1]:
             # Create the fully connected gradient weight tensor (this will be encrypted)
-            unfiltered_grad_weight = grad_output.t().matmul(x)
+            unfiltered_grad_weight = grad_output.t().matmul(input)
 
             # Initialize the gradient weight tensor (this will be encrypted, probably going to need context with public keys)
             grad_weight = torch.zeros_like(weight)

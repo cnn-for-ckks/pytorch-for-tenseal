@@ -30,11 +30,11 @@ class Sigmoid(torch.nn.Module):
         ] = approx_poly.deriv()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             SigmoidFunction.apply(
                 enc_x, self.coeffs, self.approx_poly_derivative
             )
         )
 
-        return out_x
+        return enc_output

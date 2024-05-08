@@ -66,9 +66,9 @@ class EncConvNet(torch.nn.Module):
             bias=torch_nn.fc2.bias.data,
         )
 
-    def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
+    def forward(self, enc_input: CKKSWrapper) -> CKKSWrapper:
         # Convolutional layer
-        first_result = self.conv1.forward(enc_x)
+        first_result = self.conv1.forward(enc_input)
 
         # Average pooling layer
         first_result_averaged = self.avg_pool.forward(first_result)

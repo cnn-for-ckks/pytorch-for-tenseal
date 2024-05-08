@@ -8,9 +8,9 @@ import torch
 
 class SoftmaxFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSSoftmaxFunctionWrapper, enc_x: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, iterations: int) -> CKKSWrapper:
+    def forward(ctx: CKKSSoftmaxFunctionWrapper, enc_input: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, iterations: int) -> CKKSWrapper:
         # Apply the exp function to the encrypted input
-        act_x = enc_x.do_activation_function(exp_coeffs)
+        act_x = enc_input.do_activation_function(exp_coeffs)
         act_x_copy = act_x.clone()
 
         # Apply the sum function to the encrypted input
@@ -22,17 +22,17 @@ class SoftmaxFunction(torch.autograd.Function):
         )
 
         # Apply the division function to the encrypted input
-        out_x = act_x_copy.do_element_multiplication(inverse_sum_x)
+        enc_output = act_x_copy.do_element_multiplication(inverse_sum_x)
 
         # Save the ctx for the backward method
-        ctx.out_x = out_x.clone()
+        ctx.enc_output = enc_output.clone()
 
-        return out_x
+        return enc_output
 
     @staticmethod
     def backward(ctx: CKKSSoftmaxFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors
-        out_x = ctx.out_x.do_decryption()
+        enc_output = ctx.enc_output.do_decryption()
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -45,7 +45,7 @@ class SoftmaxFunction(torch.autograd.Function):
 
         if result[0]:
             # Compute the gradients
-            grad_input = out_x * \
-                (grad_output - (grad_output * out_x).sum(dim=1, keepdim=True))
+            grad_input = enc_output * \
+                (grad_output - (grad_output * enc_output).sum(dim=1, keepdim=True))
 
         return grad_input, None, None, None

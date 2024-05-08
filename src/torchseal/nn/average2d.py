@@ -37,11 +37,11 @@ class AvgPool2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             AvgPool2dFunction.apply(
                 enc_x, self.weight, self.conv2d_input_mask
             )
         )
 
-        return out_x
+        return enc_output

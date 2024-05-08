@@ -55,11 +55,11 @@ class Softmax(torch.nn.Module):
         self.iterations = inverse_iterations
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        out_x = typing.cast(
+        enc_output = typing.cast(
             CKKSWrapper,
             SoftmaxFunction.apply(
                 enc_x, self.exp_coeffs, self.inverse_coeffs, self.iterations
             )
         )
 
-        return out_x
+        return enc_output
