@@ -122,28 +122,66 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_element_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
-        # Apply the multiplication function to the encrypted input
-        new_ckks_tensor: CKKSTensor = self.ckks_data.mul(other.ckks_data)
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        # Change the shape of the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
-
-        # Update the data
-        self.data = tensor.data
-
-        return self
-
-    # CKKS Operation
     def do_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
         new_ckks_tensor = typing.cast(
             CKKSTensor,
             self.ckks_data.square()
         )
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
+    def do_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
+        # Apply the exp function to the encrypted input
+        act_x = typing.cast(
+            CKKSTensor,
+            self.ckks_data.polyval(
+                exp_coeffs.tolist()
+            )
+        )
+
+        # Copy the encrypted activation
+        act_x_copy = typing.cast(
+            CKKSTensor,
+            act_x.copy()
+        )
+
+        # Apply the sum function to the encrypted input
+        sum_x = typing.cast(
+            CKKSTensor,
+            act_x.sum(axis=1)
+        )
+
+        # Apply the multiplicative inverse function to the encrypted input
+        inverse_sum_x = typing.cast(
+            CKKSTensor,
+            sum_x.polyval(
+                inverse_coeffs.tolist()
+            )
+        )
+
+        # Newton-Raphson iteration to refine the inverse
+        for _ in range(inverse_iterations):
+            prod = sum_x.mul(inverse_sum_x)  # d * x_n
+
+            correction = typing.cast(
+                CKKSTensor, prod.neg()
+            ).add(
+                torch.ones(
+                    sum_x.shape
+                ).mul(2).tolist()
+            )  # 2 - d * x_n
+
+            inverse_sum_x = inverse_sum_x.mul(
+                correction
+            )  # x_n * (2 - d * x_n)
+
+        # Apply the division function to the encrypted input
+        new_ckks_tensor = act_x_copy.mul(inverse_sum_x)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -159,41 +197,6 @@ class CKKSWrapper(torch.Tensor):
                 polyval_coeffs.tolist()
             )
         )
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        return self
-
-    # CKKS Operation
-    def do_multiplicative_inverse(self, polyval_coeffs: np.ndarray, iterations: int) -> "CKKSWrapper":
-        # Source: https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division
-
-        # Start with an initial guess (encoded as a scalar)
-        # For multiplicative inverse, good initial guess can be crucial - let's assume approx. inverse is known
-        # This should be based on some estimation method
-        new_ckks_tensor = typing.cast(
-            CKKSTensor,
-            self.ckks_data.polyval(
-                polyval_coeffs.tolist()
-            )
-        )
-
-        # Newton-Raphson iteration to refine the inverse
-        for _ in range(iterations):
-            prod = self.ckks_data.mul(new_ckks_tensor)  # d * x_n
-
-            correction = typing.cast(
-                CKKSTensor, prod.neg()
-            ).add(
-                torch.ones(
-                    self.ckks_data.shape
-                ).mul(2).tolist()
-            )  # 2 - d * x_n
-
-            new_ckks_tensor = new_ckks_tensor.mul(
-                correction
-            )  # x_n * (2 - d * x_n)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

@@ -1,2 +1,1 @@
-from typing import Optional, Tuple
-from torchseal.wrapper import CKKSWrapper, CKKSSoftmaxFunctionWrapper
+# TODO: Implement the cross entropy loss layer for encrypted data

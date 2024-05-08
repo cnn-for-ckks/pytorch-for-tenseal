@@ -8,21 +8,11 @@ import torch
 
 class SoftmaxFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSSoftmaxFunctionWrapper, enc_input: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, iterations: int) -> CKKSWrapper:
-        # Apply the exp function to the encrypted input
-        act_x = enc_input.do_activation_function(exp_coeffs)
-        act_x_copy = act_x.clone()
-
-        # Apply the sum function to the encrypted input
-        sum_x = act_x.do_sum(axis=1)
-
-        # Apply the multiplicative inverse function to the encrypted input
-        inverse_sum_x = sum_x.do_multiplicative_inverse(
-            inverse_coeffs, iterations
-        )
-
+    def forward(ctx: CKKSSoftmaxFunctionWrapper, enc_input: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> CKKSWrapper:
         # Apply the division function to the encrypted input
-        enc_output = act_x_copy.do_element_multiplication(inverse_sum_x)
+        enc_output = enc_input.do_softmax(
+            exp_coeffs, inverse_coeffs, inverse_iterations
+        )
 
         # Save the ctx for the backward method
         ctx.enc_output = enc_output.clone()
