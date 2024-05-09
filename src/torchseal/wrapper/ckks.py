@@ -122,6 +122,26 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
+    def do_scalar_multiplication(self, scalar: float) -> "CKKSWrapper":
+        # Apply the scalar multiplication function to the encrypted input
+        new_ckks_tensor = self.ckks_data.mul(scalar)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
+    def do_element_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the multiplication function to the encrypted input
+        new_ckks_tensor = self.ckks_data.mul(other.ckks_data)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
     def do_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
         new_ckks_tensor = typing.cast(
@@ -181,6 +201,7 @@ class CKKSWrapper(torch.Tensor):
             )  # x_n * (2 - d * x_n)
 
         # Apply the division function to the encrypted input
+        # TODO: Support batch size more than one
         new_ckks_tensor = act_x_copy.mul(inverse_sum_x)
 
         # Update the encrypted data

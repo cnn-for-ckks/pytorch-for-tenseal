@@ -20,7 +20,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         # Save input and target for backward pass
         ctx.save_for_backward(output, sparse_target)
 
-        # Get the number of classes
+        # Get the batch size
         batch_size, _ = input.shape
 
         # Apply log softmax to the output (will be approximated for encrypted data)

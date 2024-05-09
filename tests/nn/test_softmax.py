@@ -36,7 +36,7 @@ def test_softmax():
     exp_start = -3
     exp_stop = 3
     exp_num_of_sample = 100
-    exp_degree = 5
+    exp_degree = 4
     exp_approximation_type = "minimax"
 
     inverse_start = 1
@@ -48,7 +48,7 @@ def test_softmax():
 
     # Declare input dimensions
     input_length = 10
-    batch_size = 1
+    batch_size = 1  # TODO: Batch size more than one is not supported yet
 
     # Create the input tensor
     input_tensor = torch.randn(batch_size, input_length)
