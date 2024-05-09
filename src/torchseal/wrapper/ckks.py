@@ -176,6 +176,8 @@ class CKKSWrapper(torch.Tensor):
             act_x.sum(axis=1)
         )
 
+        print("sum_x", sum_x.decrypt().tolist())
+
         # Apply the multiplicative inverse function to the encrypted input
         inverse_sum_x = typing.cast(
             CKKSTensor,
@@ -200,9 +202,20 @@ class CKKSWrapper(torch.Tensor):
                 correction
             )  # x_n * (2 - d * x_n)
 
+        # Reshape the inverse sum
+        reshaped_inverse_sum_x = typing.cast(
+            CKKSTensor,
+            inverse_sum_x.reshape(
+                [inverse_sum_x.shape[0], 1]
+            )
+        )
+
+        # Change the inverse sum to a matrix
+        binary_matrix = torch.ones(1, act_x_copy.shape[1])
+        matrix_inverse_sum = reshaped_inverse_sum_x.mm(binary_matrix.tolist())
+
         # Apply the division function to the encrypted input
-        # TODO: Support batch size more than one
-        new_ckks_tensor = act_x_copy.mul(inverse_sum_x)
+        new_ckks_tensor = act_x_copy.mul(matrix_inverse_sum)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

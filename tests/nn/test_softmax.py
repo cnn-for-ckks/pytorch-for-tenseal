@@ -22,7 +22,7 @@ def test_softmax():
         ts.SCHEME_TYPE.CKKS,
         poly_modulus_degree=16384,
         coeff_mod_bit_sizes=[
-            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
+            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
         ]
     )
 
@@ -40,15 +40,15 @@ def test_softmax():
     exp_approximation_type = "minimax"
 
     inverse_start = 1
-    inverse_stop = 20
+    inverse_stop = 30
     inverse_num_of_sample = 50
     inverse_degree = 3
     inverse_approximation_type = "minimax"
     inverse_iterations = 3
 
     # Declare input dimensions
+    batch_size = 2
     input_length = 10
-    batch_size = 1  # TODO: Batch size more than one is not supported yet
 
     # Create the input tensor
     input_tensor = torch.randn(batch_size, input_length)

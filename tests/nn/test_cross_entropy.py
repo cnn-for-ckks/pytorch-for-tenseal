@@ -42,7 +42,7 @@ def test_cross_entropy():
     exp_approximation_type = "minimax"
 
     inverse_start = 1
-    inverse_stop = 20
+    inverse_stop = 30
     inverse_num_of_sample = 50
     inverse_degree = 3
     inverse_approximation_type = "minimax"
@@ -55,7 +55,7 @@ def test_cross_entropy():
     log_approximation_type = "minimax"
 
     # Declare input dimensions
-    batch_size = 1  # TODO: Batch size more than one is not supported yet
+    batch_size = 2
     num_classes = 5
 
     # Create the input tensors
