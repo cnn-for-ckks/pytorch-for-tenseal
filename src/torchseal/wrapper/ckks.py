@@ -176,8 +176,6 @@ class CKKSWrapper(torch.Tensor):
             act_x.sum(axis=1)
         )
 
-        print("sum_x", sum_x.decrypt().tolist())
-
         # Apply the multiplicative inverse function to the encrypted input
         inverse_sum_x = typing.cast(
             CKKSTensor,
