@@ -41,12 +41,12 @@ def test_cross_entropy():
     exp_degree = 5
     exp_approximation_type = "minimax"
 
-    inverse_start = 1
+    inverse_start = 10
     inverse_stop = 30
-    inverse_num_of_sample = 50
-    inverse_degree = 3
+    inverse_num_of_sample = 100
+    inverse_degree = 2
     inverse_approximation_type = "minimax"
-    inverse_iterations = 2
+    inverse_iterations = 3
 
     log_start = 1e-3
     log_stop = 10
