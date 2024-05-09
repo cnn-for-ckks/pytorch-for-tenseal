@@ -115,9 +115,6 @@ def test_conv2d():
         batch_size, out_channels, output_height, output_width
     )
 
-    print("output:", output)
-    print("dec_output_resized:", dec_output_resized)
-
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         dec_output_resized,

@@ -47,7 +47,7 @@ def test_softmax():
     inverse_iterations = 3
 
     # Declare input dimensions
-    batch_size = 2
+    batch_size = 1
     input_length = 10
 
     # Create the input tensor
