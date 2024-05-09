@@ -2,7 +2,6 @@ from .average2d import AvgPool2dFunction
 from .conv2d import Conv2dFunction
 from .cross_entropy import CrossEntropyLossFunction
 from .linear import LinearFunction
-from .relu import ReLUFunction
 from .sigmoid import SigmoidFunction
 from .softmax import SoftmaxFunction
 from .square import SquareFunction
