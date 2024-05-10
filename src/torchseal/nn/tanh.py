@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Union
+from typing import Literal, Union
 from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.function import TanhFunction
 from torchseal.wrapper import CKKSWrapper
@@ -17,23 +17,18 @@ class Tanh(torch.nn.Module):
         y = (lambda x: np.tanh(x))(x)
 
         # Perform the polynomial approximation
-        self.coeffs: np.ndarray = Polynomial.fit(
+        self.coeffs = Polynomial.fit(
             x, y, degree
         ).convert(kind=Polynomial).coef if approximation_type == "least-squares" else Chebyshev.fit(x, y, degree).convert(kind=Polynomial).coef
 
-        # Construct the polynomial approximation
-        approx_poly = Polynomial(self.coeffs)
-
         # Differentiate the polynomial approximation
-        self.approx_poly_derivative: Callable[
-            [float], float
-        ] = approx_poly.deriv()
+        self.deriv_coeffs = Polynomial(self.coeffs).deriv().coef
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         enc_output = typing.cast(
             CKKSWrapper,
             TanhFunction.apply(
-                enc_x, self.coeffs, self.approx_poly_derivative
+                enc_x, self.coeffs, self.deriv_coeffs
             )
         )
 

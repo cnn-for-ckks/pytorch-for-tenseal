@@ -1,6 +1,7 @@
-from typing import Callable
 from torch.autograd.function import NestedIOFunction
 from torchseal.wrapper import CKKSWrapper
+
+import numpy as np
 
 
 class CKKSLinearFunctionWrapper(NestedIOFunction):
@@ -18,7 +19,7 @@ class CKKSLossFunctionWrapper(NestedIOFunction):
 
 class CKKSActivationFunctionWrapper(NestedIOFunction):
     enc_input: CKKSWrapper
-    polyval_derivative: Callable[[float], float]
+    deriv_coeffs: np.ndarray
 
 
 class CKKSSoftmaxFunctionWrapper(NestedIOFunction):

@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Optional
 from tenseal import CKKSTensor
 
 import typing
@@ -37,7 +37,7 @@ class CKKSWrapper(torch.Tensor):
 
     # Overridden methods
 
-    def __new__(cls, _ckks_data: CKKSTensor, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _: CKKSTensor, *args, **kwargs) -> "CKKSWrapper":
         # Create the tensor
         data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
 
@@ -89,25 +89,6 @@ class CKKSWrapper(torch.Tensor):
 
         # Resize the data
         self.data = super(torch.Tensor, self).view_as(other)
-
-        return self
-
-    # CKKS Operation (with shape change)
-    def do_encryption(self, context: ts.Context) -> "CKKSWrapper":
-        # Define the new CKKS tensor
-        new_ckks_tensor = ts.ckks_tensor(context, self.data.tolist())
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        # Blur the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
-
-        # Update the data
-        self.data = tensor.data
-
-        # Update the is_encrypted flag
-        self.is_encrypted = True
 
         return self
 
@@ -252,7 +233,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_activation_function(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
+    def do_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
         # Apply the activation function to the encrypted input
         new_ckks_tensor = typing.cast(
             CKKSTensor,
@@ -269,36 +250,14 @@ class CKKSWrapper(torch.Tensor):
     # Data Operation
     def do_decryption(self) -> "CKKSWrapper":
         # Define the new tensor
-        new_tensor = torch.tensor(
+        new_data_tensor = torch.tensor(
             self.ckks_data.decrypt().tolist(), requires_grad=True
         )
 
         # Update the data
-        self.data = new_tensor.data
+        self.data = new_data_tensor.data
 
         # Update the is_encrypted flag
         self.is_encrypted = False
-
-        return self
-
-    # Data Operation
-    def do_activation_function_backward(self, polyval_derivative: Callable[[float], float]) -> "CKKSWrapper":
-        # Apply the activation function backward to the data
-        new_tensor = torch.tensor(
-            np.vectorize(polyval_derivative)(self.data)
-        )
-
-        # Update the data
-        self.data = new_tensor.data
-
-        return self
-
-    # Data Operation
-    def do_clamp(self, min: float, max: float) -> "CKKSWrapper":
-        # Apply the clamp function to the data
-        new_tensor = torch.clamp(self.data, min=min, max=max)
-
-        # Update the data
-        self.data = new_tensor.data
 
         return self

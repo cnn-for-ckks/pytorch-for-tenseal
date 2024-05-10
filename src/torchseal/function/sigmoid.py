@@ -1,4 +1,5 @@
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
+from numpy.polynomial import Polynomial
 from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
 
 import typing
@@ -8,13 +9,13 @@ import torch
 
 class SigmoidFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray, approx_poly_derivative: Callable[[float], float]) -> CKKSWrapper:
+    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray, deriv_coeffs: np.ndarray) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.enc_input = enc_input.clone()
-        ctx.polyval_derivative = approx_poly_derivative
+        ctx.deriv_coeffs = deriv_coeffs
 
         # Apply the sigmoid function to the encrypted input
-        enc_output = enc_input.do_activation_function(coeffs)
+        enc_output = enc_input.do_polynomial(coeffs)
 
         return enc_output
 
@@ -22,11 +23,12 @@ class SigmoidFunction(torch.autograd.Function):
     def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:
         # Get the saved tensors
         input = ctx.enc_input.do_decryption()
-        polyval_derivative = ctx.polyval_derivative
+        deriv_coeffs = ctx.deriv_coeffs
 
         # Do the backward operation
-        backward_output = input.do_activation_function_backward(
-            polyval_derivative
+        polynomial_deriv = Polynomial(deriv_coeffs)
+        backward_output = torch.tensor(
+            np.vectorize(polynomial_deriv)(input)
         )
 
         # Get the needs_input_grad

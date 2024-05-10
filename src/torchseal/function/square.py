@@ -1,32 +1,29 @@
 from typing import Optional, Tuple
-from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
+from torchseal.wrapper import CKKSWrapper, CKKSLinearFunctionWrapper
 
 import typing
+import numpy as np
 import torch
 
 
 class SquareFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.enc_input = enc_input.clone()
-        ctx.polyval_derivative = lambda x: 2 * x
 
-        # Apply square function to the encrypted input
+        # Apply square function to the encrypted input (x ** 2)
         enc_output = enc_input.do_square()
 
         return enc_output
 
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
+    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
         # Get the saved tensors
         input = ctx.enc_input.do_decryption()
-        polyval_derivative = ctx.polyval_derivative
 
-        # Do the backward operation
-        backward_output = input.do_activation_function_backward(
-            polyval_derivative
-        )
+        # Do the backward operation (2 * x)
+        backward_output = input.mul(2)
 
         # Get the needs_input_grad
         result = typing.cast(Tuple[bool], ctx.needs_input_grad)
