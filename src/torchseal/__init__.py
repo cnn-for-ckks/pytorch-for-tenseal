@@ -4,8 +4,5 @@ import torch
 import tenseal as ts
 
 
-def ckks_wrapper(context: ts.Context, data: torch.Tensor) -> CKKSWrapper:
-    ckks_data = ts.ckks_tensor(context, data.tolist())
-    ckks_data_wrapper = CKKSWrapper(ckks_data)
-
-    return ckks_data_wrapper
+def ckks_wrapper(context: ts.Context, data: torch.Tensor, is_encrypted: bool = True) -> CKKSWrapper:
+    return CKKSWrapper(context, data, is_encrypted)

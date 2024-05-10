@@ -36,8 +36,7 @@ class CKKSWrapper(torch.Tensor):
     #     return super(CKKSWrapper, cls).__torch_function__(func, types, *args, **kwargs)
 
     # Overridden methods
-
-    def __new__(cls, _: CKKSTensor, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _context: ts.Context, _data: torch.Tensor, _is_encrypted: bool, *args, **kwargs) -> "CKKSWrapper":
         # Create the tensor
         data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
 
@@ -47,35 +46,36 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Overridden methods
-    def __init__(self, ckks_data: CKKSTensor, *args, **kwargs) -> None:
+    def __init__(self, context: ts.Context, data: torch.Tensor, is_encrypted: bool, *args, **kwargs) -> None:
         # Call the super constructor
-        super(torch.Tensor, self).__init__(*args, **kwargs)
+        super(CKKSWrapper, self).__init__(*args, **kwargs)
 
         # Set the ckks_data
-        self.ckks_data = ckks_data
+        self.ckks_data = ts.ckks_tensor(context, data.tolist())
 
         # Set the data to zeros
-        self.data = torch.zeros(ckks_data.shape)
+        self.data = torch.zeros(data.shape)
 
         # Set the is_encrypted flag
-        self.is_encrypted = True
+        self.is_encrypted = is_encrypted
 
     # Overridden methods
     def clone(self, *args, **kwargs) -> "CKKSWrapper":
-        # Clone the ckks_data
-        ckks_data = typing.cast(CKKSTensor, self.ckks_data.copy())
-
-        # Create the new instance
-        instance = CKKSWrapper(ckks_data)
+        # Get the context
+        context = self.ckks_data.context()
 
         # Clone the data
-        data = super(torch.Tensor, self).clone(*args, **kwargs)
+        data = super(CKKSWrapper, self).clone(*args, **kwargs)
 
-        # Update the instance's data
-        instance.data = data
+        # Get the is_encrypted flag
+        is_encrypted = self.is_encrypted
 
-        # Update the instance's is_encrypted flag
-        instance.is_encrypted = self.is_encrypted
+        # Create the new instance
+        instance = CKKSWrapper(
+            context,
+            data,
+            is_encrypted
+        )
 
         return instance
 
@@ -88,7 +88,7 @@ class CKKSWrapper(torch.Tensor):
         )
 
         # Resize the data
-        self.data = super(torch.Tensor, self).view_as(other)
+        self.data = super(CKKSWrapper, self).view_as(other)
 
         return self
 
