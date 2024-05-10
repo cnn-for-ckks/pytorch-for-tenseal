@@ -185,7 +185,7 @@ if __name__ == "__main__":
     )
 
     # Subset the data
-    # TODO: Remove subset to use the entire dataset
+    # NOTE: Remove subset to use the entire dataset
     subset_test_data = Subset(test_data, list(range(20)))
 
     # Set the batch size

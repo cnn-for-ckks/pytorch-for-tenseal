@@ -96,7 +96,7 @@ if __name__ == "__main__":
     dataset = FraminghamDataset(csv_file="./data/Framingham/framingham.csv")
 
     # Take subset of the data
-    # TODO: Remove subset to use the entire dataset
+    # NOTE: Remove subset to use the entire dataset
     subdataset = Subset(dataset, list(range(100)))
 
     # Split the data into training and testing
