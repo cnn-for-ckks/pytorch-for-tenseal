@@ -6,6 +6,8 @@ import torch
 import tenseal as ts
 
 
+# TODO: Move all overridden to a __torch_dispatch__ implementation
+# TODO: Make sure all non-overridden methods are able to accept both CKKSWrapper and torch.Tensor
 class CKKSWrapper(torch.Tensor):
     __ckks_data: CKKSTensor
     __is_encrypted: bool
@@ -26,18 +28,10 @@ class CKKSWrapper(torch.Tensor):
     def is_encrypted(self, is_encrypted: bool) -> None:
         self.__is_encrypted = is_encrypted
 
-    # # Logging method
-    # @classmethod
-    # def __torch_function__(cls, func, types, *args, **kwargs):
-    #     # Print the function and the types
-    #     print(f"Function: {func}")
-
-    #     return super(CKKSWrapper, cls).__torch_function__(func, types, *args, **kwargs)
-
     # Overridden methods
-    def __new__(cls, _context: ts.Context, _data: torch.Tensor, _is_encrypted: bool, *args, **kwargs) -> "CKKSWrapper":
+    def __new__(cls, _context: ts.Context, _data: torch.Tensor, _is_encrypted: bool = True) -> "CKKSWrapper":
         # Create the tensor
-        data = super(CKKSWrapper, cls).__new__(cls, *args, **kwargs)
+        data = super(CKKSWrapper, cls).__new__(cls)
 
         # Create the instance
         instance = torch.Tensor._make_subclass(cls, data)
@@ -45,9 +39,9 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Overridden methods
-    def __init__(self, context: ts.Context, data: torch.Tensor, is_encrypted: bool, *args, **kwargs) -> None:
+    def __init__(self, context: ts.Context, data: torch.Tensor, is_encrypted: bool = True) -> None:
         # Call the super constructor
-        super(CKKSWrapper, self).__init__(*args, **kwargs)
+        super(CKKSWrapper, self).__init__()
 
         # Set the ckks_data
         self.ckks_data = ts.ckks_tensor(context, data.tolist())
@@ -59,12 +53,12 @@ class CKKSWrapper(torch.Tensor):
         self.is_encrypted = is_encrypted
 
     # Overridden methods
-    def clone(self, *args, **kwargs) -> "CKKSWrapper":
+    def clone(self) -> "CKKSWrapper":
         # Get the context
         context = self.ckks_data.context()
 
         # Clone the data
-        data = super(CKKSWrapper, self).clone(*args, **kwargs)
+        data = super(CKKSWrapper, self).clone()
 
         # Get the is_encrypted flag
         is_encrypted = self.is_encrypted
@@ -94,9 +88,7 @@ class CKKSWrapper(torch.Tensor):
     # CKKS Operation (with shape change)
     def do_matrix_multiplication(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
-        new_ckks_tensor = self.ckks_data.mm(
-            ts.plain_tensor(other.tolist())
-        )
+        new_ckks_tensor = self.ckks_data.mm(other.tolist())
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -152,6 +144,19 @@ class CKKSWrapper(torch.Tensor):
     def do_element_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the multiplication function to the encrypted input
         new_ckks_tensor = self.ckks_data.mul(other.ckks_data)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
+    def do_negation(self) -> "CKKSWrapper":
+        # Apply the negation function to the encrypted input
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.neg()
+        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
