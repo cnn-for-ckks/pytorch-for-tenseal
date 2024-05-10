@@ -1,4 +1,3 @@
-from typing import Optional
 from tenseal import CKKSTensor
 
 import typing
@@ -93,14 +92,10 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation (with shape change)
-    def do_linear(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> "CKKSWrapper":
+    def do_matrix_multiplication(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
         new_ckks_tensor = self.ckks_data.mm(
-            ts.plain_tensor(weight.t().tolist())
-        ).add(
-            ts.plain_tensor(bias.tolist())
-        ) if bias is not None else self.ckks_data.mm(
-            ts.plain_tensor(weight.t().tolist())
+            ts.plain_tensor(other.tolist())
         )
 
         # Update the encrypted data
@@ -134,6 +129,16 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
+    def do_addition(self, other: torch.Tensor) -> "CKKSWrapper":
+        # Apply the addition function to the encrypted input
+        new_ckks_tensor = self.ckks_data.add(other)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
     def do_scalar_multiplication(self, scalar: float) -> "CKKSWrapper":
         # Apply the scalar multiplication function to the encrypted input
         new_ckks_tensor = self.ckks_data.mul(scalar)
@@ -159,6 +164,21 @@ class CKKSWrapper(torch.Tensor):
         new_ckks_tensor = typing.cast(
             CKKSTensor,
             self.ckks_data.square()
+        )
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
+    def do_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
+        # Apply the activation function to the encrypted input
+        new_ckks_tensor = typing.cast(
+            CKKSTensor,
+            self.ckks_data.polyval(
+                polyval_coeffs.tolist()
+            )
         )
 
         # Update the encrypted data
@@ -226,21 +246,6 @@ class CKKSWrapper(torch.Tensor):
 
         # Apply the division function to the encrypted input
         new_ckks_tensor = act_x_copy.mul(matrix_inverse_sum)
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        return self
-
-    # CKKS Operation
-    def do_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
-        # Apply the activation function to the encrypted input
-        new_ckks_tensor = typing.cast(
-            CKKSTensor,
-            self.ckks_data.polyval(
-                polyval_coeffs.tolist()
-            )
-        )
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor

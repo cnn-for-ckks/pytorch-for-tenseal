@@ -12,7 +12,7 @@ class AvgPool2dFunction(torch.autograd.Function):
         ctx.save_for_backward(weight, conv2d_input_mask)
 
         # Apply the convolution to the encrypted input
-        enc_output = enc_input.do_linear(weight)
+        enc_output = enc_input.do_matrix_multiplication(weight.t())
 
         return enc_output
 

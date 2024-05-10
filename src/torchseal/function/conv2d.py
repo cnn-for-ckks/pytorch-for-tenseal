@@ -18,7 +18,9 @@ class Conv2dFunction(torch.autograd.Function):
         ctx.enc_input = enc_input.clone()
 
         # Apply the convolution to the encrypted input
-        enc_output = enc_input.do_linear(weight, bias)
+        enc_output = enc_input.do_matrix_multiplication(
+            weight.t()
+        ).do_addition(bias)
 
         return enc_output
 
