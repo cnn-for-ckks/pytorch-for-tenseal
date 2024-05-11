@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from torch.nn import Conv2d
 from torch.autograd.function import NestedIOFunction
-from torchseal.utils import precise_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
+from torchseal.utils import precise_toeplitz_multiple_channels, create_conv2d_weight_mask, create_conv2d_bias_transformation, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
 
 import typing
 import torch
@@ -15,12 +15,15 @@ class ToeplitzConv2dFunctionWrapper(NestedIOFunction):
 
 class ToeplitzConv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: ToeplitzConv2dFunctionWrapper, padded_x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> torch.Tensor:
+    def forward(ctx: ToeplitzConv2dFunctionWrapper, x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, conv2d_padding_transformation: torch.Tensor, conv2d_inverse_padding_transformation: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> torch.Tensor:
+        # Add padding to input
+        padded_x = x.matmul(conv2d_padding_transformation)
+
         # Save the context for the backward method
         ctx.save_for_backward(
             padded_x,
             weight,
-            conv2d_input_mask,
+            conv2d_inverse_padding_transformation,
             conv2d_weight_mask,
             conv2d_bias_transformation
         )
@@ -31,9 +34,9 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         return enc_output
 
     @staticmethod
-    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
+    def backward(ctx: ToeplitzConv2dFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None, None]:
         # Get the saved tensors
-        padded_x, weight, conv2d_input_mask, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
+        padded_x, weight, conv2d_inverse_padding_transformation, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
             Tuple[
                 torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
             ],
@@ -43,7 +46,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
         # Get the needs_input_grad
         result = typing.cast(
             Tuple[
-                bool, bool, bool, bool, bool, bool
+                bool, bool, bool, bool, bool, bool, bool
             ],
             ctx.needs_input_grad
         )
@@ -53,8 +56,10 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
 
         # Compute the gradients
         if result[0]:
-            # Calculate the gradients for the input tensor (this will be encrypted)
-            grad_input = grad_output.matmul(weight).mul(conv2d_input_mask)
+            # Calculate the gradients for the input tensor (this will be encrypted
+            grad_input = grad_output.matmul(weight).matmul(
+                conv2d_inverse_padding_transformation
+            )
 
         if result[1]:
             # Create the fully connected gradient weight tensor (this will be encrypted)
@@ -81,7 +86,7 @@ class ToeplitzConv2dFunction(torch.autograd.Function):
             # Apply the binary transformation to the gradient output (this will be encrypted)
             grad_bias = conv2d_bias_transformation.matmul(grad_output.sum(0))
 
-        return grad_input, grad_weight, grad_bias, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None, None
 
 
 class ToeplitzConv2d(torch.nn.Module):
@@ -121,11 +126,12 @@ class ToeplitzConv2d(torch.nn.Module):
             )
         )
 
-        # Create the binary masking for training
-        self.conv2d_input_mask = create_conv2d_input_mask(
-            (in_channels, input_height, input_width),
-            batch_size=batch_size,
-            padding=padding
+        # Create the binary masking for inference
+        self.conv2d_padding_transformation = create_padding_transformation_matrix(
+            input_height, input_width, padding
+        )
+        self.conv2d_inverse_padding_transformation = create_inverse_padding_transformation_matrix(
+            input_height, input_width, padding
         )
 
         self.conv2d_weight_mask = create_conv2d_weight_mask(
@@ -144,7 +150,7 @@ class ToeplitzConv2d(torch.nn.Module):
         enc_output = typing.cast(
             torch.Tensor,
             ToeplitzConv2dFunction.apply(
-                padded_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation
+                padded_x, self.weight, self.bias, self.conv2d_padding_transformation, self.conv2d_inverse_padding_transformation, self.conv2d_weight_mask, self.conv2d_bias_transformation
             )
         )
 
@@ -163,7 +169,7 @@ def test_convmtx2():
     kernel_height = 7
     kernel_width = 7
     stride = 3
-    padding = 0
+    padding = 1
 
     # Declare input dimensions
     batch_size = 1
@@ -202,9 +208,7 @@ def test_convmtx2():
     )
 
     # Create the sparse input tensor (with padding)
-    sparse_input_tensor = torch.nn.functional.pad(
-        input_tensor, (padding, padding, padding, padding)
-    ).view(
+    sparse_input_tensor = input_tensor.view(
         batch_size, -1
     ).clone().detach().requires_grad_(True)
 
@@ -265,9 +269,7 @@ def test_convmtx2():
     # Check the correctness of the input gradients (with a tolerance of 1e-3)
     assert input_tensor.grad is not None and sparse_input_tensor.grad is not None, "Input gradients are None!"
 
-    input_tensor_grad_expanded = torch.nn.functional.pad(
-        input_tensor.grad, (padding, padding, padding, padding)
-    ).view(batch_size, -1)
+    input_tensor_grad_expanded = input_tensor.grad.view(batch_size, -1)
 
     assert torch.allclose(
         sparse_input_tensor.grad,

@@ -5,22 +5,6 @@ import numpy as np
 import torch
 
 
-def create_conv2d_input_mask(input_size_with_channel: Tuple[int, int, int], batch_size: int = 1, padding: int = 0) -> torch.Tensor:
-    # Get the shapes
-    in_channels, input_height, input_width = input_size_with_channel
-
-    # Create binary mask to remove padding
-    binary_mask = torch.nn.functional.pad(
-        torch.ones(
-            in_channels, input_height, input_width
-        ),
-        (padding, padding, padding, padding),
-        value=0  # NOTE: Possibility of TenSEAL parameter mismatch when setting value=0
-    ).view(-1).unsqueeze(0).repeat(batch_size, 1)
-
-    return binary_mask
-
-
 def create_conv2d_weight_mask(input_size_with_channel: Tuple[int, int, int], kernel_size_with_channel: Tuple[int, int, int, int], stride: int = 1, padding: int = 0) -> torch.Tensor:
     # Get the shapes
     out_channels, _, kernel_height, kernel_width = kernel_size_with_channel
@@ -52,7 +36,7 @@ def create_conv2d_weight_mask(input_size_with_channel: Tuple[int, int, int], ker
     return binary_tensor
 
 
-def create_conv2d_bias_transformation(repeat: int, length: int):
+def create_conv2d_bias_transformation(repeat: int, length: int) -> torch.Tensor:
     # Calculate the number of groups
     num_groups = length // repeat
 
@@ -60,6 +44,7 @@ def create_conv2d_bias_transformation(repeat: int, length: int):
     # NOTE: Possibility of TenSEAL parameter mismatch when using torch.zeros
     transformation_matrix = torch.zeros((length, length))
 
+    # Fill the transformation matrix
     for i in range(num_groups):
         for j in range(repeat):
             row = i * repeat + j
