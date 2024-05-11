@@ -9,10 +9,12 @@ import tenseal as ts
 class CKKSWrapper(torch.Tensor):
     __ckks_data: ts.CKKSTensor
 
+    # Properties
     @property
     def ckks_data(self) -> ts.CKKSTensor:
         return self.__ckks_data
 
+    # Properties
     @ckks_data.setter
     def ckks_data(self, ckks_data: ts.CKKSTensor) -> None:
         self.__ckks_data = ckks_data
@@ -26,15 +28,22 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Special methods
+    # NOTE: Will automatically encrypt the data tensor
     def __init__(self, context: ts.Context, data: torch.Tensor) -> None:
         # Call the super constructor
         super(CKKSWrapper, self).__init__()
 
-        # Set the ckks_data
-        self.ckks_data = ts.ckks_tensor(context, data.tolist())
+        # Create the encrypted tensor
+        new_ckks_data = ts.ckks_tensor(context, data.tolist())
 
-        # Set the data to zeros
-        self.data = torch.zeros(data.shape)
+        # Set the ckks_data
+        self.ckks_data = new_ckks_data
+
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(new_ckks_data.shape)
+
+        # Blur the data
+        self.data = new_data_tensor.data
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
@@ -73,11 +82,11 @@ class CKKSWrapper(torch.Tensor):
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
 
-        # Change the shape of the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
 
-        # Update the data
-        self.data = tensor.data
+        # Reshape the data
+        self.data = new_data_tensor.data
 
         return self
 
@@ -92,11 +101,11 @@ class CKKSWrapper(torch.Tensor):
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
 
-        # Change the shape of the data
-        tensor = torch.zeros(new_ckks_tensor.shape)
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
 
-        # Update the data
-        self.data = tensor.data
+        # Reshape the data
+        self.data = new_data_tensor.data
 
         return self
 
@@ -237,7 +246,26 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
-    # Data Operation
+    # Encrypt-Decrypt Operations
+    def do_encryption(self) -> "CKKSWrapper":
+        # Get the previous context
+        context = self.ckks_data.context()
+
+        # Create the new encrypted tensor
+        new_ckks_tensor = ts.ckks_tensor(context, self.data.tolist())
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
+
+        # Blur the data
+        self.data = new_data_tensor.data
+
+        return self
+
+    # Encrypt-Decrypt Operations
     def do_decryption(self) -> "CKKSWrapper":
         # Define the new tensor
         new_data_tensor = torch.tensor(
