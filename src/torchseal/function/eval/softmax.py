@@ -19,6 +19,7 @@ class SoftmaxFunction(torch.autograd.Function):
 
         return enc_output
 
+    # TODO: Move this to train mode
     @staticmethod
     def backward(ctx: CKKSSoftmaxFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors

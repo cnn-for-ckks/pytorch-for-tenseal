@@ -1,6 +1,6 @@
 from typing import Optional
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function import LinearFunction
+from torchseal.function.eval import LinearFunction
 
 import typing
 import torch
@@ -18,6 +18,8 @@ class Linear(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
+        # TODO: Implement the forward pass based on self.training flag
+
         enc_output = typing.cast(
             CKKSWrapper,
             LinearFunction.apply(
@@ -26,3 +28,14 @@ class Linear(torch.nn.Module):
         )
 
         return enc_output
+
+    def train(self, mode=True) -> "Linear":
+        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
+        # TODO: Else, change the encrypted parameters to plaintext parameters
+
+        return super(Linear, self).train(mode)
+
+    def eval(self) -> "Linear":
+        # TODO: Change the encrypted parameters to plaintext parameters
+
+        return super(Linear, self).eval()

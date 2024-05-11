@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function import Conv2dFunction
+from torchseal.function.eval import Conv2dFunction
 from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
 
 import typing
@@ -64,6 +64,8 @@ class Conv2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
+        # TODO: Implement the forward pass based on self.training flag
+
         enc_output = typing.cast(
             CKKSWrapper,
             Conv2dFunction.apply(
@@ -72,3 +74,14 @@ class Conv2d(torch.nn.Module):
         )
 
         return enc_output
+
+    def train(self, mode=True) -> "Conv2d":
+        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
+        # TODO: Else, change the encrypted parameters to plaintext parameters
+
+        return super(Conv2d, self).train(mode)
+
+    def eval(self) -> "Conv2d":
+        # TODO: Change the encrypted parameters to plaintext parameters
+
+        return super(Conv2d, self).eval()

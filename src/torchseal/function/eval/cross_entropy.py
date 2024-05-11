@@ -36,6 +36,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
 
         return enc_loss
 
+    # TODO: Move this to train mode
     @staticmethod
     def backward(ctx: CKKSLossFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None, None, None]:
         # Get the saved tensors
