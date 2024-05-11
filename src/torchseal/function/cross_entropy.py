@@ -25,7 +25,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         enc_log_output = enc_output.do_polynomial(log_coeffs)
 
         # Calculate the negative log likelihood loss
-        enc_log_probs = enc_log_output.do_element_multiplication(
+        enc_log_probs = enc_log_output.do_enc_element_multiplication(
             enc_target
         ).do_sum(axis=1)
 

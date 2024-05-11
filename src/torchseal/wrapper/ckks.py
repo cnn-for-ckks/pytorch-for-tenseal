@@ -1,5 +1,3 @@
-from tenseal import CKKSTensor
-
 import typing
 import numpy as np
 import torch
@@ -9,37 +7,26 @@ import tenseal as ts
 # TODO: Move all overridden to a __torch_dispatch__ implementation
 # TODO: Make sure all non-overridden methods are able to accept both CKKSWrapper and torch.Tensor
 class CKKSWrapper(torch.Tensor):
-    __ckks_data: CKKSTensor
-    __is_encrypted: bool
+    __ckks_data: ts.CKKSTensor
 
     @property
-    def ckks_data(self) -> CKKSTensor:
+    def ckks_data(self) -> ts.CKKSTensor:
         return self.__ckks_data
 
     @ckks_data.setter
-    def ckks_data(self, ckks_data: CKKSTensor) -> None:
+    def ckks_data(self, ckks_data: ts.CKKSTensor) -> None:
         self.__ckks_data = ckks_data
 
-    @property
-    def is_encrypted(self) -> bool:
-        return self.__is_encrypted
-
-    @is_encrypted.setter
-    def is_encrypted(self, is_encrypted: bool) -> None:
-        self.__is_encrypted = is_encrypted
-
-    # Overridden methods
-    def __new__(cls, _context: ts.Context, _data: torch.Tensor, _is_encrypted: bool = True) -> "CKKSWrapper":
-        # Create the tensor
-        data = super(CKKSWrapper, cls).__new__(cls)
-
+    # Special methods
+    @staticmethod
+    def __new__(cls, context: ts.Context, data: torch.Tensor) -> "CKKSWrapper":
         # Create the instance
         instance = torch.Tensor._make_subclass(cls, data)
 
         return instance
 
-    # Overridden methods
-    def __init__(self, context: ts.Context, data: torch.Tensor, is_encrypted: bool = True) -> None:
+    # Special methods
+    def __init__(self, context: ts.Context, data: torch.Tensor) -> None:
         # Call the super constructor
         super(CKKSWrapper, self).__init__()
 
@@ -49,9 +36,6 @@ class CKKSWrapper(torch.Tensor):
         # Set the data to zeros
         self.data = torch.zeros(data.shape)
 
-        # Set the is_encrypted flag
-        self.is_encrypted = is_encrypted
-
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
         # Get the context
@@ -60,14 +44,10 @@ class CKKSWrapper(torch.Tensor):
         # Clone the data
         data = super(CKKSWrapper, self).clone()
 
-        # Get the is_encrypted flag
-        is_encrypted = self.is_encrypted
-
         # Create the new instance
         instance = CKKSWrapper(
             context,
             data,
-            is_encrypted
         )
 
         return instance
@@ -76,7 +56,7 @@ class CKKSWrapper(torch.Tensor):
     def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Resize the ckks_data
         self.ckks_data = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.reshape(list(self.data.size()))
         )
 
@@ -105,7 +85,7 @@ class CKKSWrapper(torch.Tensor):
     def do_sum(self, axis: int) -> "CKKSWrapper":
         # Apply the sum function to the encrypted input
         new_ckks_tensor = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.sum(axis=axis)
         )
 
@@ -141,9 +121,9 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_element_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+    def do_enc_element_multiplication(self, enc_other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the multiplication function to the encrypted input
-        new_ckks_tensor = self.ckks_data.mul(other.ckks_data)
+        new_ckks_tensor = self.ckks_data.mul(enc_other.ckks_data)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -154,7 +134,7 @@ class CKKSWrapper(torch.Tensor):
     def do_negation(self) -> "CKKSWrapper":
         # Apply the negation function to the encrypted input
         new_ckks_tensor = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.neg()
         )
 
@@ -167,7 +147,7 @@ class CKKSWrapper(torch.Tensor):
     def do_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
         new_ckks_tensor = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.square()
         )
 
@@ -180,7 +160,7 @@ class CKKSWrapper(torch.Tensor):
     def do_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
         # Apply the activation function to the encrypted input
         new_ckks_tensor = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.polyval(
                 polyval_coeffs.tolist()
             )
@@ -195,7 +175,7 @@ class CKKSWrapper(torch.Tensor):
     def do_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
         # Apply the exp function to the encrypted input
         act_x = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             self.ckks_data.polyval(
                 exp_coeffs.tolist()
             )
@@ -203,19 +183,19 @@ class CKKSWrapper(torch.Tensor):
 
         # Copy the encrypted activation
         act_x_copy = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             act_x.copy()
         )
 
         # Apply the sum function to the encrypted input
         sum_x = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             act_x.sum(axis=1)
         )
 
         # Apply the multiplicative inverse function to the encrypted input
         inverse_sum_x = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             sum_x.polyval(
                 inverse_coeffs.tolist()
             )
@@ -226,7 +206,7 @@ class CKKSWrapper(torch.Tensor):
             prod = sum_x.mul(inverse_sum_x)  # d * x_n
 
             correction = typing.cast(
-                CKKSTensor, prod.neg()
+                ts.CKKSTensor, prod.neg()
             ).add(
                 torch.ones(
                     sum_x.shape
@@ -239,7 +219,7 @@ class CKKSWrapper(torch.Tensor):
 
         # Reshape the inverse sum
         reshaped_inverse_sum_x = typing.cast(
-            CKKSTensor,
+            ts.CKKSTensor,
             inverse_sum_x.reshape(
                 [inverse_sum_x.shape[0], 1]
             )
@@ -266,8 +246,5 @@ class CKKSWrapper(torch.Tensor):
 
         # Update the data
         self.data = new_data_tensor.data
-
-        # Update the is_encrypted flag
-        self.is_encrypted = False
 
         return self
