@@ -128,10 +128,10 @@ class ToeplitzConv2d(torch.nn.Module):
 
         # Create the binary masking for inference
         self.conv2d_padding_transformation = create_padding_transformation_matrix(
-            input_height, input_width, padding
+            in_channels, input_height, input_width, padding
         )
         self.conv2d_inverse_padding_transformation = create_inverse_padding_transformation_matrix(
-            input_height, input_width, padding
+            out_channels, input_height, input_width, padding
         )
 
         self.conv2d_weight_mask = create_conv2d_weight_mask(
@@ -165,16 +165,16 @@ def test_convmtx2():
 
     # Declare parameters
     out_channels = 2
-    in_channels = 1
-    kernel_height = 7
-    kernel_width = 7
-    stride = 3
+    in_channels = 2
+    kernel_height = 3
+    kernel_width = 3
+    stride = 1
     padding = 1
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 28
-    input_width = 28
+    input_height = 4
+    input_width = 4
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding

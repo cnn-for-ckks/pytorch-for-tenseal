@@ -1,7 +1,25 @@
 import torch
 
 
-def create_inverse_padding_transformation_matrix(input_height: int, input_width: int, padding: int) -> torch.Tensor:
+def create_block_diagonal_matrix(base_matrix: torch.Tensor, num_blocks: int) -> torch.Tensor:
+    # Get dimensions of the base matrix
+    rows, cols = base_matrix.shape
+
+    # Create a large zero matrix to hold the entire block diagonal matrix
+    # NOTE: Possibility of TenSEAL parameter mismatch when using torch.zeros
+    block_diag_matrix = torch.zeros(num_blocks * rows, num_blocks * cols)
+
+    # Fill the block diagonal matrix
+    for i in range(num_blocks):
+        start_index = i * rows
+        block_diag_matrix[
+            start_index:start_index + rows, i * cols:i * cols + cols
+        ] = base_matrix
+
+    return block_diag_matrix
+
+
+def create_inverse_padding_transformation_matrix(num_channels: int, input_height: int, input_width: int, padding: int) -> torch.Tensor:
     # Add padding to the input size
     padded_input_height = input_height + 2 * padding
     padded_input_width = input_width + 2 * padding
@@ -24,12 +42,18 @@ def create_inverse_padding_transformation_matrix(input_height: int, input_width:
             # Update the inverse transformation matrix
             inverse_transform_matrix[orig_pos, padded_pos] = 1
 
-    transposed_inverse_transform_matrix = inverse_transform_matrix.t()
+    # Repeat the inverse transformation matrix for each channel
+    repeated_inverse_transform_matrix = create_block_diagonal_matrix(
+        inverse_transform_matrix, num_channels
+    )
+
+    # Transpose the inverse transformation matrix
+    transposed_inverse_transform_matrix = repeated_inverse_transform_matrix.t()
 
     return transposed_inverse_transform_matrix
 
 
-def create_padding_transformation_matrix(input_height: int, input_width: int, padding: int) -> torch.Tensor:
+def create_padding_transformation_matrix(num_channels: int, input_height: int, input_width: int, padding: int) -> torch.Tensor:
     # Add padding to the input size
     padded_input_height = input_height + 2 * padding
     padded_input_width = input_width + 2 * padding
@@ -52,6 +76,12 @@ def create_padding_transformation_matrix(input_height: int, input_width: int, pa
             # Update the transformation matrix
             transform_matrix[new_pos, orig_pos] = 1
 
-    transposed_transform_matrix = transform_matrix.t()
+    # Repeat the transformation matrix for each channel
+    repeated_transform_matrix = create_block_diagonal_matrix(
+        transform_matrix, num_channels
+    )
+
+    # Transpose the transformation matrix
+    transposed_transform_matrix = repeated_transform_matrix.t()
 
     return transposed_transform_matrix

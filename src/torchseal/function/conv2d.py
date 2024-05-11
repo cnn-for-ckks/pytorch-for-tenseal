@@ -7,20 +7,25 @@ import torch
 
 class Conv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor, training: bool) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_padding_transformation: torch.Tensor, conv2d_inverse_padding_transformation: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor, training: bool) -> CKKSWrapper:
+        # Apply the padding transformation to the encrypted input
+        enc_padding_input = enc_input.do_matrix_multiplication(
+            conv2d_padding_transformation
+        )
+
         # Save the ctx for the backward method
         ctx.save_for_backward(
             weight,
-            conv2d_input_mask,
+            conv2d_inverse_padding_transformation,
             conv2d_weight_mask,
             conv2d_bias_transformation
         )
-        ctx.enc_input = enc_input.clone()
+        ctx.enc_input = enc_padding_input.clone()
         ctx.training = training
 
         # Apply the convolution to the encrypted input
         # TODO: Implement the convolution for encrypted parameters
-        enc_output = enc_input.do_matrix_multiplication(
+        enc_output = enc_padding_input.do_matrix_multiplication(
             weight.t()
         ).do_addition(bias)
 
@@ -30,7 +35,7 @@ class Conv2dFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None, None]:
         # Get the saved tensors
-        weight, conv2d_input_mask, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
+        weight, conv2d_inverse_padding_transformation, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
             Tuple[
                 torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
             ],
@@ -49,7 +54,9 @@ class Conv2dFunction(torch.autograd.Function):
 
         if result[0]:
             # Calculate the gradients for the input tensor (this will be encrypted)
-            grad_input = grad_output.matmul(weight).mul(conv2d_input_mask)
+            grad_input = grad_output.matmul(weight).matmul(
+                conv2d_inverse_padding_transformation
+            )
 
         if result[1]:
             # Create the fully connected gradient weight tensor (this will be encrypted)

@@ -1,14 +1,14 @@
 from typing import Tuple, Optional
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import Conv2dFunction
-from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
+from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_weight_mask, create_conv2d_bias_transformation, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
 
 import typing
 import torch
 
 
 class Conv2d(torch.nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], batch_size: int = 1, stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], stride: int = 1, padding: int = 0, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None) -> None:
         super(Conv2d, self).__init__()
 
         # Unpack the kernel size
@@ -44,13 +44,16 @@ class Conv2d(torch.nn.Module):
             ) if bias is None else bias
         )
 
-        # Create the binary masking for training
-        self.conv2d_input_mask = create_conv2d_input_mask(
-            (in_channels, input_height, input_width),
-            batch_size=batch_size,
-            padding=padding
+        # Create the binary masking for inference
+        self.conv2d_padding_transformation = create_padding_transformation_matrix(
+            in_channels, input_height, input_width, padding
         )
 
+        self.conv2d_inverse_padding_transformation = create_inverse_padding_transformation_matrix(
+            out_channels, input_height, input_width, padding
+        )
+
+        # Create the binary masking for training
         self.conv2d_weight_mask = create_conv2d_weight_mask(
             (in_channels, input_height, input_width),
             (out_channels, in_channels, kernel_height, kernel_width),
@@ -67,7 +70,7 @@ class Conv2d(torch.nn.Module):
         enc_output = typing.cast(
             CKKSWrapper,
             Conv2dFunction.apply(
-                enc_x, self.weight, self.bias, self.conv2d_input_mask, self.conv2d_weight_mask, self.conv2d_bias_transformation, self.training
+                enc_x, self.weight, self.bias, self.conv2d_padding_transformation, self.conv2d_inverse_padding_transformation, self.conv2d_weight_mask, self.conv2d_bias_transformation, self.training
             )
         )
 

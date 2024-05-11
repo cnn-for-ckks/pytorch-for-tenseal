@@ -35,20 +35,24 @@ def test_conv2d():
 
     # Declare parameters
     out_channels = 2
-    in_channels = 1
-    kernel_height = 7
-    kernel_width = 7
-    stride = 3
+    in_channels = 2
+    kernel_height = 3
+    kernel_width = 3
+    stride = 1
     padding = 1
 
     # Declare input dimensions
     batch_size = 1
-    input_height = 28
-    input_width = 28
+    input_height = 4
+    input_width = 4
+
+    # Adjust for padding
+    padded_input_height = input_height + 2 * padding
+    padded_input_width = input_width + 2 * padding
 
     # Count the output dimensions
-    output_height = (input_height - kernel_height) // stride + 1
-    output_width = (input_width - kernel_width) // stride + 1
+    output_height = (padded_input_height - kernel_height) // stride + 1
+    output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Create weight and bias
     kernel = torch.randn(
@@ -67,9 +71,7 @@ def test_conv2d():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, torch.nn.functional.pad(
-            input_tensor, (padding, padding, padding, padding)
-        ).view(batch_size, -1)
+        context, input_tensor.view(batch_size, -1)
     )
 
     # Create the plaintext convolution layer
