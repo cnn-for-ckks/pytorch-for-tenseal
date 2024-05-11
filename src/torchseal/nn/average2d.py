@@ -1,7 +1,7 @@
 from typing import Tuple
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
-from torchseal.utils import generate_near_zeros, approximate_toeplitz_multiple_channels, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
+from torchseal.utils import generate_near_zeros, approximate_toeplitz_multiple_channels, create_average_kernel, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
 
 import typing
 import torch
@@ -17,19 +17,11 @@ class AvgPool2d(torch.nn.Module):
         # Unpack the input size
         input_height, input_width = input_size
 
-        # Create the initial weight
-        initial_weight = generate_near_zeros(
-            (n_channels, n_channels, kernel_height, kernel_width)
-        )
-
-        # Fill the initial weight with the average pooling kernel
-        for i in range(n_channels):
-            initial_weight[i, i] = torch.ones(kernel_height, kernel_width).div(
-                kernel_height * kernel_width
-            )
-
+        # Create the weight matrix for the average pooling operation
         self.weight = approximate_toeplitz_multiple_channels(
-            initial_weight,
+            create_average_kernel(
+                n_channels, kernel_height, kernel_width
+            ),
             (n_channels, input_height, input_width),
             stride=stride,
             padding=padding
