@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function.eval import Conv2dFunction
+from torchseal.function import Conv2dFunction
 from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
 
 import typing

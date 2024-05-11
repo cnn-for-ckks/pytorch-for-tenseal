@@ -1,6 +1,6 @@
 from typing import Tuple
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function.eval import AvgPool2dFunction
+from torchseal.function import AvgPool2dFunction
 from torchseal.utils import approximate_toeplitz_multiple_channels, create_conv2d_input_mask
 
 import typing

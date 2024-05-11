@@ -1,5 +1,5 @@
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function.eval import SquareFunction
+from torchseal.function import SquareFunction
 
 import typing
 import torch

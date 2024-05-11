@@ -21,18 +21,10 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         # Get the batch size
         batch_size, _ = enc_input.shape
 
-        # Apply log softmax to the output
-        enc_log_output = enc_output.do_polynomial(log_coeffs)
-
-        # Calculate the negative log likelihood loss
-        enc_log_probs = enc_log_output.do_enc_element_multiplication(
-            enc_target
-        ).do_sum(axis=1)
-
         # Calculate the loss
-        enc_loss = enc_log_probs.do_sum(
-            axis=0
-        ).do_scalar_multiplication(-1 / batch_size)
+        enc_loss = enc_output.do_encrypted_negative_log_likelihood_loss(
+            enc_target, log_coeffs, batch_size
+        )
 
         return enc_loss
 

@@ -1,6 +1,6 @@
 from typing import Optional
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function.eval import LinearFunction
+from torchseal.function import LinearFunction
 
 import typing
 import torch

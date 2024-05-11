@@ -13,7 +13,7 @@ class SquareFunction(torch.autograd.Function):
         ctx.enc_input = enc_input.clone()
 
         # Apply square function to the encrypted input (x ** 2)
-        enc_output = enc_input.do_square()
+        enc_output = enc_input.do_encrypted_square()
 
         return enc_output
 

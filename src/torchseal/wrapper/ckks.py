@@ -4,8 +4,7 @@ import torch
 import tenseal as ts
 
 
-# TODO: Move all overridden to a __torch_dispatch__ implementation
-# TODO: Make sure all non-overridden methods are able to accept both CKKSWrapper and torch.Tensor
+# TODO: Move overridden methods to the __torch_dispatch__ method
 class CKKSWrapper(torch.Tensor):
     __ckks_data: ts.CKKSTensor
 
@@ -90,25 +89,6 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
-    # CKKS Operation (with shape change)
-    def do_sum(self, axis: int) -> "CKKSWrapper":
-        # Apply the sum function to the encrypted input
-        new_ckks_tensor = typing.cast(
-            ts.CKKSTensor,
-            self.ckks_data.sum(axis=axis)
-        )
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
-
-        # Reshape the data
-        self.data = new_data_tensor.data
-
-        return self
-
     # CKKS Operation
     def do_addition(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the addition function to the encrypted input
@@ -120,27 +100,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_scalar_multiplication(self, scalar: float) -> "CKKSWrapper":
-        # Apply the scalar multiplication function to the encrypted input
-        new_ckks_tensor = self.ckks_data.mul(scalar)
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        return self
-
-    # CKKS Operation
-    def do_enc_element_multiplication(self, enc_other: "CKKSWrapper") -> "CKKSWrapper":
-        # Apply the multiplication function to the encrypted input
-        new_ckks_tensor = self.ckks_data.mul(enc_other.ckks_data)
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
-
-        return self
-
-    # CKKS Operation
-    def do_negation(self) -> "CKKSWrapper":
+    def do_encrypted_negation(self) -> "CKKSWrapper":
         # Apply the negation function to the encrypted input
         new_ckks_tensor = typing.cast(
             ts.CKKSTensor,
@@ -153,7 +113,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_square(self) -> "CKKSWrapper":
+    def do_encrypted_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
         new_ckks_tensor = typing.cast(
             ts.CKKSTensor,
@@ -166,7 +126,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
+    def do_encrypted_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
         # Apply the activation function to the encrypted input
         new_ckks_tensor = typing.cast(
             ts.CKKSTensor,
@@ -243,6 +203,40 @@ class CKKSWrapper(torch.Tensor):
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation (with shape change)
+    def do_encrypted_negative_log_likelihood_loss(
+        self, enc_target: "CKKSWrapper", log_coeffs: np.ndarray, batch_size: int
+    ) -> "CKKSWrapper":
+        # Apply log softmax to the output
+        enc_log_output = typing.cast(
+            ts.CKKSTensor,
+            self.ckks_data.polyval(
+                log_coeffs.tolist()
+            )
+        )
+
+        # Calculate the negative log likelihood loss
+        enc_log_probs = typing.cast(
+            ts.CKKSTensor,
+            enc_log_output.mul(enc_target.ckks_data).sum(axis=1)
+        )
+
+        # Calculate the loss
+        enc_loss = typing.cast(
+            ts.CKKSTensor, enc_log_probs.sum(axis=0)
+        ).mul(-1 / batch_size)
+
+        # Update the encrypted data
+        self.ckks_data = enc_loss
+
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(enc_loss.shape)
+
+        # Reshape the data
+        self.data = new_data_tensor.data
 
         return self
 

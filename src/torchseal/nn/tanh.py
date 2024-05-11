@@ -1,7 +1,7 @@
 from typing import Literal, Union
 from numpy.polynomial import Polynomial, Chebyshev
 from torchseal.wrapper import CKKSWrapper
-from torchseal.function.eval import TanhFunction
+from torchseal.function import TanhFunction
 
 import typing
 import numpy as np

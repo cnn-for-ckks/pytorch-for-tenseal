@@ -15,7 +15,7 @@ class SigmoidFunction(torch.autograd.Function):
         ctx.deriv_coeffs = deriv_coeffs
 
         # Apply the sigmoid function to the encrypted input
-        enc_output = enc_input.do_polynomial(coeffs)
+        enc_output = enc_input.do_encrypted_polynomial(coeffs)
 
         return enc_output
 
