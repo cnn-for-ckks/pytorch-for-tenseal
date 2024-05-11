@@ -9,6 +9,7 @@ class Conv2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_padding_transformation: torch.Tensor, conv2d_inverse_padding_transformation: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor, training: bool) -> CKKSWrapper:
         # Apply the padding transformation to the encrypted input
+        # TODO: This is useless if padding is 0 (we can skip this step if that's the case)
         enc_padding_input = enc_input.do_matrix_multiplication(
             conv2d_padding_transformation
         )
@@ -54,7 +55,11 @@ class Conv2dFunction(torch.autograd.Function):
 
         if result[0]:
             # Calculate the gradients for the input tensor (this will be encrypted)
-            grad_input = grad_output.matmul(weight).matmul(
+            padded_grad_input = grad_output.matmul(weight)
+
+            # Apply the inverse padding transformation to the gradient input
+            # TODO: This is useless if padding is 0 (we can skip this step if that's the case)
+            grad_input = padded_grad_input.matmul(
                 conv2d_inverse_padding_transformation
             )
 
@@ -62,7 +67,7 @@ class Conv2dFunction(torch.autograd.Function):
             # Create the fully connected gradient weight tensor (this will be encrypted)
             unfiltered_grad_weight = grad_output.t().matmul(input)
 
-            # Initialize the gradient weight tensor (this will be encrypted, probably going to need context with public keys)
+            # Initialize the gradient weight tensor (this will be encrypted, probably going to be plain tensor)
             grad_weight = torch.zeros_like(weight)
 
             # Apply the binary tensor to the gradient weight
@@ -81,6 +86,9 @@ class Conv2dFunction(torch.autograd.Function):
 
         if result[2]:
             # Apply the binary transformation to the gradient output (this will be encrypted)
-            grad_bias = conv2d_bias_transformation.matmul(grad_output.sum(0))
+            linear_grad_bias = grad_output.sum(0)
+
+            # Calculate the gradient bias for the convolutional layer (this will be encrypted)
+            grad_bias = conv2d_bias_transformation.matmul(linear_grad_bias)
 
         return grad_input, grad_weight, grad_bias, None, None, None, None
