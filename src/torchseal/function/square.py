@@ -17,7 +17,7 @@ class SquareFunction(torch.autograd.Function):
 
         return enc_output
 
-    # TODO: Move this to train mode
+    # TODO: Move this to encrypted mode
     @staticmethod
     def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
         # Get the saved tensors

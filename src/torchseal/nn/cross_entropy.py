@@ -72,22 +72,9 @@ class CrossEntropyLoss(torch.nn.Module):
         ).convert(kind=Polynomial).coef if log_approximation_type == "least-squares" else Chebyshev.fit(log_x, log_y, log_degree).convert(kind=Polynomial).coef
 
     def forward(self, enc_input: CKKSWrapper, enc_target: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         return typing.cast(
             CKKSWrapper,
             CrossEntropyLossFunction.apply(
                 enc_input, enc_target, self.exp_coeffs, self.inverse_coeffs, self.iterations, self.log_coeffs
             )
         )
-
-    def train(self, mode=True) -> "CrossEntropyLoss":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
-
-        return super(CrossEntropyLoss, self).train(mode)
-
-    def eval(self) -> "CrossEntropyLoss":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(CrossEntropyLoss, self).eval()

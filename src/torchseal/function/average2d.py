@@ -16,7 +16,7 @@ class AvgPool2dFunction(torch.autograd.Function):
 
         return enc_output
 
-    # TODO: Move this to train mode
+    # TODO: Move this to encrypted mode
     @staticmethod
     def backward(ctx: CKKSPoolingFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:
         # Get the saved tensors

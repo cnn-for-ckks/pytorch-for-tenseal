@@ -89,10 +89,36 @@ class CKKSWrapper(torch.Tensor):
 
         return self
 
+    # CKKS Operation (with shape change)
+    def do_encrypted_matrix_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the linear transformation to the encrypted input
+        new_ckks_tensor = self.ckks_data.mm(other.ckks_data)
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        # Create an empty data tensor
+        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
+
+        # Reshape the data
+        self.data = new_data_tensor.data
+
+        return self
+
     # CKKS Operation
     def do_addition(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the addition function to the encrypted input
-        new_ckks_tensor = self.ckks_data.add(other)
+        new_ckks_tensor = self.ckks_data.add(other.tolist())
+
+        # Update the encrypted data
+        self.ckks_data = new_ckks_tensor
+
+        return self
+
+    # CKKS Operation
+    def do_encrypted_addition(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the addition function to the encrypted input
+        new_ckks_tensor = self.ckks_data.add(other.ckks_data)
 
         # Update the encrypted data
         self.ckks_data = new_ckks_tensor
@@ -141,7 +167,7 @@ class CKKSWrapper(torch.Tensor):
         return self
 
     # CKKS Operation
-    def do_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
+    def do_encrypted_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
         # Apply the exp function to the encrypted input
         act_x = typing.cast(
             ts.CKKSTensor,

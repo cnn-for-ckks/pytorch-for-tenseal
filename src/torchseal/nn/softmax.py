@@ -55,8 +55,6 @@ class Softmax(torch.nn.Module):
         self.iterations = inverse_iterations
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         enc_output = typing.cast(
             CKKSWrapper,
             SoftmaxFunction.apply(
@@ -65,14 +63,3 @@ class Softmax(torch.nn.Module):
         )
 
         return enc_output
-
-    def train(self, mode=True) -> "Softmax":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
-
-        return super(Softmax, self).train(mode)
-
-    def eval(self) -> "Softmax":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(Softmax, self).eval()

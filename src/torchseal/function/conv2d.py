@@ -7,7 +7,7 @@ import torch
 
 class Conv2dFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_input_mask: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor, training: bool) -> CKKSWrapper:
         # Save the ctx for the backward method
         ctx.save_for_backward(
             weight,
@@ -16,17 +16,19 @@ class Conv2dFunction(torch.autograd.Function):
             conv2d_bias_transformation
         )
         ctx.enc_input = enc_input.clone()
+        ctx.training = training
 
         # Apply the convolution to the encrypted input
+        # TODO: Implement the convolution for encrypted parameters
         enc_output = enc_input.do_matrix_multiplication(
             weight.t()
         ).do_addition(bias)
 
         return enc_output
 
-    # TODO: Move this to train mode
+    # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None]:
+    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None, None]:
         # Get the saved tensors
         weight, conv2d_input_mask, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
             Tuple[
@@ -38,7 +40,7 @@ class Conv2dFunction(torch.autograd.Function):
 
         # Get the needs_input_grad
         result = typing.cast(
-            Tuple[bool, bool, bool, bool, bool, bool],
+            Tuple[bool, bool, bool, bool, bool, bool, bool],
             ctx.needs_input_grad
         )
 
@@ -74,4 +76,4 @@ class Conv2dFunction(torch.autograd.Function):
             # Apply the binary transformation to the gradient output (this will be encrypted)
             grad_bias = conv2d_bias_transformation.matmul(grad_output.sum(0))
 
-        return grad_input, grad_weight, grad_bias, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None, None

@@ -18,12 +18,10 @@ class Linear(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         enc_output = typing.cast(
             CKKSWrapper,
             LinearFunction.apply(
-                enc_x, self.weight, self.bias
+                enc_x, self.weight, self.bias, self.training
             )
         )
 

@@ -10,7 +10,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSLossFunctionWrapper, enc_input: CKKSWrapper, enc_target: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int, log_coeffs: np.ndarray) -> CKKSWrapper:
         # Apply softmax to the input to get probabilities
-        enc_output = enc_input.do_softmax(
+        enc_output = enc_input.do_encrypted_softmax(
             exp_coeffs, inverse_coeffs, inverse_iterations
         )
 
@@ -28,7 +28,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
 
         return enc_loss
 
-    # TODO: Move this to train mode
+    # TODO: Move this to encrypted mode
     @staticmethod
     def backward(ctx: CKKSLossFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None, None, None]:
         # Get the saved tensors

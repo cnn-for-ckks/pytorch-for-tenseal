@@ -37,8 +37,6 @@ class AvgPool2d(torch.nn.Module):
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         enc_output = typing.cast(
             CKKSWrapper,
             AvgPool2dFunction.apply(
@@ -47,14 +45,3 @@ class AvgPool2d(torch.nn.Module):
         )
 
         return enc_output
-
-    def train(self, mode=True) -> "AvgPool2d":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
-
-        return super(AvgPool2d, self).train(mode)
-
-    def eval(self) -> "AvgPool2d":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(AvgPool2d, self).eval()

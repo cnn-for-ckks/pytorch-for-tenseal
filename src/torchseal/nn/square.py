@@ -10,8 +10,6 @@ class Square(torch.nn.Module):
         super(Square, self).__init__()
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         enc_output = typing.cast(
             CKKSWrapper,
             SquareFunction.apply(
@@ -20,14 +18,3 @@ class Square(torch.nn.Module):
         )
 
         return enc_output
-
-    def train(self, mode=True) -> "Square":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
-
-        return super(Square, self).train(mode)
-
-    def eval(self) -> "Square":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(Square, self).eval()

@@ -6,6 +6,7 @@ import numpy as np
 
 class CKKSLinearFunctionWrapper(NestedIOFunction):
     enc_input: CKKSWrapper
+    training: bool
 
 
 class CKKSPoolingFunctionWrapper(NestedIOFunction):

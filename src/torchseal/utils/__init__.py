@@ -1,4 +1,4 @@
+from .conv2d import create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation
 from .near_zeros import generate_near_zeros
 from .sparse import get_sparse_target
 from .toeplitz import precise_toeplitz_multiple_channels, approximate_toeplitz_multiple_channels
-from .transformation import create_conv2d_input_mask, create_conv2d_weight_mask, create_conv2d_bias_transformation

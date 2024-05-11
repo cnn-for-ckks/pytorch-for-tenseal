@@ -25,8 +25,6 @@ class Tanh(torch.nn.Module):
         self.deriv_coeffs = Polynomial(self.coeffs).deriv().coef
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
-        # TODO: Implement the forward pass based on self.training flag
-
         enc_output = typing.cast(
             CKKSWrapper,
             TanhFunction.apply(
@@ -35,14 +33,3 @@ class Tanh(torch.nn.Module):
         )
 
         return enc_output
-
-    def train(self, mode=True) -> "Tanh":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
-
-        return super(Tanh, self).train(mode)
-
-    def eval(self) -> "Tanh":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(Tanh, self).eval()
