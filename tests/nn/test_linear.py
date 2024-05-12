@@ -1,5 +1,6 @@
 from torchseal.nn import Linear as EncryptedLinear
-from torchseal.optimizer import SGD as EncryptedSGD
+from torchseal.optim import SGD as EncryptedSGD
+
 from torch.nn import Linear as PlainLinear
 from torch.optim import SGD as PlainSGD
 

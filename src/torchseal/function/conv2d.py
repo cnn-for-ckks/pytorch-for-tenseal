@@ -34,7 +34,7 @@ class Conv2dFunction(torch.autograd.Function):
 
     # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None, None]:
+    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None, None, None, None, None]:
         # Get the saved tensors
         weight, conv2d_inverse_padding_transformation, conv2d_weight_mask, conv2d_bias_transformation = typing.cast(
             Tuple[
@@ -46,7 +46,7 @@ class Conv2dFunction(torch.autograd.Function):
 
         # Get the needs_input_grad
         result = typing.cast(
-            Tuple[bool, bool, bool, bool, bool, bool, bool],
+            Tuple[bool, bool, bool, bool, bool, bool, bool, bool],
             ctx.needs_input_grad
         )
 
@@ -91,4 +91,4 @@ class Conv2dFunction(torch.autograd.Function):
             # Calculate the gradient bias for the convolutional layer (this will be encrypted)
             grad_bias = conv2d_bias_transformation.matmul(linear_grad_bias)
 
-        return grad_input, grad_weight, grad_bias, None, None, None, None
+        return grad_input, grad_weight, grad_bias, None, None, None, None, None
