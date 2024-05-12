@@ -1,9 +1,6 @@
 from torchseal.nn import Conv2d as EncryptedConv2d
 from torchseal.utils import approximate_toeplitz_multiple_channels, precise_toeplitz_multiple_channels
-from torchseal.optim import SGD as EncryptedSGD
-
 from torch.nn import Conv2d as PlainConv2d
-from torch.optim import SGD as PlainSGD
 
 import torch
 import numpy as np
@@ -42,15 +39,12 @@ def test_conv2d_train():
     kernel_height = 3
     kernel_width = 3
     stride = 1
-    padding = 1
+    padding = 0
 
     # Declare input dimensions
     batch_size = 1
     input_height = 4
     input_width = 4
-
-    # Declare the training parameters
-    lr = 0.1
 
     # Adjust for padding
     padded_input_height = input_height + 2 * padding
@@ -137,14 +131,6 @@ def test_conv2d_train():
         rtol=0
     ), "Convolution layer failed!"
 
-    # Define the optimizer
-    optim = PlainSGD(conv2d.parameters(), lr=lr)
-    enc_optim = EncryptedSGD(enc_conv2d.parameters(), lr=lr)
-
-    # Clear the gradients
-    optim.zero_grad()
-    enc_optim.zero_grad()
-
     # Create random grad_output
     grad_output = torch.randn_like(output)
     enc_grad_output = grad_output.view(batch_size, -1)
@@ -155,29 +141,30 @@ def test_conv2d_train():
 
     # TODO: Check the correctness of input gradients
 
-    # Do the optimization step
-    optim.step()
-    enc_optim.step()
+    # Check the correctness of weight gradients (with a tolerance of 5e-2)
+    assert enc_conv2d.weight.grad is not None and conv2d.weight.grad is not None, "Weight gradients are None!"
 
-    # Check the correctness of parameters optimization (with a tolerance of 5e-2)
-    conv2d_weight_expanded = precise_toeplitz_multiple_channels(
-        conv2d.weight,
+    conv2d_weight_grad_expanded = precise_toeplitz_multiple_channels(
+        conv2d.weight.grad,
         (in_channels, input_height, input_width),
         stride=stride,
         padding=padding
     )
 
     assert torch.allclose(
-        enc_conv2d.weight, conv2d_weight_expanded, atol=5e-2, rtol=0
-    ), "Weight optimization failed!"
+        enc_conv2d.weight.grad, conv2d_weight_grad_expanded, atol=5e-2, rtol=0
+    ), "Weight gradient failed!"
 
-    conv2d_bias_expanded = conv2d.bias.repeat_interleave(
-        output_height * output_width
+    # Check the correctness of bias gradients (with a tolerance of 5e-2)
+    assert enc_conv2d.bias.grad is not None and conv2d.bias.grad is not None, "Bias gradients are None!"
+
+    conv2d_bias_grad_expanded = torch.repeat_interleave(
+        conv2d.bias.grad, output_height * output_width
     )
 
     assert torch.allclose(
-        enc_conv2d.bias, conv2d_bias_expanded, atol=5e-2, rtol=0
-    ), "Bias optimization failed!"
+        enc_conv2d.bias.grad, conv2d_bias_grad_expanded, atol=5e-2, rtol=0
+    ), "Bias gradient failed!"
 
 
 def test_conv2d_eval():

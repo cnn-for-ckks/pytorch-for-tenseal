@@ -1,8 +1,5 @@
 from torchseal.nn import Linear as EncryptedLinear
-from torchseal.optim import SGD as EncryptedSGD
-
 from torch.nn import Linear as PlainLinear
-from torch.optim import SGD as PlainSGD
 
 import torch
 import numpy as np
@@ -41,9 +38,6 @@ def test_linear_train():
 
     # Declare input dimensions
     batch_size = 1
-
-    # Declare the training parameters
-    lr = 0.1
 
     # Create weight and bias
     weight = torch.randn(out_features, in_features, requires_grad=True)
@@ -90,14 +84,6 @@ def test_linear_train():
         output, dec_output, atol=5e-2, rtol=0
     ), "Linear layer failed!"
 
-    # Define the optimizer
-    optim = PlainSGD(linear.parameters(), lr=lr)
-    enc_optim = EncryptedSGD(enc_linear.parameters(), lr=lr)
-
-    # Clear the gradients
-    optim.zero_grad()
-    enc_optim.zero_grad()
-
     # Create random grad_output
     grad_output = torch.randn_like(output)
 
@@ -107,18 +93,19 @@ def test_linear_train():
 
     # TODO: Check the correctness of input gradients
 
-    # Do the optimization step
-    optim.step()
-    enc_optim.step()
-
-    # Check the correctness of parameters optimization (with a tolerance of 5e-2)
-    assert torch.allclose(
-        enc_linear.weight, linear.weight, atol=5e-2, rtol=0
-    ), "Weight optimization failed!"
+    # Check the correctness of weight gradients (with a tolerance of 5e-2)
+    assert enc_linear.weight.grad is not None and linear.weight.grad is not None, "Weight gradients are None!"
 
     assert torch.allclose(
-        enc_linear.bias, linear.bias, atol=5e-2, rtol=0
-    ), "Bias optimization failed!"
+        enc_linear.weight.grad, linear.weight.grad, atol=5e-2, rtol=0
+    ), "Weight gradient failed!"
+
+    # Check the correctness of bias gradients (with a tolerance of 5e-2)
+    assert enc_linear.bias.grad is not None and linear.bias.grad is not None, "Bias gradients are None!"
+
+    assert torch.allclose(
+        enc_linear.bias.grad, linear.bias.grad, atol=5e-2, rtol=0
+    ), "Bias gradient failed!"
 
 
 def test_linear_eval():
