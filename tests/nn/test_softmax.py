@@ -88,5 +88,4 @@ def test_softmax():
         dec_output, output, atol=5e-2, rtol=0
     ), "Softmax layer failed!"
 
-
-# TODO: Add gradient test
+    # TODO: Do backward pass and check the correctness of the input gradients

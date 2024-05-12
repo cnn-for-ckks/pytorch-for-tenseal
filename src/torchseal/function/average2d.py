@@ -9,7 +9,7 @@ class AvgPool2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSPoolingFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, conv2d_padding_transformation: torch.Tensor, conv2d_inverse_padding_transformation: torch.Tensor) -> CKKSWrapper:
         # Apply the padding transformation to the encrypted input
-        # TODO: This is useless if padding is 0 (we can skip this step if that's the case)
+        # NOTE: This is useless if padding is 0 (we can skip this step if that's the case)
         enc_padding_input = enc_input.do_matrix_multiplication(
             conv2d_padding_transformation
         )
@@ -46,7 +46,7 @@ class AvgPool2dFunction(torch.autograd.Function):
             padded_grad_input = grad_output.matmul(weight)
 
             # Apply the inverse padding transformation to the gradient input
-            # TODO: This is useless if padding is 0 (we can skip this step if that's the case)
+            # NOTE: This is useless if padding is 0 (we can skip this step if that's the case)
             grad_input = padded_grad_input.matmul(
                 conv2d_inverse_padding_transformation
             )

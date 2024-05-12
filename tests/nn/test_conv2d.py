@@ -9,7 +9,7 @@ import tenseal as ts
 import torchseal
 
 
-def test_conv2d():
+def test_conv2d_train():
     # Set the seed for reproducibility
     torch.manual_seed(73)
     np.random.seed(73)
@@ -87,15 +87,6 @@ def test_conv2d():
     conv2d.bias = torch.nn.Parameter(bias)  # Set the bias
 
     # Create the encrypted convolution layer
-    enc_weight = approximate_toeplitz_multiple_channels(
-        kernel,
-        (in_channels, input_height, input_width),
-        stride=stride,
-        padding=padding
-    )
-    enc_bias = torch.repeat_interleave(
-        bias, output_height * output_width
-    )
     enc_conv2d = EncryptedConv2d(
         in_channels=in_channels,
         out_channels=out_channels,
@@ -103,9 +94,20 @@ def test_conv2d():
         input_size=(input_height, input_width),
         stride=stride,
         padding=padding,
-        weight=enc_weight,
-        bias=enc_bias,
+        weight=approximate_toeplitz_multiple_channels(
+            kernel,
+            (in_channels, input_height, input_width),
+            stride=stride,
+            padding=padding
+        ),
+        bias=torch.repeat_interleave(
+            bias, output_height * output_width
+        ),
     )
+
+    # Set both layer on training mode
+    conv2d.train()
+    enc_conv2d.train()
 
     # Calculate the output
     output = conv2d.forward(input_tensor)
@@ -125,4 +127,12 @@ def test_conv2d():
         rtol=0
     ), "Convolution layer failed!"
 
-# TODO: Add gradient test
+    # TODO: Check the correctness of input gradients
+
+    # TODO: Check the correctness of parameter gradients
+
+
+def test_conv2d_eval():
+    # TODO: Add evaluation test
+
+    pass

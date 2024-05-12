@@ -53,10 +53,10 @@ class CKKSWrapper(torch.Tensor):
         data = super(CKKSWrapper, self).clone()
 
         # Create the new instance
-        instance = CKKSWrapper(
-            context,
-            data,
-        )
+        instance = CKKSWrapper.__new__(CKKSWrapper, context, data)
+
+        # Set the parameters
+        instance.ckks_data = self.ckks_data
 
         return instance
 

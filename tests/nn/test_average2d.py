@@ -96,4 +96,4 @@ def test_avgpool2d():
         rtol=0
     ), "Average pooling layer failed!"
 
-# TODO: Add gradient test
+    # TODO: Do backward pass and check the correctness of the input gradients

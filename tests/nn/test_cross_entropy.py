@@ -112,4 +112,4 @@ def test_cross_entropy():
         dec_loss, loss, atol=5e-1, rtol=0
     ), "Cross entropy loss layer failed!"
 
-# TODO: Add gradient test
+    # TODO: Do backward pass and check the correctness of the input gradients

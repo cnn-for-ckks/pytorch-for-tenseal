@@ -58,4 +58,4 @@ def test_square():
         output, dec_output, atol=5e-2, rtol=0
     ), "Square layer failed!"
 
-# TODO: Add gradient test
+    # TODO: Do backward pass and check the correctness of the input gradients

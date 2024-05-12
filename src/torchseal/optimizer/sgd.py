@@ -4,7 +4,7 @@ import typing
 import torch
 
 
-# TODO: Move the SGD optimizer to the torchseal package
+# TODO: Move the SGD optimizer to operate on encrypted data
 class SGD(torch.optim.Optimizer):
     def __init__(self, params: Iterator[torch.nn.Parameter], lr=1e-3) -> None:
         super(SGD, self).__init__(params, defaults={"lr": lr})
@@ -22,7 +22,8 @@ class SGD(torch.optim.Optimizer):
                 # Get the parameter
                 lr = typing.cast(float, group["lr"])
 
-                # Update the parameter
-                param_tensor.data = param_tensor.data.subtract(
-                    param_tensor.grad.data.mul(lr)
-                )
+                # Delta weight
+                delta_weight = param_tensor.grad.data.mul(-lr)
+
+                # Update the tensor
+                param_tensor.data = param_tensor.data.add(delta_weight)

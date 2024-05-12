@@ -1,5 +1,7 @@
 from torchseal.nn import Linear as EncryptedLinear
+from torchseal.optimizer import SGD as EncryptedSGD
 from torch.nn import Linear as PlainLinear
+from torch.optim import SGD as PlainSGD
 
 import torch
 import numpy as np
@@ -8,7 +10,7 @@ import tenseal as ts
 import torchseal
 
 
-def test_linear():
+def test_linear_train():
     # Set the seed for reproducibility
     torch.manual_seed(73)
     np.random.seed(73)
@@ -39,16 +41,19 @@ def test_linear():
     # Declare input dimensions
     batch_size = 1
 
+    # Declare the training parameters
+    lr = 0.1
+
     # Create weight and bias
     weight = torch.randn(out_features, in_features, requires_grad=True)
     bias = torch.randn(out_features, requires_grad=True)
 
     # Create the input tensor
-    input_tensor = torch.randn(batch_size, in_features)
+    input_tensor = torch.randn(batch_size, in_features, requires_grad=True)
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        context, input_tensor.clone().view(batch_size, -1)
     )
 
     # Create the plaintext linear layer
@@ -60,9 +65,17 @@ def test_linear():
     enc_linear = EncryptedLinear(
         in_features=in_features,
         out_features=out_features,
-        weight=weight,
-        bias=bias
+        weight=torch.nn.Parameter(
+            weight.clone().detach().requires_grad_(True)
+        ),
+        bias=torch.nn.Parameter(
+            bias.clone().detach().requires_grad_(True)
+        )
     )
+
+    # Set both layer on training mode
+    linear.train()
+    enc_linear.train()
 
     # Calculate the output
     output = linear.forward(input_tensor)
@@ -76,5 +89,38 @@ def test_linear():
         output, dec_output, atol=5e-2, rtol=0
     ), "Linear layer failed!"
 
+    # Define the optimizer
+    optim = PlainSGD(linear.parameters(), lr=lr)
+    enc_optim = EncryptedSGD(enc_linear.parameters(), lr=lr)
 
-# TODO: Add gradient test
+    # Clear the gradients
+    optim.zero_grad()
+    enc_optim.zero_grad()
+
+    # Create random grad_output
+    grad_output = torch.randn_like(output)
+
+    # Do backward pass
+    output.backward(grad_output)
+    enc_output.backward(grad_output)
+
+    # TODO: Check the correctness of input gradients
+
+    # Do the optimization step
+    optim.step()
+    enc_optim.step()
+
+    # Check the correctness of parameters optimization (with a tolerance of 5e-2)
+    assert torch.allclose(
+        enc_linear.weight, linear.weight, atol=5e-2, rtol=0
+    ), "Weight optimization failed!"
+
+    assert torch.allclose(
+        enc_linear.bias, linear.bias, atol=5e-2, rtol=0
+    ), "Bias optimization failed!"
+
+
+def test_linear_eval():
+    # TODO: Add evaluation test
+
+    pass
