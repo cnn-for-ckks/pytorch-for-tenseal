@@ -32,6 +32,9 @@ def test_softmax():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     exp_start = -3
     exp_stop = 3
@@ -54,9 +57,7 @@ def test_softmax():
     input_tensor = torch.randn(batch_size, input_length)
 
     # Encrypt the value
-    enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor
-    )
+    enc_input_tensor = torchseal.ckks_wrapper(input_tensor)
 
     # Create the plaintext softmax layer
     softmax = PlainSoftmax(dim=1)

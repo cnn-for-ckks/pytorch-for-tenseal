@@ -32,6 +32,9 @@ def test_avgpool2d():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     n_channels = 2
     kernel_height = 3
@@ -59,7 +62,7 @@ def test_avgpool2d():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1)
     )
 
     # Create the plaintext average pooling layer

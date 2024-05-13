@@ -31,6 +31,9 @@ def test_square():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare input dimensions
     input_length = 10
     batch_size = 1
@@ -40,7 +43,7 @@ def test_square():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1)
     )
 
     # Create the encrypted square layer

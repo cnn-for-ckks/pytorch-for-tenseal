@@ -1,3 +1,5 @@
+from torchseal.state import CKKSState
+
 import typing
 import numpy as np
 import torch
@@ -20,7 +22,7 @@ class CKKSWrapper(torch.Tensor):
 
     # Special methods
     @staticmethod
-    def __new__(cls, context: ts.Context, data: torch.Tensor) -> "CKKSWrapper":
+    def __new__(cls, data: torch.Tensor) -> "CKKSWrapper":
         # Create the instance
         instance = torch.Tensor._make_subclass(cls, data)
 
@@ -28,12 +30,15 @@ class CKKSWrapper(torch.Tensor):
 
     # Special methods
     # NOTE: Will automatically encrypt the data tensor
-    def __init__(self, context: ts.Context, data: torch.Tensor) -> None:
+    def __init__(self, data: torch.Tensor) -> None:
         # Call the super constructor
         super(CKKSWrapper, self).__init__()
 
+        # Get the state of the CKKS
+        state = CKKSState()
+
         # Create the encrypted tensor
-        new_ckks_data = ts.ckks_tensor(context, data.tolist())
+        new_ckks_data = ts.ckks_tensor(state.context, data.tolist())
 
         # Set the ckks_data
         self.ckks_data = new_ckks_data
@@ -46,14 +51,11 @@ class CKKSWrapper(torch.Tensor):
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
-        # Get the context
-        context = self.ckks_data.context()
-
         # Clone the data
         data = super(CKKSWrapper, self).clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, context, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
         # Set the parameters
         instance.ckks_data = self.ckks_data
@@ -268,17 +270,17 @@ class CKKSWrapper(torch.Tensor):
 
     # Encrypt-Decrypt Operations
     def do_encryption(self) -> "CKKSWrapper":
-        # Get the previous context
-        context = self.ckks_data.context()
+        # Get the state of the CKKS
+        state = CKKSState()
 
         # Create the new encrypted tensor
-        new_ckks_tensor = ts.ckks_tensor(context, self.data.tolist())
+        new_ckks_data = ts.ckks_tensor(state.context, self.data.tolist())
 
         # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        self.ckks_data = new_ckks_data
 
         # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
+        new_data_tensor = torch.zeros(new_ckks_data.shape)
 
         # Blur the data
         self.data = new_data_tensor.data

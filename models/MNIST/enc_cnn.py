@@ -92,7 +92,7 @@ class EncConvNet(torch.nn.Module):
         return third_result
 
 
-def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, batch_size: int) -> None:
+def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntropyLoss, batch_size: int) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
     class_correct = list(0. for _ in range(10))
@@ -104,7 +104,7 @@ def enc_test(context: ts.Context, enc_model: EncConvNet, test_loader: DataLoader
     for raw_data, raw_target in test_loader:
         # Encoding and encryption
         enc_data_wrapper = torchseal.ckks_wrapper(
-            context, raw_data.view(batch_size, -1)
+            raw_data.view(batch_size, -1)
         )
 
         # Encrypted evaluation
@@ -180,6 +180,9 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Load the data
     train_data = datasets.MNIST(
         "data", train=True, download=True, transform=transforms.ToTensor()
@@ -220,7 +223,6 @@ if __name__ == "__main__":
 
     # Encrypted evaluation
     enc_test(
-        context,
         enc_model,
         enc_subset_test_loader,
         enc_criterion,

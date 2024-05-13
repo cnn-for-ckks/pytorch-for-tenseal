@@ -42,7 +42,7 @@ class EncLogisticRegression(torch.nn.Module):
         return first_result_activated
 
 
-def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader: DataLoader, criterion: torch.nn.BCELoss) -> None:
+def enc_test(enc_model: EncLogisticRegression, test_loader: DataLoader, criterion: torch.nn.BCELoss) -> None:
     # Initialize lists to monitor test loss and accuracy
     test_loss = 0.
 
@@ -51,9 +51,7 @@ def enc_test(context: ts.Context, enc_model: EncLogisticRegression, test_loader:
 
     for raw_data, raw_target in test_loader:
         # Encryption
-        enc_data_wrapper = torchseal.ckks_wrapper(
-            context, raw_data
-        )
+        enc_data_wrapper = torchseal.ckks_wrapper(raw_data)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(enc_data_wrapper)
@@ -96,6 +94,9 @@ if __name__ == "__main__":
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Load the data
     dataset = FraminghamDataset(csv_file="./data/Framingham/framingham.csv")
 
@@ -137,4 +138,4 @@ if __name__ == "__main__":
     enc_criterion = torch.nn.BCELoss()
 
     # Test the model
-    enc_test(context, enc_model, test_loader, enc_criterion)
+    enc_test(enc_model, test_loader, enc_criterion)

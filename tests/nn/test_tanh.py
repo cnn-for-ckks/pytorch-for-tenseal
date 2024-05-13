@@ -32,6 +32,9 @@ def test_tanh():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     start = -3
     stop = 3
@@ -48,7 +51,7 @@ def test_tanh():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1)
     )
 
     # Create the plaintext tanh layer

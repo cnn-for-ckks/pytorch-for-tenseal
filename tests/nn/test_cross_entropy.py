@@ -34,6 +34,9 @@ def test_cross_entropy():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     exp_start = -3
     exp_stop = 3
@@ -62,9 +65,7 @@ def test_cross_entropy():
     input_tensor = torch.randn(batch_size, num_classes, requires_grad=True)
 
     # Encrypt the value
-    enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor
-    )
+    enc_input_tensor = torchseal.ckks_wrapper(input_tensor)
 
     # Create the target tensor
     target = torch.randint(
@@ -74,7 +75,7 @@ def test_cross_entropy():
 
     # Sparse and encrypt the target tensor
     enc_target = torchseal.ckks_wrapper(
-        context, get_sparse_target(target, batch_size, num_classes)
+        get_sparse_target(target, batch_size, num_classes)
     )
 
     # Create the plaintext softmax layer

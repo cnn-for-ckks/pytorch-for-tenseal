@@ -32,6 +32,9 @@ def test_linear_train():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     out_features = 8
     in_features = 8
@@ -48,7 +51,7 @@ def test_linear_train():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.clone().view(batch_size, -1)
+        input_tensor.clone().view(batch_size, -1)
     )
 
     # Create the plaintext linear layer

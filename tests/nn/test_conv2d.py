@@ -33,6 +33,9 @@ def test_conv2d_train():
     # Galois keys are required to do ciphertext rotations
     context.generate_galois_keys()
 
+    # Set the context
+    torchseal.set_context(context)
+
     # Declare parameters
     out_channels = 2
     in_channels = 2
@@ -71,7 +74,7 @@ def test_conv2d_train():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        context, input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1)
     )
 
     # Create the plaintext convolution layer
