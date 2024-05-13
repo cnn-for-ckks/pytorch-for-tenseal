@@ -65,7 +65,7 @@ def test_cross_entropy():
     input_tensor = torch.randn(batch_size, num_classes, requires_grad=True)
 
     # Encrypt the value
-    enc_input_tensor = torchseal.ckks_wrapper(input_tensor)
+    enc_input_tensor = torchseal.ckks_wrapper(input_tensor, do_encryption=True)
 
     # Create the target tensor
     target = torch.randint(
@@ -75,7 +75,7 @@ def test_cross_entropy():
 
     # Sparse and encrypt the target tensor
     enc_target = torchseal.ckks_wrapper(
-        get_sparse_target(target, batch_size, num_classes)
+        get_sparse_target(target, batch_size, num_classes), do_encryption=True
     )
 
     # Create the plaintext softmax layer

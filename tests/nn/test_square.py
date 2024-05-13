@@ -43,7 +43,7 @@ def test_square():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1), do_encryption=True
     )
 
     # Create the encrypted square layer

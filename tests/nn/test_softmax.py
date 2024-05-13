@@ -57,7 +57,7 @@ def test_softmax():
     input_tensor = torch.randn(batch_size, input_length)
 
     # Encrypt the value
-    enc_input_tensor = torchseal.ckks_wrapper(input_tensor)
+    enc_input_tensor = torchseal.ckks_wrapper(input_tensor, do_encryption=True)
 
     # Create the plaintext softmax layer
     softmax = PlainSoftmax(dim=1)

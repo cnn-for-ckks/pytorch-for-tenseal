@@ -62,7 +62,7 @@ def test_avgpool2d():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1), do_encryption=True
     )
 
     # Create the plaintext average pooling layer

@@ -51,7 +51,7 @@ def enc_test(enc_model: EncLogisticRegression, test_loader: DataLoader, criterio
 
     for raw_data, raw_target in test_loader:
         # Encryption
-        enc_data_wrapper = torchseal.ckks_wrapper(raw_data)
+        enc_data_wrapper = torchseal.ckks_wrapper(raw_data, do_encryption=True)
 
         # Encrypted evaluation
         enc_output = enc_model.forward(enc_data_wrapper)

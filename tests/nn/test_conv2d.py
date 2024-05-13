@@ -74,7 +74,7 @@ def test_conv2d_train():
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        input_tensor.view(batch_size, -1)
+        input_tensor.view(batch_size, -1), do_encryption=True
     )
 
     # Create the plaintext convolution layer

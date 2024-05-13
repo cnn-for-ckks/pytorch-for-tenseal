@@ -13,7 +13,7 @@ def set_context(context: ts.Context) -> None:
     state.context = context
 
 
-def ckks_wrapper(data: torch.Tensor, do_encryption: bool = True) -> CKKSWrapper:
+def ckks_wrapper(data: torch.Tensor, do_encryption: bool = False) -> CKKSWrapper:
     # Get the state of the CKKS
     state = CKKSState()
 

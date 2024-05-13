@@ -104,7 +104,7 @@ def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn
     for raw_data, raw_target in test_loader:
         # Encoding and encryption
         enc_data_wrapper = torchseal.ckks_wrapper(
-            raw_data.view(batch_size, -1)
+            raw_data.view(batch_size, -1), do_encryption=True
         )
 
         # Encrypted evaluation
