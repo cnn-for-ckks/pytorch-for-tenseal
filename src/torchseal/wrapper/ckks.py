@@ -1,25 +1,27 @@
-from typing import Callable, Dict, Iterable, Optional, Tuple, Type
-# from torch.utils._pytree import tree_map, PyTree
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type
+from torch.utils._pytree import tree_map, PyTree
 from torchseal.state import CKKSState
+
 
 import typing
 import numpy as np
 import torch
 import tenseal as ts
-import torchseal
 
 
-# # Functions
-# def unwrap(ckks_wrapper: "CKKSWrapper") -> torch.Tensor:
-#     return ckks_wrapper.data
+# Helper functions
+def unwrap(ckks_wrapper: Any) -> Any:
+    return ckks_wrapper.plaintext_data if isinstance(ckks_wrapper, CKKSWrapper) else ckks_wrapper
 
 
-# def wrap(data: torch.Tensor) -> "CKKSWrapper":
-#     return CKKSWrapper(data)
+# Helper functions
+def wrap(tensor: Any) -> Any:
+    return CKKSWrapper(tensor) if isinstance(tensor, torch.Tensor) else tensor
 
 
 # CKKS Wrapper
 class CKKSWrapper(torch.Tensor):
+    __plaintext_data: torch.Tensor
     __ckks_data: Optional[ts.CKKSTensor] = None
 
     # Properties
@@ -34,35 +36,45 @@ class CKKSWrapper(torch.Tensor):
     def ckks_data(self, ckks_data: Optional[ts.CKKSTensor]) -> None:
         self.__ckks_data = ckks_data
 
+    # Properties
+    @property
+    def plaintext_data(self) -> torch.Tensor:
+        return self.__plaintext_data
+
+    # Properties
+    @plaintext_data.setter
+    def plaintext_data(self, plaintext_data: torch.Tensor) -> None:
+        self.__plaintext_data = plaintext_data
+
     # Predicates
     def is_encrypted(self) -> bool:
         return self.__ckks_data is not None
 
     # Special methods
     @staticmethod
-    def __new__(cls, data: torch.Tensor) -> "CKKSWrapper":
+    def __new__(cls, plaintext_data: torch.Tensor) -> "CKKSWrapper":
         # Create the instance
-        instance = torch.Tensor._make_subclass(cls, data)
+        instance = torch.Tensor._make_subclass(cls, plaintext_data.to("meta"))
 
         return instance
 
     # Special methods
     # NOTE: This will just create unencrypted wrapper
-    def __init__(self, data: torch.Tensor) -> None:
+    def __init__(self, plaintext_data: torch.Tensor) -> None:
         # Call the super constructor
         super(CKKSWrapper, self).__init__()
 
-        # Blur the data
-        self.data = data
+        # Set the plaintext data
+        self.plaintext_data = plaintext_data
 
     # Special methods
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(ENCRYPTED)" if self.is_encrypted() else super(CKKSWrapper, self).__repr__()
+        return f"{self.__class__.__name__}(ENCRYPTED)" if self.is_encrypted() else f"{self.__class__.__name__}(plaintext_data={self.plaintext_data})"
 
-    # # Special methods
-    # @classmethod
-    # def __torch_dispatch__(cls, func: Callable, types: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
-    #     return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
+    # Special methods
+    @classmethod
+    def __torch_dispatch__(cls, func: Callable, types: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+        return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
@@ -72,17 +84,17 @@ class CKKSWrapper(torch.Tensor):
             self.ckks_data.copy()
         )
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -94,17 +106,17 @@ class CKKSWrapper(torch.Tensor):
             self.ckks_data.reshape(other.ckks_data.shape)
         )
 
-        # Resize the data
-        data = super(CKKSWrapper, self).view_as(other)
+        # Resize the plaintext data
+        plaintext_data = self.plaintext_data.view_as(other)
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -113,17 +125,17 @@ class CKKSWrapper(torch.Tensor):
         # Apply the linear transformation to the encrypted input
         ckks_data = self.ckks_data.mm(other.tolist())
 
-        # Create an empty data tensor
-        data = torch.zeros(ckks_data.shape)
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -132,17 +144,17 @@ class CKKSWrapper(torch.Tensor):
         # Apply the linear transformation to the encrypted input
         ckks_data = self.ckks_data.mm(other.ckks_data)
 
-        # Create an empty data tensor
-        data = torch.zeros(ckks_data.shape)
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -151,17 +163,17 @@ class CKKSWrapper(torch.Tensor):
         # Apply the addition function to the encrypted input
         ckks_data = self.ckks_data.add(other.tolist())
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -170,17 +182,17 @@ class CKKSWrapper(torch.Tensor):
         # Apply the addition function to the encrypted input
         ckks_data = self.ckks_data.add(other.ckks_data)
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -192,17 +204,17 @@ class CKKSWrapper(torch.Tensor):
             self.ckks_data.neg()
         )
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -214,17 +226,17 @@ class CKKSWrapper(torch.Tensor):
             self.ckks_data.square()
         )
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -238,17 +250,17 @@ class CKKSWrapper(torch.Tensor):
             )
         )
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -313,17 +325,17 @@ class CKKSWrapper(torch.Tensor):
         # Apply the division function to the encrypted input
         ckks_data = act_x_copy.mul(matrix_inverse_sum)
 
-        # Clone the data
-        data = super(CKKSWrapper, self).clone()
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -350,17 +362,17 @@ class CKKSWrapper(torch.Tensor):
             ts.CKKSTensor, enc_log_probs.sum(axis=0)
         ).mul(-1 / batch_size)
 
-        # Create an empty data tensor
-        data = torch.zeros(ckks_data.shape)
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -370,19 +382,19 @@ class CKKSWrapper(torch.Tensor):
         state = CKKSState()
 
         # Create the new encrypted tensor
-        ckks_data = ts.ckks_tensor(state.context, self.data.tolist())
+        ckks_data = ts.ckks_tensor(state.context, self.plaintext_data.tolist())
 
-        # Create an empty data tensor
-        data = torch.zeros(ckks_data.shape)
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
 
@@ -392,17 +404,17 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = None
 
         # Decrypt the data
-        data = torch.tensor(
+        plaintext_data = torch.tensor(
             self.ckks_data.decrypt().tolist()
         )
 
         # Create the new instance
-        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
 
         # Set the ckks data
         instance.ckks_data = ckks_data
 
-        # Set the data
-        instance.data = data
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
 
         return instance
