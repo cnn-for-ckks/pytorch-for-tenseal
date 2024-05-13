@@ -15,9 +15,9 @@ class LinearFunction(torch.autograd.Function):
 
         # Apply the linear transformation to the encrypted input
         # TODO: Implement the linear transformation for encrypted parameters
-        enc_output = enc_input.do_matrix_multiplication(
+        enc_output = enc_input.ckks_matrix_multiplication(
             weight.t()
-        ).do_addition(bias)
+        ).ckks_addition(bias)
 
         return enc_output
 
@@ -29,7 +29,7 @@ class LinearFunction(torch.autograd.Function):
             Tuple[torch.Tensor],
             ctx.saved_tensors
         )
-        input = ctx.enc_input.do_decryption()
+        input = ctx.enc_input.decrypt()
 
         # Unpack the saved tensors
         weight, = saved_tensors

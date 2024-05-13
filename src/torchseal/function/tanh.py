@@ -15,7 +15,7 @@ class TanhFunction(torch.autograd.Function):
         ctx.deriv_coeffs = deriv_coeffs
 
         # Apply the sigmoid function to the encrypted input
-        enc_output = enc_input.do_encrypted_polynomial(coeffs)
+        enc_output = enc_input.ckks_encrypted_polynomial(coeffs)
 
         return enc_output
 
@@ -23,7 +23,7 @@ class TanhFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:
         # Get the saved tensors
-        input = ctx.enc_input.do_decryption()
+        input = ctx.enc_input.decrypt()
         deriv_coeffs = ctx.deriv_coeffs
 
         # Do the backward operation

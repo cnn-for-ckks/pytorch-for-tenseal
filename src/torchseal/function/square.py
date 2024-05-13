@@ -2,7 +2,6 @@ from typing import Optional, Tuple
 from torchseal.wrapper import CKKSWrapper, CKKSLinearFunctionWrapper
 
 import typing
-import numpy as np
 import torch
 
 
@@ -13,7 +12,7 @@ class SquareFunction(torch.autograd.Function):
         ctx.enc_input = enc_input.clone()
 
         # Apply square function to the encrypted input (x ** 2)
-        enc_output = enc_input.do_encrypted_square()
+        enc_output = enc_input.ckks_encrypted_square()
 
         return enc_output
 
@@ -21,7 +20,7 @@ class SquareFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
         # Get the saved tensors
-        input = ctx.enc_input.do_decryption()
+        input = ctx.enc_input.decrypt()
 
         # Do the backward operation (2 * x)
         backward_output = input.mul(2)

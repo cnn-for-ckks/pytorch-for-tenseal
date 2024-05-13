@@ -111,7 +111,7 @@ def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn
         enc_output = enc_model.forward(enc_data_wrapper)
 
         # Decryption of result using client secret key
-        output = enc_output.do_decryption()
+        output = enc_output.decrypt()
 
         # Compute loss
         loss = criterion.forward(output, raw_target)

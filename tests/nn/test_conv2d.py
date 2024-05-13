@@ -121,7 +121,7 @@ def test_conv2d_train():
     enc_output = enc_conv2d.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.do_decryption()
+    dec_output = enc_output.decrypt()
     dec_output_resized = dec_output.view(
         batch_size, out_channels, output_height, output_width
     )

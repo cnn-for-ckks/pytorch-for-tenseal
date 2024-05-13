@@ -82,7 +82,7 @@ def test_softmax():
     enc_output = encrypted_softmax.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.do_decryption()
+    dec_output = enc_output.decrypt()
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(

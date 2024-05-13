@@ -57,7 +57,7 @@ def enc_test(enc_model: EncLogisticRegression, test_loader: DataLoader, criterio
         enc_output = enc_model.forward(enc_data_wrapper)
 
         # Decryption using client secret key
-        output = enc_output.do_decryption().clamp(0, 1)
+        output = enc_output.decrypt().clamp(0, 1)
 
         # Compute loss
         loss = criterion.forward(output, raw_target)

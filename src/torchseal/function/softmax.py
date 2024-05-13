@@ -10,7 +10,7 @@ class SoftmaxFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSSoftmaxFunctionWrapper, enc_input: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> CKKSWrapper:
         # Apply the division function to the encrypted input
-        enc_output = enc_input.do_encrypted_softmax(
+        enc_output = enc_input.ckks_encrypted_softmax(
             exp_coeffs, inverse_coeffs, inverse_iterations
         )
 
@@ -23,7 +23,7 @@ class SoftmaxFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSSoftmaxFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None]:
         # Get the saved tensors
-        enc_output = ctx.enc_output.do_decryption()
+        enc_output = ctx.enc_output.decrypt()
 
         # Get the needs_input_grad
         result = typing.cast(

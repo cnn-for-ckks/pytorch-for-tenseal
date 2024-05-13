@@ -10,7 +10,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx: CKKSLossFunctionWrapper, enc_input: CKKSWrapper, enc_target: CKKSWrapper, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int, log_coeffs: np.ndarray) -> CKKSWrapper:
         # Apply softmax to the input to get probabilities
-        enc_output = enc_input.do_encrypted_softmax(
+        enc_output = enc_input.ckks_encrypted_softmax(
             exp_coeffs, inverse_coeffs, inverse_iterations
         )
 
@@ -22,7 +22,7 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         batch_size, _ = enc_input.shape
 
         # Calculate the loss
-        enc_loss = enc_output.do_encrypted_negative_log_likelihood_loss(
+        enc_loss = enc_output.ckks_encrypted_negative_log_likelihood_loss(
             enc_target, log_coeffs, batch_size
         )
 
@@ -32,8 +32,8 @@ class CrossEntropyLossFunction(torch.autograd.Function):
     @staticmethod
     def backward(ctx: CKKSLossFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None, None, None]:
         # Get the saved tensors
-        output = ctx.enc_output.do_decryption()
-        target = ctx.enc_target.do_decryption()
+        output = ctx.enc_output.decrypt()
+        target = ctx.enc_target.decrypt()
 
         # Unpack the target shape
         batch_size, _ = target.shape

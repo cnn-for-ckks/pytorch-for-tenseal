@@ -1,3 +1,4 @@
+from typing import Optional
 from torchseal.state import CKKSState
 
 import typing
@@ -6,18 +7,20 @@ import torch
 import tenseal as ts
 
 
-# TODO: Move overridden methods to the __torch_dispatch__ method
+# TODO: Add wrap and unwrap function to the __torch_dispatch__ method
 class CKKSWrapper(torch.Tensor):
-    __ckks_data: ts.CKKSTensor
+    __ckks_data: Optional[ts.CKKSTensor] = None
 
     # Properties
     @property
     def ckks_data(self) -> ts.CKKSTensor:
+        assert self.__ckks_data is not None, "CKKS data is not initialized"
+
         return self.__ckks_data
 
     # Properties
     @ckks_data.setter
-    def ckks_data(self, ckks_data: ts.CKKSTensor) -> None:
+    def ckks_data(self, ckks_data: Optional[ts.CKKSTensor]) -> None:
         self.__ckks_data = ckks_data
 
     # Special methods
@@ -29,147 +32,204 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Special methods
-    # NOTE: Will automatically encrypt the data tensor
+    # NOTE: This will just create unencrypted wrapper
     def __init__(self, data: torch.Tensor) -> None:
         # Call the super constructor
         super(CKKSWrapper, self).__init__()
 
-        # Get the state of the CKKS
-        state = CKKSState()
-
-        # Create the encrypted tensor
-        new_ckks_data = ts.ckks_tensor(state.context, data.tolist())
-
-        # Set the ckks_data
-        self.ckks_data = new_ckks_data
-
-        # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_data.shape)
-
         # Blur the data
-        self.data = new_data_tensor.data
+        self.data = data
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
+        # Clone the ckks_data
+        ckks_data = typing.cast(
+            ts.CKKSTensor,
+            self.ckks_data.copy()
+        )
+
         # Clone the data
         data = super(CKKSWrapper, self).clone()
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-        # Set the parameters
-        instance.ckks_data = self.ckks_data
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
 
         return instance
 
     # Overridden methods
     def view_as(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Resize the ckks_data
-        self.ckks_data = typing.cast(
+        ckks_data = typing.cast(
             ts.CKKSTensor,
-            self.ckks_data.reshape(list(self.data.size()))
+            self.ckks_data.reshape(other.ckks_data.shape)
         )
 
         # Resize the data
-        self.data = super(CKKSWrapper, self).view_as(other)
+        data = super(CKKSWrapper, self).view_as(other)
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-    # CKKS Operation (with shape change)
-    def do_matrix_multiplication(self, other: torch.Tensor) -> "CKKSWrapper":
-        # Apply the linear transformation to the encrypted input
-        new_ckks_tensor = self.ckks_data.mm(other.tolist())
+        # Set the ckks data
+        instance.ckks_data = ckks_data
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Set the data
+        instance.data = data
 
-        # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
-
-        # Reshape the data
-        self.data = new_data_tensor.data
-
-        return self
+        return instance
 
     # CKKS Operation (with shape change)
-    def do_encrypted_matrix_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+    def ckks_matrix_multiplication(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
-        new_ckks_tensor = self.ckks_data.mm(other.ckks_data)
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        ckks_data = self.ckks_data.mm(other.tolist())
 
         # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_tensor.shape)
+        data = torch.zeros(ckks_data.shape)
 
-        # Reshape the data
-        self.data = new_data_tensor.data
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-        return self
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
+
+    # CKKS Operation (with shape change)
+    def ckks_encrypted_matrix_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the linear transformation to the encrypted input
+        ckks_data = self.ckks_data.mm(other.ckks_data)
+
+        # Create an empty data tensor
+        data = torch.zeros(ckks_data.shape)
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_addition(self, other: torch.Tensor) -> "CKKSWrapper":
+    def ckks_addition(self, other: torch.Tensor) -> "CKKSWrapper":
         # Apply the addition function to the encrypted input
-        new_ckks_tensor = self.ckks_data.add(other.tolist())
+        ckks_data = self.ckks_data.add(other.tolist())
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_encrypted_addition(self, other: "CKKSWrapper") -> "CKKSWrapper":
+    def ckks_encrypted_addition(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the addition function to the encrypted input
-        new_ckks_tensor = self.ckks_data.add(other.ckks_data)
+        ckks_data = self.ckks_data.add(other.ckks_data)
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_encrypted_negation(self) -> "CKKSWrapper":
+    def ckks_encrypted_negation(self) -> "CKKSWrapper":
         # Apply the negation function to the encrypted input
-        new_ckks_tensor = typing.cast(
+        ckks_data = typing.cast(
             ts.CKKSTensor,
             self.ckks_data.neg()
         )
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_encrypted_square(self) -> "CKKSWrapper":
+    def ckks_encrypted_square(self) -> "CKKSWrapper":
         # Apply the square function to the encrypted input
-        new_ckks_tensor = typing.cast(
+        ckks_data = typing.cast(
             ts.CKKSTensor,
             self.ckks_data.square()
         )
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_encrypted_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
+    def ckks_encrypted_polynomial(self, polyval_coeffs: np.ndarray) -> "CKKSWrapper":
         # Apply the activation function to the encrypted input
-        new_ckks_tensor = typing.cast(
+        ckks_data = typing.cast(
             ts.CKKSTensor,
             self.ckks_data.polyval(
                 polyval_coeffs.tolist()
             )
         )
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation
-    def do_encrypted_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
+    def ckks_encrypted_softmax(self, exp_coeffs: np.ndarray, inverse_coeffs: np.ndarray, inverse_iterations: int) -> "CKKSWrapper":
         # Apply the exp function to the encrypted input
         act_x = typing.cast(
             ts.CKKSTensor,
@@ -227,15 +287,24 @@ class CKKSWrapper(torch.Tensor):
         matrix_inverse_sum = reshaped_inverse_sum_x.mm(binary_matrix.tolist())
 
         # Apply the division function to the encrypted input
-        new_ckks_tensor = act_x_copy.mul(matrix_inverse_sum)
+        ckks_data = act_x_copy.mul(matrix_inverse_sum)
 
-        # Update the encrypted data
-        self.ckks_data = new_ckks_tensor
+        # Clone the data
+        data = super(CKKSWrapper, self).clone()
 
-        return self
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # CKKS Operation (with shape change)
-    def do_encrypted_negative_log_likelihood_loss(
+    def ckks_encrypted_negative_log_likelihood_loss(
         self, enc_target: "CKKSWrapper", log_coeffs: np.ndarray, batch_size: int
     ) -> "CKKSWrapper":
         # Apply log softmax to the output
@@ -253,48 +322,63 @@ class CKKSWrapper(torch.Tensor):
         )
 
         # Calculate the loss
-        enc_loss = typing.cast(
+        ckks_data = typing.cast(
             ts.CKKSTensor, enc_log_probs.sum(axis=0)
         ).mul(-1 / batch_size)
 
-        # Update the encrypted data
-        self.ckks_data = enc_loss
-
         # Create an empty data tensor
-        new_data_tensor = torch.zeros(enc_loss.shape)
+        data = torch.zeros(ckks_data.shape)
 
-        # Reshape the data
-        self.data = new_data_tensor.data
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-        return self
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # Encrypt-Decrypt Operations
-    def do_encryption(self) -> "CKKSWrapper":
+    def encrypt(self) -> "CKKSWrapper":
         # Get the state of the CKKS
         state = CKKSState()
 
         # Create the new encrypted tensor
-        new_ckks_data = ts.ckks_tensor(state.context, self.data.tolist())
-
-        # Update the encrypted data
-        self.ckks_data = new_ckks_data
+        ckks_data = ts.ckks_tensor(state.context, self.data.tolist())
 
         # Create an empty data tensor
-        new_data_tensor = torch.zeros(new_ckks_data.shape)
+        data = torch.zeros(ckks_data.shape)
 
-        # Blur the data
-        self.data = new_data_tensor.data
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-        return self
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance
 
     # Encrypt-Decrypt Operations
-    def do_decryption(self) -> "CKKSWrapper":
-        # Define the new tensor
-        new_data_tensor = torch.tensor(
-            self.ckks_data.decrypt().tolist(), requires_grad=True
+    def decrypt(self) -> "CKKSWrapper":
+        # Set the encrypted data to None
+        ckks_data = None
+
+        # Decrypt the data
+        data = torch.tensor(
+            self.ckks_data.decrypt().tolist()
         )
 
-        # Update the data
-        self.data = new_data_tensor.data
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, data)
 
-        return self
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the data
+        instance.data = data
+
+        return instance

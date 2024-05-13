@@ -10,7 +10,7 @@ class Conv2dFunction(torch.autograd.Function):
     def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, conv2d_padding_transformation: torch.Tensor, conv2d_inverse_padding_transformation: torch.Tensor, conv2d_weight_mask: torch.Tensor, conv2d_bias_transformation: torch.Tensor, training: bool) -> CKKSWrapper:
         # Apply the padding transformation to the encrypted input
         # NOTE: This is useless if padding is 0 (we can skip this step if that's the case)
-        enc_padding_input = enc_input.do_matrix_multiplication(
+        enc_padding_input = enc_input.ckks_matrix_multiplication(
             conv2d_padding_transformation
         )
 
@@ -26,9 +26,9 @@ class Conv2dFunction(torch.autograd.Function):
 
         # Apply the convolution to the encrypted input
         # TODO: Implement the convolution for encrypted parameters
-        enc_output = enc_padding_input.do_matrix_multiplication(
+        enc_output = enc_padding_input.ckks_matrix_multiplication(
             weight.t()
-        ).do_addition(bias)
+        ).ckks_addition(bias)
 
         return enc_output
 
@@ -42,7 +42,7 @@ class Conv2dFunction(torch.autograd.Function):
             ],
             ctx.saved_tensors
         )
-        input = ctx.enc_input.do_decryption()
+        input = ctx.enc_input.decrypt()
 
         # Get the needs_input_grad
         result = typing.cast(

@@ -106,7 +106,7 @@ def test_cross_entropy():
     enc_loss = enc_criterion.forward(enc_input_tensor, enc_target)
 
     # Decrypt the output
-    dec_loss = enc_loss.do_decryption()
+    dec_loss = enc_loss.decrypt()
 
     # Check the correctness of the results (with a tolerance of 5e-1, because the log function will expand the error)
     assert torch.allclose(

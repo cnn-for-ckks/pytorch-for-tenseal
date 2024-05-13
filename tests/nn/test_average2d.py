@@ -86,7 +86,7 @@ def test_avgpool2d():
     enc_output = enc_avgpool2d.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.do_decryption()
+    dec_output = enc_output.decrypt()
     dec_output_resized = dec_output.view(
         batch_size, n_channels, output_height, output_width
     )
