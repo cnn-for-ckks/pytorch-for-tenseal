@@ -378,6 +378,28 @@ class CKKSWrapper(torch.Tensor):
 
     # Encrypt-Decrypt Operations
     def encrypt(self) -> "CKKSWrapper":
+        # Check if the data is already encrypted
+        if self.is_encrypted():
+            # Copy the encrypted data
+            ckks_data = typing.cast(
+                ts.CKKSTensor,
+                self.ckks_data.copy()
+            )
+
+            # Create an empty plaintext data tensor
+            plaintext_data = torch.zeros(ckks_data.shape)
+
+            # Create the new instance
+            instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+            # Set the ckks data
+            instance.ckks_data = ckks_data
+
+            # Set the plaintext data
+            instance.plaintext_data = plaintext_data
+
+            return instance
+
         # Get the state of the CKKS
         state = CKKSState()
 
@@ -399,7 +421,43 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Encrypt-Decrypt Operations
+    def inplace_encrypt(self) -> None:
+        # Check if the data is already encrypted
+        if self.is_encrypted():
+            return
+
+        # Get the state of the CKKS
+        state = CKKSState()
+
+        # Create the new encrypted tensor
+        self.ckks_data = ts.ckks_tensor(
+            state.context, self.plaintext_data.tolist()
+        )
+
+        # Create an empty plaintext data tensor
+        self.plaintext_data = torch.zeros(self.ckks_data.shape)
+
+    # Encrypt-Decrypt Operations
     def decrypt(self) -> "CKKSWrapper":
+        # Check if the data is already decrypted
+        if not self.is_encrypted():
+            # Set the encrypted data to None
+            ckks_data = None
+
+            # Copy the plaintext data
+            plaintext_data = self.plaintext_data.clone()
+
+            # Create the new instance
+            instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+            # Set the ckks data
+            instance.ckks_data = ckks_data
+
+            # Set the plaintext data
+            instance.plaintext_data = plaintext_data
+
+            return instance
+
         # Set the encrypted data to None
         ckks_data = None
 
@@ -418,3 +476,17 @@ class CKKSWrapper(torch.Tensor):
         instance.plaintext_data = plaintext_data
 
         return instance
+
+    # Encrypt-Decrypt Operations
+    def inplace_decrypt(self) -> None:
+        # Check if the data is already decrypted
+        if not self.is_encrypted():
+            return
+
+        # Set the encrypted data to None
+        self.ckks_data = None
+
+        # Decrypt the data
+        self.plaintext_data = torch.tensor(
+            self.ckks_data.decrypt().tolist()
+        )
