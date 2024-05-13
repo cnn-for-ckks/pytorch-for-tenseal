@@ -21,12 +21,8 @@ class EncLogisticRegression(torch.nn.Module):
         self.linear = Linear(
             in_features=torch_nn.linear.in_features,
             out_features=torch_nn.linear.out_features,
-            weight=torch.nn.Parameter(
-                torch_nn.linear.weight
-            ),
-            bias=torch.nn.Parameter(
-                torch_nn.linear.bias
-            )
+            weight=torch_nn.linear.weight,
+            bias=torch_nn.linear.bias
         )
         self.activation_function = Sigmoid(
             start=-5, stop=5, num_of_sample=5, degree=3, approximation_type="minimax"

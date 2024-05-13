@@ -7,7 +7,7 @@ import numpy as np
 
 class CKKSLinearFunctionWrapper(NestedIOFunction):
     __enc_input: Optional[CKKSWrapper] = None
-    __training: Optional[bool] = None
+    __weight: Optional[CKKSWrapper] = None
 
     @property
     def enc_input(self) -> CKKSWrapper:
@@ -20,14 +20,14 @@ class CKKSLinearFunctionWrapper(NestedIOFunction):
         self.__enc_input = enc_input
 
     @property
-    def training(self) -> bool:
-        assert self.__training is not None, "training is not set"
+    def weight(self) -> CKKSWrapper:
+        assert self.__weight is not None, "weight is not set"
 
-        return self.__training
+        return self.__weight
 
-    @training.setter
-    def training(self, training: bool) -> None:
-        self.__training = training
+    @weight.setter
+    def weight(self, weight: CKKSWrapper) -> None:
+        self.__weight = weight
 
 
 class CKKSPoolingFunctionWrapper(NestedIOFunction):

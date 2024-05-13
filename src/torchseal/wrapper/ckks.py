@@ -9,17 +9,8 @@ import torch
 import tenseal as ts
 
 
-# Helper functions
-def unwrap(ckks_wrapper: Any) -> Any:
-    return ckks_wrapper.plaintext_data if isinstance(ckks_wrapper, CKKSWrapper) else ckks_wrapper
-
-
-# Helper functions
-def wrap(tensor: Any) -> Any:
-    return CKKSWrapper(tensor) if isinstance(tensor, torch.Tensor) else tensor
-
-
 # CKKS Wrapper
+# Source: https://colab.research.google.com/drive/1MLeSCMrc6a5Yf_6uAh0bH-IPf5c_BTQf
 class CKKSWrapper(torch.Tensor):
     __plaintext_data: torch.Tensor
     __ckks_data: Optional[ts.CKKSTensor] = None
@@ -73,7 +64,26 @@ class CKKSWrapper(torch.Tensor):
 
     # Special methods
     @classmethod
-    def __torch_dispatch__(cls, func: Callable, types: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+    def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+        # Helper functions state
+        encrypted_tensor_mapping: Dict[torch.Tensor, ts.CKKSTensor] = {}
+
+        # Helper functions
+        # NOTE: Will always decrypt the data
+        # TODO: Implement a better way to keep the data encrypted if needed
+        def unwrap(ckks_wrapper: Any) -> Any:
+            return (
+                ckks_wrapper.decrypt().plaintext_data
+                if ckks_wrapper.is_encrypted()
+                else ckks_wrapper.plaintext_data
+            ) if isinstance(ckks_wrapper, CKKSWrapper) else ckks_wrapper
+
+        # Helper functions
+        # NOTE: Will create a decrypted wrapper
+        # TODO: Implement a better way to keep the data encrypted if needed
+        def wrap(tensor: Any) -> Any:
+            return CKKSWrapper(tensor) if isinstance(tensor, torch.Tensor) else tensor
+
         return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
 
     # Overridden methods
@@ -143,6 +153,50 @@ class CKKSWrapper(torch.Tensor):
     def ckks_encrypted_matrix_multiplication(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the linear transformation to the encrypted input
         ckks_data = self.ckks_data.mm(other.ckks_data)
+
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation (with shape change)
+    def ckks_transpose(self) -> "CKKSWrapper":
+        # Apply the transpose function to the encrypted input
+        ckks_data = typing.cast(
+            ts.CKKSTensor,
+            self.ckks_data.transpose()
+        )
+
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation (with shape change)
+    def ckks_sum(self, axis: int) -> "CKKSWrapper":
+        # Apply the sum function to the encrypted input
+        ckks_data = typing.cast(
+            ts.CKKSTensor,
+            self.ckks_data.sum(axis=axis)
+        )
 
         # Create an empty plaintext data tensor
         plaintext_data = torch.zeros(ckks_data.shape)
@@ -483,10 +537,10 @@ class CKKSWrapper(torch.Tensor):
         if not self.is_encrypted():
             return
 
-        # Set the encrypted data to None
-        self.ckks_data = None
-
         # Decrypt the data
         self.plaintext_data = torch.tensor(
             self.ckks_data.decrypt().tolist()
         )
+
+        # Set the encrypted data to None
+        self.ckks_data = None

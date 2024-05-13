@@ -4,17 +4,34 @@ from torchseal.function import LinearFunction
 
 import typing
 import torch
+import torchseal
 
 
 class Linear(torch.nn.Module):
-    def __init__(self, in_features: int, out_features: int, weight: Optional[torch.Tensor] = None, bias: Optional[torch.Tensor] = None):
+    def __init__(self, in_features: int, out_features: int, weight: Optional[CKKSWrapper] = None, bias: Optional[CKKSWrapper] = None):
         super(Linear, self).__init__()
 
-        self.weight = torch.nn.Parameter(
-            torch.rand(out_features, in_features) if weight is None else weight
+        self.weight = typing.cast(
+            CKKSWrapper,
+            torch.nn.Parameter(
+                # NOTE: Applying torch.nn.Parameter to the ckks_wrapper will always decrypt the tensor
+                # NOTE: But you can always inplace_encrypt the tensor
+                torchseal.ckks_wrapper(
+                    torch.rand(out_features, in_features),
+                    do_encryption=False
+                ) if weight is None else weight
+            )
         )
-        self.bias = torch.nn.Parameter(
-            torch.rand(out_features) if bias is None else bias
+        self.bias = typing.cast(
+            CKKSWrapper,
+            torch.nn.Parameter(
+                # NOTE: Applying torch.nn.Parameter to the ckks_wrapper will always decrypt the tensor
+                # NOTE: But you can always inplace_encrypt the tensor
+                torchseal.ckks_wrapper(
+                    torch.rand(out_features),
+                    do_encryption=False
+                ) if bias is None else bias
+            )
         )
 
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
@@ -28,12 +45,16 @@ class Linear(torch.nn.Module):
         return enc_output
 
     def train(self, mode=True) -> "Linear":
-        # TODO: Change the plaintext parameters to encrypted parameters if mode is True
-        # TODO: Else, change the encrypted parameters to plaintext parameters
+        if mode:
+            # Inplace encrypt the parameters
+            self.weight.inplace_encrypt()
+            self.bias.inplace_encrypt()
+        else:
+            # Inplace decrypt the parameters
+            self.weight.inplace_decrypt()
+            self.bias.inplace_decrypt()
 
         return super(Linear, self).train(mode)
 
     def eval(self) -> "Linear":
-        # TODO: Change the encrypted parameters to plaintext parameters
-
-        return super(Linear, self).eval()
+        return self.train(False)

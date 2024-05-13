@@ -29,18 +29,14 @@ class EncConvNet(torch.nn.Module):
             padding=0,
 
             # Optional parameters
-            weight=torch.nn.Parameter(
-                approximate_toeplitz_multiple_channels(
-                    torch_nn.conv1.weight.data,
-                    (torch_nn.conv1.in_channels, 28, 28),
-                    stride=3,
-                    padding=0
-                )
+            weight=approximate_toeplitz_multiple_channels(
+                torch_nn.conv1.weight.data,
+                (torch_nn.conv1.in_channels, 28, 28),
+                stride=3,
+                padding=0
             ),
-            bias=torch.nn.Parameter(
-                torch.repeat_interleave(
-                    torch_nn.conv1.bias.data, 8 * 8
-                )
+            bias=torch.repeat_interleave(
+                torch_nn.conv1.bias.data, 8 * 8
             ) if torch_nn.conv1.bias is not None else None,
         )
 

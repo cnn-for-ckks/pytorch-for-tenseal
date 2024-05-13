@@ -1,7 +1,7 @@
 from typing import Tuple
 from torchseal.wrapper import CKKSWrapper
 from torchseal.function import AvgPool2dFunction
-from torchseal.utils import generate_near_zeros, approximate_toeplitz_multiple_channels, create_average_kernel, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
+from torchseal.utils import approximate_toeplitz_multiple_channels, create_average_kernel, create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
 
 import typing
 import torch

@@ -7,32 +7,32 @@ import torch
 
 class LinearFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: torch.Tensor, bias: torch.Tensor, training: bool) -> CKKSWrapper:
+    def forward(ctx: CKKSLinearFunctionWrapper, enc_input: CKKSWrapper, weight: CKKSWrapper, bias: CKKSWrapper, training: bool) -> CKKSWrapper:
         # Save the ctx for the backward method
-        ctx.save_for_backward(weight)
         ctx.enc_input = enc_input.clone()
-        ctx.training = training
+        ctx.weight = weight.clone()
 
         # Apply the linear transformation to the encrypted input
-        # TODO: Implement the linear transformation for encrypted parameters
+        # If training, apply the linear transformation to the encrypted input using encrypted parameters
+        if training:
+            enc_output = enc_input.ckks_encrypted_matrix_multiplication(
+                weight.ckks_transpose()
+            ).ckks_encrypted_addition(bias)
+
+            return enc_output
+
+        # Else, apply the linear transformation to the encrypted input using plaintext parameters
         enc_output = enc_input.ckks_matrix_multiplication(
             weight.t()
         ).ckks_addition(bias)
 
         return enc_output
 
-    # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None]:
+    def backward(ctx: CKKSLinearFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], Optional[CKKSWrapper], Optional[CKKSWrapper], None]:
         # Get the saved tensors
-        saved_tensors = typing.cast(
-            Tuple[torch.Tensor],
-            ctx.saved_tensors
-        )
-        input = ctx.enc_input.decrypt()
-
-        # Unpack the saved tensors
-        weight, = saved_tensors
+        weight = ctx.weight
+        enc_input = ctx.enc_input
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -41,14 +41,18 @@ class LinearFunction(torch.autograd.Function):
         )
 
         # Initialize the gradients
-        grad_input = grad_weight = grad_bias = None
+        enc_grad_input = enc_grad_weight = enc_grad_bias = None
 
         # Compute the gradients
         if result[0]:
-            grad_input = grad_output.matmul(weight)
+            enc_grad_input = enc_grad_output.ckks_encrypted_matrix_multiplication(
+                weight
+            )
         if result[1]:
-            grad_weight = grad_output.t().matmul(input)
+            enc_grad_weight = enc_grad_output.ckks_transpose().ckks_encrypted_matrix_multiplication(
+                enc_input
+            )
         if result[2]:
-            grad_bias = grad_output.sum(0)
+            enc_grad_bias = enc_grad_output.ckks_sum(axis=0)
 
-        return grad_input, grad_weight, grad_bias, None
+        return enc_grad_input, enc_grad_weight, enc_grad_bias, None

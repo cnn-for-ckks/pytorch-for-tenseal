@@ -97,18 +97,14 @@ def test_conv2d_train():
         input_size=(input_height, input_width),
         stride=stride,
         padding=padding,
-        weight=torch.nn.Parameter(
-            approximate_toeplitz_multiple_channels(
-                kernel,
-                (in_channels, input_height, input_width),
-                stride=stride,
-                padding=padding
-            )
+        weight=approximate_toeplitz_multiple_channels(
+            kernel,
+            (in_channels, input_height, input_width),
+            stride=stride,
+            padding=padding
         ),
-        bias=torch.nn.Parameter(
-            torch.repeat_interleave(
-                bias, output_height * output_width
-            )
+        bias=torch.repeat_interleave(
+            bias, output_height * output_width
         ),
     )
 

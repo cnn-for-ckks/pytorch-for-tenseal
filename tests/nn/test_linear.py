@@ -1,3 +1,4 @@
+import typing
 from torchseal.nn import Linear as EncryptedLinear
 from torch.nn import Linear as PlainLinear
 
@@ -6,6 +7,7 @@ import numpy as np
 import random
 import tenseal as ts
 import torchseal
+from torchseal.wrapper.ckks import CKKSWrapper
 
 
 def test_linear_train():
@@ -63,11 +65,11 @@ def test_linear_train():
     enc_linear = EncryptedLinear(
         in_features=in_features,
         out_features=out_features,
-        weight=torch.nn.Parameter(
-            weight.clone().detach().requires_grad_(True)
+        weight=torchseal.ckks_wrapper(
+            weight.clone(), do_encryption=False
         ),
-        bias=torch.nn.Parameter(
-            bias.clone().detach().requires_grad_(True)
+        bias=torchseal.ckks_wrapper(
+            bias.clone(), do_encryption=False
         )
     )
 
@@ -90,9 +92,14 @@ def test_linear_train():
     # Create random grad_output
     grad_output = torch.randn_like(output)
 
+    # Encrypt the grad_output
+    enc_grad_output = torchseal.ckks_wrapper(
+        grad_output.clone().view(batch_size, -1), do_encryption=True
+    )
+
     # Do backward pass
     output.backward(grad_output)
-    enc_output.backward(grad_output)
+    enc_output.backward(enc_grad_output)
 
     # TODO: Check the correctness of input gradients
 
@@ -100,14 +107,26 @@ def test_linear_train():
     assert enc_linear.weight.grad is not None and linear.weight.grad is not None, "Weight gradients are None!"
 
     assert torch.allclose(
-        enc_linear.weight.grad, linear.weight.grad, atol=5e-2, rtol=0
+        typing.cast(
+            CKKSWrapper,
+            enc_linear.weight.grad
+        ).decrypt(),
+        linear.weight.grad,
+        atol=5e-2,
+        rtol=0
     ), "Weight gradient failed!"
 
     # Check the correctness of bias gradients (with a tolerance of 5e-2)
     assert enc_linear.bias.grad is not None and linear.bias.grad is not None, "Bias gradients are None!"
 
     assert torch.allclose(
-        enc_linear.bias.grad, linear.bias.grad, atol=5e-2, rtol=0
+        typing.cast(
+            CKKSWrapper,
+            enc_linear.bias.grad
+        ).decrypt(),
+        linear.bias.grad,
+        atol=5e-2,
+        rtol=0
     ), "Bias gradient failed!"
 
 
