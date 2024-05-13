@@ -14,17 +14,8 @@ def set_context(context: ts.Context) -> None:
 
 
 def ckks_wrapper(data: torch.Tensor, do_encryption: bool = False) -> CKKSWrapper:
-    # Get the state of the CKKS
-    state = CKKSState()
-
-    # Create the ckks data
-    ckks_data = ts.ckks_tensor(state.context, data.tolist())
-
     # Create the ckks wrapper
     instance = CKKSWrapper(data)
-
-    # Set the ckks data
-    instance.ckks_data = ckks_data
 
     # If encryption is enabled, encrypt the data
     if do_encryption:

@@ -1,13 +1,24 @@
-from typing import Optional
+from typing import Callable, Dict, Iterable, Optional, Tuple, Type
+# from torch.utils._pytree import tree_map, PyTree
 from torchseal.state import CKKSState
 
 import typing
 import numpy as np
 import torch
 import tenseal as ts
+import torchseal
 
 
-# TODO: Add wrap and unwrap function to the __torch_dispatch__ method
+# # Functions
+# def unwrap(ckks_wrapper: "CKKSWrapper") -> torch.Tensor:
+#     return ckks_wrapper.data
+
+
+# def wrap(data: torch.Tensor) -> "CKKSWrapper":
+#     return CKKSWrapper(data)
+
+
+# CKKS Wrapper
 class CKKSWrapper(torch.Tensor):
     __ckks_data: Optional[ts.CKKSTensor] = None
 
@@ -22,6 +33,10 @@ class CKKSWrapper(torch.Tensor):
     @ckks_data.setter
     def ckks_data(self, ckks_data: Optional[ts.CKKSTensor]) -> None:
         self.__ckks_data = ckks_data
+
+    # Predicates
+    def is_encrypted(self) -> bool:
+        return self.__ckks_data is not None
 
     # Special methods
     @staticmethod
@@ -42,7 +57,12 @@ class CKKSWrapper(torch.Tensor):
 
     # Special methods
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(ENCRYPTED)" if self.__ckks_data is not None else super(CKKSWrapper, self).__repr__()
+        return f"{self.__class__.__name__}(ENCRYPTED)" if self.is_encrypted() else super(CKKSWrapper, self).__repr__()
+
+    # # Special methods
+    # @classmethod
+    # def __torch_dispatch__(cls, func: Callable, types: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+    #     return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
