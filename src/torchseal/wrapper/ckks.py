@@ -40,6 +40,10 @@ class CKKSWrapper(torch.Tensor):
         # Blur the data
         self.data = data
 
+    # Special methods
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(ENCRYPTED)" if self.__ckks_data is not None else super(CKKSWrapper, self).__repr__()
+
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
         # Clone the ckks_data
