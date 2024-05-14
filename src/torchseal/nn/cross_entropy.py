@@ -9,6 +9,11 @@ import torch
 
 
 class CrossEntropyLoss(torch.nn.Module):
+    exp_coeffs: np.ndarray
+    inverse_coeffs: np.ndarray
+    inverse_iterations: int
+    log_coeffs: np.ndarray
+
     def __init__(
             self,
             exp_start: float,
@@ -60,7 +65,7 @@ class CrossEntropyLoss(torch.nn.Module):
         ).convert(kind=Polynomial).coef if inverse_approximation_type == "least-squares" else Chebyshev.fit(inverse_x, inverse_y, inverse_degree).convert(kind=Polynomial).coef
 
         # Save the iterations
-        self.iterations = inverse_iterations
+        self.inverse_iterations = inverse_iterations
 
         # Create the polynomial for the log function
         log_x = np.linspace(log_start, log_stop, log_num_of_sample)
@@ -75,6 +80,6 @@ class CrossEntropyLoss(torch.nn.Module):
         return typing.cast(
             CKKSWrapper,
             CrossEntropyLossFunction.apply(
-                enc_input, enc_target, self.exp_coeffs, self.inverse_coeffs, self.iterations, self.log_coeffs
+                enc_input, enc_target, self.exp_coeffs, self.inverse_coeffs, self.inverse_iterations, self.log_coeffs
             )
         )

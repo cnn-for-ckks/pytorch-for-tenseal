@@ -9,7 +9,7 @@ import torchseal
 
 class SigmoidFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray, deriv_coeffs: np.ndarray) -> CKKSWrapper:
+    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray) -> CKKSWrapper:
         # Apply the sigmoid function to the encrypted input
         enc_output = enc_input.ckks_encrypted_polynomial(coeffs)
 
@@ -19,12 +19,12 @@ class SigmoidFunction(torch.autograd.Function):
         return enc_output
 
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None, None]:
+    def backward(ctx: CKKSActivationFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None]:
         # Get the saved tensors
         enc_output = ctx.enc_output
 
         # Get the needs_input_grad
-        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
+        result = typing.cast(Tuple[bool, bool], ctx.needs_input_grad)
 
         # Initialize the gradients
         enc_grad_input = None
@@ -39,4 +39,4 @@ class SigmoidFunction(torch.autograd.Function):
                 )
             )
 
-        return enc_grad_input, None, None
+        return enc_grad_input, None

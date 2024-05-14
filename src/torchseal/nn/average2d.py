@@ -8,6 +8,10 @@ import torch
 
 
 class AvgPool2d(torch.nn.Module):
+    weight: torch.Tensor
+    conv2d_padding_transformation: torch.Tensor
+    conv2d_inverse_padding_transformation: torch.Tensor
+
     def __init__(self, n_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], stride: int = 1, padding: int = 0) -> None:
         super(AvgPool2d, self).__init__()
 

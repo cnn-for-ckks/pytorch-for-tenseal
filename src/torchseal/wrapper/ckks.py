@@ -70,6 +70,7 @@ class CKKSWrapper(torch.Tensor):
         full_func_name = f"{func.__module__}.{func.__name__}"
 
         # Assert that only detach method is allowed
+        # TODO: Implement torch.ones_like function for loss backward pass
         assert full_func_name == "torch._ops.aten.detach.default", "Only detach method is allowed!"
 
         # Helper functions

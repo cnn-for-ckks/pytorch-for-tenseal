@@ -9,6 +9,8 @@ import torch
 
 
 class Tanh(torch.nn.Module):
+    coeffs: np.ndarray
+
     def __init__(self, start: float, stop: float, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
         super(Tanh, self).__init__()
 

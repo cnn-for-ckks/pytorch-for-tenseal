@@ -10,6 +10,13 @@ import torchseal
 
 
 class Conv2d(torch.nn.Module):
+    weight: CKKSWrapper
+    bias: CKKSWrapper
+    conv2d_padding_transformation: torch.Tensor
+    conv2d_inverse_padding_transformation: torch.Tensor
+    conv2d_weight_mask: torch.Tensor
+    conv2d_bias_transformation: torch.Tensor
+
     def __init__(self, in_channels: int, out_channels: int, kernel_size: Tuple[int, int], input_size: Tuple[int, int], stride: int = 1, padding: int = 0, weight: Optional[CKKSWrapper] = None, bias: Optional[CKKSWrapper] = None) -> None:
         super(Conv2d, self).__init__()
 

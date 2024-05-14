@@ -10,6 +10,8 @@ import torch
 
 
 class Sigmoid(torch.nn.Module):
+    coeffs: np.ndarray
+
     def __init__(self, start: float, stop: float, num_of_sample: int, degree: int, approximation_type: Union[Literal["minimax"], Literal["least-squares"]]) -> None:
         super(Sigmoid, self).__init__()
 
@@ -22,14 +24,11 @@ class Sigmoid(torch.nn.Module):
             x, y, degree
         ).convert(kind=Polynomial).coef if approximation_type == "least-squares" else Chebyshev.fit(x, y, degree).convert(kind=Polynomial).coef
 
-        # Differentiate the polynomial approximation
-        self.deriv_coeffs = Polynomial(self.coeffs).deriv().coef
-
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         enc_output = typing.cast(
             CKKSWrapper,
             SigmoidFunction.apply(
-                enc_x, self.coeffs, self.deriv_coeffs
+                enc_x, self.coeffs
             )
         )
 

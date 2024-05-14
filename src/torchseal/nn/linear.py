@@ -8,6 +8,9 @@ import torchseal
 
 
 class Linear(torch.nn.Module):
+    weight: CKKSWrapper
+    bias: CKKSWrapper
+
     def __init__(self, in_features: int, out_features: int, weight: Optional[CKKSWrapper] = None, bias: Optional[CKKSWrapper] = None):
         super(Linear, self).__init__()
 

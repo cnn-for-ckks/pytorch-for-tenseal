@@ -66,6 +66,7 @@ def test_cross_entropy():
 
     # Encrypt the value
     enc_input_tensor = torchseal.ckks_wrapper(input_tensor, do_encryption=True)
+    enc_input_tensor.requires_grad_(True)
 
     # Create the target tensor
     target = torch.randint(
@@ -106,11 +107,32 @@ def test_cross_entropy():
     enc_loss = enc_criterion.forward(enc_input_tensor, enc_target)
 
     # Decrypt the output
-    dec_loss = enc_loss.decrypt()
+    dec_loss = enc_loss.decrypt().plaintext_data.clone()
 
-    # Check the correctness of the results (with a tolerance of 5e-1, because the log function will expand the error)
+    # Check the correctness of the results (with a tolerance of 0.5, because the log function will expand the error)
     assert torch.allclose(
-        dec_loss, loss, atol=5e-1, rtol=0
+        dec_loss, loss, atol=0.5, rtol=0
     ), "Cross entropy loss layer failed!"
 
-    # TODO: Do backward pass and check the correctness of the input gradients
+    # NOTE: The enc_loss needed to be supplied with encrypted ones, because torch.ones() is not yet supported in CKKSWrapper
+    # TODO: Invalid size for batching in TenSEAL
+    enc_grad_output = torchseal.ckks_ones(enc_loss.shape, do_encryption=True)
+
+    # Do backward pass
+    loss.backward()
+    enc_loss.backward(enc_grad_output)
+
+    # Check the correctness of input gradients (with a tolerance of 0.5)
+    assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
+
+    # Decrypt the input gradients
+    dec_input_grad = torchseal.ckks_wrapper(
+        enc_input_tensor.grad
+    ).decrypt().plaintext_data.clone()
+
+    assert torch.allclose(
+        dec_input_grad,
+        input_tensor.grad,
+        atol=0.5,
+        rtol=0
+    ), "Input gradients are incorrect!"
