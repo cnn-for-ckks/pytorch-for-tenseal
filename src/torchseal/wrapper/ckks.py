@@ -63,28 +63,71 @@ class CKKSWrapper(torch.Tensor):
         return f"{self.__class__.__name__}(ENCRYPTED)" if self.is_encrypted() else f"{self.__class__.__name__}(plaintext_data={self.plaintext_data})"
 
     # Special methods
+    # NOTE: This method is called when the tuple of object is passed from backward method into .grad attribute
+    # NOTE: Ideally, we don't decrypt the data here (as it is not needed)
     @classmethod
     def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
-        # Helper functions state
-        encrypted_tensor_mapping: Dict[torch.Tensor, ts.CKKSTensor] = {}
+        print(f"{func.__module__}.{func.__name__} is called!")
+
+        # Helper functions state (if there is just one encrypted parameter, then the result will be encrypted)
+        one_of_the_tensors_is_encrypted = False
 
         # Helper functions
-        # NOTE: Will always decrypt the data
-        # TODO: Implement a better way to keep the data encrypted if needed
-        def unwrap(ckks_wrapper: Any) -> Any:
-            return (
-                ckks_wrapper.decrypt().plaintext_data
-                if ckks_wrapper.is_encrypted()
-                else ckks_wrapper.plaintext_data
-            ) if isinstance(ckks_wrapper, CKKSWrapper) else ckks_wrapper
+        def unwrap(obj: Any) -> Any:
+            # Set the state
+            nonlocal one_of_the_tensors_is_encrypted
+
+            # If the data is encrypted, then decrypt it and set the state
+            if isinstance(obj, CKKSWrapper) and obj.is_encrypted():
+                # Set the state
+                one_of_the_tensors_is_encrypted = True
+
+                return obj.decrypt().plaintext_data
+
+            # Else, just return the plaintext data
+            if isinstance(obj, CKKSWrapper):
+                return obj.plaintext_data
+
+            return obj
 
         # Helper functions
-        # NOTE: Will create a decrypted wrapper
-        # TODO: Implement a better way to keep the data encrypted if needed
-        def wrap(tensor: Any) -> Any:
-            return CKKSWrapper(tensor) if isinstance(tensor, torch.Tensor) else tensor
+        def wrap(obj: Any) -> Any:
+            # Set the state
+            nonlocal one_of_the_tensors_is_encrypted
+
+            # If one of the parameters is encrypted, then encrypt the result
+            if isinstance(obj, torch.Tensor) and one_of_the_tensors_is_encrypted:
+                return CKKSWrapper(obj).encrypt()
+
+            # Else, just return the plaintext data
+            if isinstance(obj, torch.Tensor):
+                return CKKSWrapper(obj)
+
+            return obj
 
         return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
+
+    # Overridden methods
+    def detach(self) -> "CKKSWrapper":
+        # Clone the ckks_data
+        ckks_data = typing.cast(
+            ts.CKKSTensor,
+            self.ckks_data.copy()
+        ) if self.is_encrypted() else None
+
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.detach()
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
 
     # Overridden methods
     def clone(self) -> "CKKSWrapper":
@@ -92,7 +135,7 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = typing.cast(
             ts.CKKSTensor,
             self.ckks_data.copy()
-        )
+        ) if self.is_encrypted() else None
 
         # Clone the plaintext data
         plaintext_data = self.plaintext_data.clone()

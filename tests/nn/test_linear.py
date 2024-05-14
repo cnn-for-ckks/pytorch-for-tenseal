@@ -82,7 +82,7 @@ def test_linear_train():
     enc_output = enc_linear.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.decrypt()
+    dec_output = enc_output.decrypt().plaintext_data.clone()
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
@@ -106,11 +106,13 @@ def test_linear_train():
     # Check the correctness of weight gradients (with a tolerance of 5e-2)
     assert enc_linear.weight.grad is not None and linear.weight.grad is not None, "Weight gradients are None!"
 
+    dec_linear_weight_grad = typing.cast(
+        CKKSWrapper,
+        enc_linear.weight.grad
+    ).decrypt().plaintext_data.clone()
+
     assert torch.allclose(
-        typing.cast(
-            CKKSWrapper,
-            enc_linear.weight.grad
-        ).decrypt(),
+        dec_linear_weight_grad,
         linear.weight.grad,
         atol=5e-2,
         rtol=0
@@ -119,11 +121,13 @@ def test_linear_train():
     # Check the correctness of bias gradients (with a tolerance of 5e-2)
     assert enc_linear.bias.grad is not None and linear.bias.grad is not None, "Bias gradients are None!"
 
+    dec_linear_bias_grad = typing.cast(
+        CKKSWrapper,
+        enc_linear.bias.grad
+    ).decrypt().plaintext_data.clone()
+
     assert torch.allclose(
-        typing.cast(
-            CKKSWrapper,
-            enc_linear.bias.grad
-        ).decrypt(),
+        dec_linear_bias_grad,
         linear.bias.grad,
         atol=5e-2,
         rtol=0
