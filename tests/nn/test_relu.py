@@ -1,6 +1,6 @@
 from torchseal.wrapper import CKKSWrapper
-from torchseal.nn import Tanh as EncryptedTanh
-from torch.nn import Tanh as PlainTanh
+from torchseal.nn import ReLU as EncryptedReLU
+from torch.nn import ReLU as PlainReLU
 
 import typing
 import torch
@@ -11,7 +11,7 @@ import torchseal
 
 
 # NOTE: We cannot use a high degree polynomial approximation because of the innacuracy when using a lot of multiplications in CKKS
-def test_tanh():
+def test_relu():
     # Set the seed for reproducibility
     torch.manual_seed(73)
     np.random.seed(73)
@@ -42,7 +42,7 @@ def test_tanh():
     start = -5
     stop = 5
     num_of_sample = 100
-    degree = 5
+    degree = 6
     approximation_type = "minimax"
 
     # Declare input dimensions
@@ -58,11 +58,11 @@ def test_tanh():
     )
     enc_input_tensor.requires_grad_(True)
 
-    # Create the plaintext tanh layer
-    tanh = PlainTanh()
+    # Create the plaintext ReLU layer
+    relu = PlainReLU()
 
-    # Create the encrypted tanh layer
-    enc_tanh = EncryptedTanh(
+    # Create the encrypted ReLU layer
+    enc_relu = EncryptedReLU(
         start=start,
         stop=stop,
         num_of_sample=num_of_sample,
@@ -71,16 +71,21 @@ def test_tanh():
     )
 
     # Calculate the output
-    output = tanh.forward(input_tensor)
-    enc_output = enc_tanh.forward(enc_input_tensor)
+    output = relu.forward(input_tensor)
+    enc_output = enc_relu.forward(enc_input_tensor)
 
     # Decrypt the output
     dec_output = enc_output.decrypt().plaintext_data.clone()
 
+    diff = torch.abs(output - dec_output)
+    max_diff = torch.max(diff)
+
+    print(f"Max difference: {max_diff}")
+
     # Check the correctness of the convolution (with a tolerance of 0.25)
     assert torch.allclose(
         output, dec_output, atol=0.25, rtol=0
-    ), "Tanh layer failed!"
+    ), "ReLU layer failed!"
 
     # Create random grad_output
     grad_output = torch.randn_like(output)
@@ -94,7 +99,7 @@ def test_tanh():
     output.backward(grad_output)
     enc_output.backward(enc_grad_output)
 
-    # Check the correctness of input gradients (with a tolerance of 0.25)
+    # Check the correctness of input gradients (with a tolerance of 0.75, this is due to the inaccuracy of approximating non-continuous functions with polynomials)
     assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
 
     # Decrypt the input gradients
@@ -103,9 +108,14 @@ def test_tanh():
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
 
+    grad_diff = torch.abs(input_tensor.grad - dec_input_grad)
+    grad_max_diff = torch.max(grad_diff)
+
+    print(f"Max gradient difference: {grad_max_diff}")
+
     assert torch.allclose(
         dec_input_grad,
         input_tensor.grad,
-        atol=0.25,
+        atol=0.75,
         rtol=0
     ), "Input gradients are incorrect!"

@@ -71,3 +71,28 @@ class CKKSActivationFunctionWrapper(NestedIOFunction):
     @enc_output.setter
     def enc_output(self, enc_output: CKKSWrapper) -> None:
         self.__enc_output = enc_output
+
+
+class CKKSActivationFunctionWithDerivWrapper(NestedIOFunction):
+    __enc_input: Optional[CKKSWrapper] = None
+    __deriv_coeffs: Optional[np.ndarray] = None
+
+    @property
+    def enc_input(self) -> CKKSWrapper:
+        assert self.__enc_input is not None, "enc_input is not set"
+
+        return self.__enc_input
+
+    @enc_input.setter
+    def enc_input(self, enc_input: CKKSWrapper) -> None:
+        self.__enc_input = enc_input
+
+    @property
+    def deriv_coeffs(self) -> np.ndarray:
+        assert self.__deriv_coeffs is not None, "deriv_coeffs is not set"
+
+        return self.__deriv_coeffs
+
+    @deriv_coeffs.setter
+    def deriv_coeffs(self, deriv_coeffs: np.ndarray) -> None:
+        self.__deriv_coeffs = deriv_coeffs
