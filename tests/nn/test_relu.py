@@ -44,6 +44,11 @@ def test_relu():
     num_of_sample = 100
     degree = 6
     approximation_type = "minimax"
+    deriv_start = -5
+    deriv_stop = 5
+    deriv_num_of_sample = 100
+    deriv_degree = 6
+    deriv_approximation_type = "minimax"
 
     # Declare input dimensions
     input_length = 20
@@ -68,6 +73,11 @@ def test_relu():
         num_of_sample=num_of_sample,
         degree=degree,
         approximation_type=approximation_type,
+        deriv_start=deriv_start,
+        deriv_stop=deriv_stop,
+        deriv_num_of_sample=deriv_num_of_sample,
+        deriv_degree=deriv_degree,
+        deriv_approximation_type=deriv_approximation_type
     )
 
     # Calculate the output
