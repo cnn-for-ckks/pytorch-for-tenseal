@@ -3,6 +3,5 @@ from .conv2d import Conv2dFunction
 from .cross_entropy import CrossEntropyLossFunction
 from .linear import LinearFunction
 from .sigmoid import SigmoidFunction
-from .softmax import SoftmaxFunction
 from .square import SquareFunction
 from .tanh import TanhFunction
