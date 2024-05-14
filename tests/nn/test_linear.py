@@ -1,13 +1,13 @@
-import typing
+from torchseal.wrapper.ckks import CKKSWrapper
 from torchseal.nn import Linear as EncryptedLinear
 from torch.nn import Linear as PlainLinear
 
+import typing
 import torch
 import numpy as np
 import random
 import tenseal as ts
 import torchseal
-from torchseal.wrapper.ckks import CKKSWrapper
 
 
 def test_linear_train():

@@ -13,7 +13,6 @@ import tenseal as ts
 import torchseal
 
 
-# TODO: Encrypt the weights and biases when training the model
 class EncConvNet(torch.nn.Module):
     def __init__(self, torch_nn: ConvNet) -> None:
         super(EncConvNet, self).__init__()
@@ -29,14 +28,20 @@ class EncConvNet(torch.nn.Module):
             padding=0,
 
             # Optional parameters
-            weight=approximate_toeplitz_multiple_channels(
-                torch_nn.conv1.weight.data,
-                (torch_nn.conv1.in_channels, 28, 28),
-                stride=3,
-                padding=0
+            weight=torchseal.ckks_wrapper(
+                approximate_toeplitz_multiple_channels(
+                    torch_nn.conv1.weight.data,
+                    (torch_nn.conv1.in_channels, 28, 28),
+                    stride=3,
+                    padding=0
+                ),
+                do_encryption=False
             ),
-            bias=torch.repeat_interleave(
-                torch_nn.conv1.bias.data, 8 * 8
+            bias=torchseal.ckks_wrapper(
+                torch.repeat_interleave(
+                    torch_nn.conv1.bias.data, 8 * 8
+                ),
+                do_encryption=False
             ) if torch_nn.conv1.bias is not None else None,
         )
 
@@ -53,8 +58,14 @@ class EncConvNet(torch.nn.Module):
         self.fc1 = Linear(
             in_features=torch_nn.fc1.in_features,
             out_features=torch_nn.fc1.out_features,
-            weight=torch_nn.fc1.weight.data,
-            bias=torch_nn.fc1.bias.data,
+            weight=torchseal.ckks_wrapper(
+                torch_nn.fc1.weight.data,
+                do_encryption=False
+            ),
+            bias=torchseal.ckks_wrapper(
+                torch_nn.fc1.bias.data,
+                do_encryption=False
+            ),
         )
 
         self.act2 = Square()
@@ -62,8 +73,14 @@ class EncConvNet(torch.nn.Module):
         self.fc2 = Linear(
             in_features=torch_nn.fc2.in_features,
             out_features=torch_nn.fc2.out_features,
-            weight=torch_nn.fc2.weight.data,
-            bias=torch_nn.fc2.bias.data,
+            weight=torchseal.ckks_wrapper(
+                torch_nn.fc2.weight.data,
+                do_encryption=False
+            ),
+            bias=torchseal.ckks_wrapper(
+                torch_nn.fc2.bias.data,
+                do_encryption=False
+            ),
         )
 
     def forward(self, enc_input: CKKSWrapper) -> CKKSWrapper:

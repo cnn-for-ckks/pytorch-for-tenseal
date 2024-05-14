@@ -13,7 +13,6 @@ import tenseal as ts
 import torchseal
 
 
-# TODO: Encrypt the weights and biases when training the model
 class EncLogisticRegression(torch.nn.Module):
     def __init__(self, torch_nn: LogisticRegression) -> None:
         super(EncLogisticRegression, self).__init__()
@@ -21,9 +20,16 @@ class EncLogisticRegression(torch.nn.Module):
         self.linear = Linear(
             in_features=torch_nn.linear.in_features,
             out_features=torch_nn.linear.out_features,
-            weight=torch_nn.linear.weight,
-            bias=torch_nn.linear.bias
+            weight=torchseal.ckks_wrapper(
+                torch_nn.linear.weight,
+                do_encryption=False
+            ),
+            bias=torchseal.ckks_wrapper(
+                torch_nn.linear.bias,
+                do_encryption=False
+            )
         )
+
         self.activation_function = Sigmoid(
             start=-5, stop=5, num_of_sample=5, degree=3, approximation_type="minimax"
         )

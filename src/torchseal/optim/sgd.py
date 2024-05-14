@@ -1,4 +1,5 @@
 from typing import Iterator
+from torchseal.wrapper import CKKSWrapper
 
 import typing
 import torch
@@ -12,18 +13,21 @@ class SGD(torch.optim.Optimizer):
     def step(self) -> None:
         for group in self.param_groups:
             for param in group["params"]:
-                # Cast the parameter to a tensor
-                param_tensor = typing.cast(torch.Tensor, param)
+                # If the parameter is not a ckks wrapper or not encrypted, skip it
+                if not isinstance(param, CKKSWrapper) or not param.is_encrypted():
+                    continue
 
-                # If the parameter does not require gradients, skip it
-                if param_tensor.grad is None:
+                # If the parameter does not require gradients, a ckks wrapper, or not encrypted, skip it
+                if param.grad is None or not isinstance(param.grad, CKKSWrapper) or not param.grad.is_encrypted():
                     continue
 
                 # Get the parameter
                 lr = typing.cast(float, group["lr"])
 
                 # Delta weight
-                delta_weight = param_tensor.grad.data.mul(-lr)
+                delta_weight = param.grad.ckks_apply_scalar(-lr)
 
-                # Update the tensor
-                param_tensor.data = param_tensor.data.add(delta_weight)
+                # Update the tensor without creating a new one
+                param.ckks_data = param.ckks_data.add(
+                    delta_weight.ckks_data
+                )
