@@ -2,11 +2,13 @@ from torchseal.nn import Conv2d as EncryptedConv2d
 from torchseal.utils import approximate_toeplitz_multiple_channels, precise_toeplitz_multiple_channels
 from torch.nn import Conv2d as PlainConv2d
 
+import typing
 import torch
 import numpy as np
 import random
 import tenseal as ts
 import torchseal
+from torchseal.wrapper.ckks import CKKSWrapper
 
 
 def test_conv2d_train():
@@ -97,14 +99,21 @@ def test_conv2d_train():
         input_size=(input_height, input_width),
         stride=stride,
         padding=padding,
-        weight=approximate_toeplitz_multiple_channels(
-            kernel,
-            (in_channels, input_height, input_width),
-            stride=stride,
-            padding=padding
+        weight=torchseal.ckks_wrapper(
+            approximate_toeplitz_multiple_channels(
+                kernel,
+                (in_channels, input_height, input_width),
+                stride=stride,
+                padding=padding
+            ),
+            do_encryption=False
         ),
-        bias=torch.repeat_interleave(
-            bias, output_height * output_width
+        bias=torchseal.ckks_wrapper(
+            torch.repeat_interleave(
+                bias,
+                output_height * output_width
+            ),
+            do_encryption=False
         ),
     )
 
@@ -118,21 +127,28 @@ def test_conv2d_train():
 
     # Decrypt the output
     dec_output = enc_output.decrypt()
-    dec_output_resized = dec_output.view(
-        batch_size, out_channels, output_height, output_width
+
+    # Resized the output
+    output_resized = output.view(
+        batch_size, -1
     )
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
+    # TODO: Output is not equal to the expected output
     assert torch.allclose(
-        dec_output_resized,
-        output,
+        dec_output,
+        output_resized,
         atol=5e-2,
         rtol=0
     ), "Convolution layer failed!"
 
     # Create random grad_output
     grad_output = torch.randn_like(output)
-    enc_grad_output = grad_output.view(batch_size, -1)
+
+    # Encrypt the grad_output
+    enc_grad_output = torchseal.ckks_wrapper(
+        grad_output.clone().view(batch_size, -1), do_encryption=True
+    )
 
     # Do backward pass
     output.backward(grad_output)
@@ -150,8 +166,13 @@ def test_conv2d_train():
         padding=padding
     )
 
+    enc_conv2d_weight_grad = typing.cast(
+        CKKSWrapper,
+        enc_conv2d.weight.grad
+    ).decrypt().plaintext_data.clone()
+
     assert torch.allclose(
-        enc_conv2d.weight.grad, conv2d_weight_grad_expanded, atol=5e-2, rtol=0
+        enc_conv2d_weight_grad, conv2d_weight_grad_expanded, atol=5e-2, rtol=0
     ), "Weight gradient failed!"
 
     # Check the correctness of bias gradients (with a tolerance of 5e-2)
@@ -161,8 +182,13 @@ def test_conv2d_train():
         conv2d.bias.grad, output_height * output_width
     )
 
+    enc_conv2d_bias_grad = typing.cast(
+        CKKSWrapper,
+        enc_conv2d.bias.grad
+    ).decrypt().plaintext_data.clone()
+
     assert torch.allclose(
-        enc_conv2d.bias.grad, conv2d_bias_grad_expanded, atol=5e-2, rtol=0
+        enc_conv2d_bias_grad, conv2d_bias_grad_expanded, atol=5e-2, rtol=0
     ), "Bias gradient failed!"
 
 

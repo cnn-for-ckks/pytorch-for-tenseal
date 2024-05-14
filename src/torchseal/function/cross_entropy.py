@@ -28,15 +28,14 @@ class CrossEntropyLossFunction(torch.autograd.Function):
 
         return enc_loss
 
-    # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSLossFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None, None, None, None]:
+    def backward(ctx: CKKSLossFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None, None, None, None, None]:
         # Get the saved tensors
-        output = ctx.enc_output.decrypt()
-        target = ctx.enc_target.decrypt()
+        enc_output = ctx.enc_output
+        enc_target = ctx.enc_target
 
         # Unpack the target shape
-        batch_size, _ = target.shape
+        batch_size, _ = enc_target.shape
 
         # Get the needs_input_grad
         result = typing.cast(
@@ -47,13 +46,17 @@ class CrossEntropyLossFunction(torch.autograd.Function):
         )
 
         # Initialize the gradients
-        grad_input = None
+        enc_grad_input = None
 
         if result[0]:
-            # Add the subtraction mask to the output (will be approximated for encrypted data)
-            output_subtracted = output.subtract(target)
+            # Add the subtraction mask to the output (this will be encrypted)
+            enc_output_subtracted = enc_output.ckks_encrypted_addition(
+                enc_target.ckks_encrypted_negation()
+            )
 
-            # Multiply by the grad_output (will be approximated for encrypted data)
-            grad_input = grad_output.mul(output_subtracted).mul(1 / batch_size)
+            # Multiply by the grad_output (this will be encrypted)
+            enc_grad_input = enc_grad_output.ckks_encrypted_apply_mask(
+                enc_output_subtracted
+            ).ckks_apply_scalar(1 / batch_size)
 
-        return grad_input, None, None, None, None, None
+        return enc_grad_input, None, None, None, None, None

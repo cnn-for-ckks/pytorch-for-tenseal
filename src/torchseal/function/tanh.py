@@ -19,18 +19,11 @@ class TanhFunction(torch.autograd.Function):
 
         return enc_output
 
-    # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], None, None]:
+    def backward(ctx: CKKSActivationFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None, None]:
         # Get the saved tensors
-        input = ctx.enc_input.decrypt()
+        enc_input = ctx.enc_input
         deriv_coeffs = ctx.deriv_coeffs
-
-        # Do the backward operation
-        polynomial_deriv = Polynomial(deriv_coeffs)
-        backward_output = torch.tensor(
-            np.vectorize(polynomial_deriv)(input)
-        )
 
         # Get the needs_input_grad
         result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
@@ -39,7 +32,14 @@ class TanhFunction(torch.autograd.Function):
         grad_input = None
 
         if result[0]:
+            # Do the backward operation
+            enc_backward_output = enc_input.ckks_encrypted_polynomial(
+                deriv_coeffs
+            )
+
             # Compute the gradients
-            grad_input = grad_output.mul(backward_output)
+            enc_grad_input = enc_grad_output.ckks_encrypted_apply_mask(
+                enc_backward_output
+            )
 
         return grad_input, None, None

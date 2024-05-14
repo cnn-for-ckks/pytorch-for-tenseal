@@ -16,23 +16,24 @@ class SquareFunction(torch.autograd.Function):
 
         return enc_output
 
-    # TODO: Move this to encrypted mode
     @staticmethod
-    def backward(ctx: CKKSLinearFunctionWrapper, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor]]:
+    def backward(ctx: CKKSLinearFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper]]:
         # Get the saved tensors
-        input = ctx.enc_input.decrypt()
-
-        # Do the backward operation (2 * x)
-        backward_output = input.mul(2)
+        enc_input = ctx.enc_input
 
         # Get the needs_input_grad
         result = typing.cast(Tuple[bool], ctx.needs_input_grad)
 
         # Initialize the gradients
-        grad_input = None
+        enc_grad_input = None
 
         if result[0]:
-            # Compute the gradients
-            grad_input = grad_output.mul(backward_output)
+            # Do the backward operation
+            enc_backward_output = enc_input.ckks_apply_scalar(2)
 
-        return grad_input,
+            # Compute the gradients
+            enc_grad_input = enc_grad_output.ckks_encrypted_apply_mask(
+                enc_backward_output
+            )
+
+        return enc_grad_input,

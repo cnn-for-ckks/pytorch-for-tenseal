@@ -14,19 +14,16 @@ class Linear(torch.nn.Module):
         self.weight = typing.cast(
             CKKSWrapper,
             torch.nn.Parameter(
-                # NOTE: Applying torch.nn.Parameter to the ckks_wrapper will always decrypt the tensor
-                # NOTE: But you can always inplace_encrypt the tensor
                 torchseal.ckks_wrapper(
                     torch.rand(out_features, in_features),
                     do_encryption=False
                 ) if weight is None else weight
             )
         )
+
         self.bias = typing.cast(
             CKKSWrapper,
             torch.nn.Parameter(
-                # NOTE: Applying torch.nn.Parameter to the ckks_wrapper will always decrypt the tensor
-                # NOTE: But you can always inplace_encrypt the tensor
                 torchseal.ckks_wrapper(
                     torch.rand(out_features),
                     do_encryption=False

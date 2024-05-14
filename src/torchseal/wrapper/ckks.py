@@ -65,8 +65,10 @@ class CKKSWrapper(torch.Tensor):
     # Special methods
     # NOTE: This method is called when the tuple of object is passed from backward method into .grad attribute
     # NOTE: Ideally, we don't decrypt the data here (as it is not needed)
+    # TODO: Think of a better way to handle this
     @classmethod
     def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+        # TODO: Remove this line
         print(f"{func.__module__}.{func.__name__} is called!")
 
         # Helper functions state (if there is just one encrypted parameter, then the result will be encrypted)
@@ -212,6 +214,25 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # CKKS Operation (with shape change)
+    def ckks_apply_transformation(self, transformation: torch.Tensor) -> "CKKSWrapper":
+        # Apply the linear transformation to the encrypted input
+        ckks_data = self.ckks_data.dot(transformation.tolist())
+
+        # Create an empty plaintext data tensor
+        plaintext_data = torch.zeros(ckks_data.shape)
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation (with shape change)
     def ckks_transpose(self) -> "CKKSWrapper":
         # Apply the transpose function to the encrypted input
         ckks_data = typing.cast(
@@ -278,6 +299,63 @@ class CKKSWrapper(torch.Tensor):
     def ckks_encrypted_addition(self, other: "CKKSWrapper") -> "CKKSWrapper":
         # Apply the addition function to the encrypted input
         ckks_data = self.ckks_data.add(other.ckks_data)
+
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation
+    def ckks_apply_scalar(self, scalar: float) -> "CKKSWrapper":
+        # Apply the scalar function to the encrypted input
+        ckks_data = self.ckks_data.mul(scalar)
+
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation
+    def ckks_apply_mask(self, mask: torch.Tensor) -> "CKKSWrapper":
+        # Apply the mask to the encrypted input
+        ckks_data = self.ckks_data.mul(mask.tolist())
+
+        # Clone the plaintext data
+        plaintext_data = self.plaintext_data.clone()
+
+        # Create the new instance
+        instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
+
+        # Set the ckks data
+        instance.ckks_data = ckks_data
+
+        # Set the plaintext data
+        instance.plaintext_data = plaintext_data
+
+        return instance
+
+    # CKKS Operation
+    def ckks_encrypted_apply_mask(self, mask: "CKKSWrapper") -> "CKKSWrapper":
+        # Apply the mask to the encrypted input
+        ckks_data = self.ckks_data.mul(mask.ckks_data)
 
         # Clone the plaintext data
         plaintext_data = self.plaintext_data.clone()

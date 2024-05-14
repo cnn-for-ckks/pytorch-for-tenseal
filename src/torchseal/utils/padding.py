@@ -1,4 +1,4 @@
-from torchseal.utils import create_block_diagonal_matrix
+from torchseal.utils import create_block_diagonal_matrix, generate_near_zeros
 
 import torch
 
@@ -9,9 +9,8 @@ def create_inverse_padding_transformation_matrix(num_channels: int, input_height
     padded_input_width = input_width + 2 * padding
 
     # Initialize the inverse transformation matrix with zeros
-    # NOTE: Possibility of TenSEAL parameter mismatch when using torch.zeros
-    inverse_transform_matrix = torch.zeros(
-        input_height * input_width, padded_input_height * padded_input_width
+    inverse_transform_matrix = generate_near_zeros(
+        (input_height * input_width, padded_input_height * padded_input_width)
     )
 
     # Fill the inverse transformation matrix to map each padded pixel back to the original image
@@ -43,9 +42,8 @@ def create_padding_transformation_matrix(num_channels: int, input_height: int, i
     padded_input_width = input_width + 2 * padding
 
     # Initialize the transformation matrix with zeros
-    # NOTE: Possibility of TenSEAL parameter mismatch when using torch.zeros
-    transform_matrix = torch.zeros(
-        padded_input_height * padded_input_width, input_height * input_width
+    transform_matrix = generate_near_zeros(
+        (padded_input_height * padded_input_width, input_height * input_width)
     )
 
     # Fill the transformation matrix to map each original pixel to the correct position in the padded image

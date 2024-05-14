@@ -23,15 +23,15 @@ class LinearFunction(torch.autograd.Function):
 
         # Else, apply the linear transformation to the encrypted input using plaintext parameters
         enc_output = enc_input.ckks_matrix_multiplication(
-            weight.t()
-        ).ckks_addition(bias)
+            weight.plaintext_data.t()
+        ).ckks_addition(bias.plaintext_data)
 
         return enc_output
 
     @staticmethod
     def backward(ctx: CKKSLinearFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], Optional[CKKSWrapper], Optional[CKKSWrapper], None]:
         # Get the saved tensors
-        weight = ctx.weight
+        enc_weight = ctx.weight
         enc_input = ctx.enc_input
 
         # Get the needs_input_grad
@@ -46,7 +46,7 @@ class LinearFunction(torch.autograd.Function):
         # Compute the gradients
         if result[0]:
             enc_grad_input = enc_grad_output.ckks_encrypted_matrix_multiplication(
-                weight
+                enc_weight
             )
         if result[1]:
             enc_grad_weight = enc_grad_output.ckks_transpose().ckks_encrypted_matrix_multiplication(
