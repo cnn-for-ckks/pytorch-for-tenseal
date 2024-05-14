@@ -55,6 +55,7 @@ def test_linear_train():
     enc_input_tensor = torchseal.ckks_wrapper(
         input_tensor.clone().view(batch_size, -1), do_encryption=True
     )
+    enc_input_tensor.requires_grad_(True)
 
     # Create the plaintext linear layer
     linear = PlainLinear(in_features, out_features)
@@ -101,7 +102,20 @@ def test_linear_train():
     output.backward(grad_output)
     enc_output.backward(enc_grad_output)
 
-    # TODO: Check the correctness of input gradients
+    # Check the correctness of input gradients (with a tolerance of 5e-2)
+    assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
+
+    dec_linear_input_grad = typing.cast(
+        CKKSWrapper,
+        enc_input_tensor.grad
+    ).decrypt().plaintext_data.clone()
+
+    assert torch.allclose(
+        dec_linear_input_grad,
+        input_tensor.grad,
+        atol=5e-2,
+        rtol=0
+    ), "Input gradient failed!"
 
     # Check the correctness of weight gradients (with a tolerance of 5e-2)
     assert enc_linear.weight.grad is not None and linear.weight.grad is not None, "Weight gradients are None!"

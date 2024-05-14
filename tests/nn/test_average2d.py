@@ -1,11 +1,13 @@
 from torchseal.nn import AvgPool2d as EncryptedAvgPool2d
 from torch.nn import AvgPool2d as PlainAvgPool2d
 
+import typing
 import torch
 import numpy as np
 import random
 import tenseal as ts
 import torchseal
+from torchseal.wrapper.ckks import CKKSWrapper
 
 
 def test_avgpool2d():
@@ -36,24 +38,17 @@ def test_avgpool2d():
     torchseal.set_context(context)
 
     # Declare parameters
+    # NOTE: High number of padding will cause the test to fail (due to the added noise by generating near-zero values)
     n_channels = 2
     kernel_height = 3
     kernel_width = 3
     stride = 1
-    padding = 1
+    padding = 0
 
     # Declare input dimensions
     batch_size = 1
     input_height = 4
     input_width = 4
-
-    # Adjust for padding
-    padded_input_height = input_height + 2 * padding
-    padded_input_width = input_width + 2 * padding
-
-    # Count the output dimensions
-    output_height = (padded_input_height - kernel_height) // stride + 1
-    output_width = (padded_input_width - kernel_width) // stride + 1
 
     # Create the input tensor
     input_tensor = torch.randn(
@@ -64,6 +59,7 @@ def test_avgpool2d():
     enc_input_tensor = torchseal.ckks_wrapper(
         input_tensor.view(batch_size, -1), do_encryption=True
     )
+    enc_input_tensor.requires_grad_(True)
 
     # Create the plaintext average pooling layer
     plain_avgpool2d = PlainAvgPool2d(
@@ -86,17 +82,49 @@ def test_avgpool2d():
     enc_output = enc_avgpool2d.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.decrypt()
-    dec_output_resized = dec_output.view(
-        batch_size, n_channels, output_height, output_width
+    dec_output = enc_output.decrypt().plaintext_data.clone()
+
+    # Reshape the output
+    output_resized = output.view(
+        batch_size, -1,
     )
 
     # Compare the results (with a tolerance of 5e-2)
     assert torch.allclose(
-        dec_output_resized,
-        output,
+        dec_output,
+        output_resized,
         atol=5e-2,
         rtol=0
     ), "Average pooling layer failed!"
 
-    # TODO: Do backward pass and check the correctness of the input gradients
+    # Create random grad_output
+    grad_output = torch.randn_like(output)
+
+    # Encrypt the grad_output
+    enc_grad_output = torchseal.ckks_wrapper(
+        grad_output.clone().view(batch_size, -1), do_encryption=True
+    )
+
+    # Do backward pass
+    output.backward(grad_output)
+    enc_output.backward(enc_grad_output)
+
+    # Check the correctness of input gradients (with a tolerance of 5e-2)
+    assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
+
+    # Reshape the input gradients
+    input_grad_expanded = input_tensor.grad.view(
+        batch_size, -1
+    )
+
+    # Decrypt the input gradients
+    enc_input_grad = typing.cast(
+        CKKSWrapper, enc_input_tensor.grad
+    ).decrypt().plaintext_data.clone()
+
+    assert torch.allclose(
+        enc_input_grad,
+        input_grad_expanded,
+        atol=5e-2,
+        rtol=0
+    ), "Input gradient failed!"

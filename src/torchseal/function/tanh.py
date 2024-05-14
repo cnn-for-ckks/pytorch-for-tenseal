@@ -1,45 +1,40 @@
 from typing import Optional, Tuple
-from numpy.polynomial import Polynomial
 from torchseal.wrapper import CKKSWrapper, CKKSActivationFunctionWrapper
 
 import typing
 import numpy as np
 import torch
+import torchseal
 
 
 class TanhFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray, deriv_coeffs: np.ndarray) -> CKKSWrapper:
-        # Save the ctx for the backward method
-        ctx.enc_input = enc_input.clone()
-        ctx.deriv_coeffs = deriv_coeffs
-
+    def forward(ctx: CKKSActivationFunctionWrapper, enc_input: CKKSWrapper, coeffs: np.ndarray) -> CKKSWrapper:
         # Apply the sigmoid function to the encrypted input
         enc_output = enc_input.ckks_encrypted_polynomial(coeffs)
+
+        # Save the ctx for the backward method
+        ctx.enc_output = enc_output.clone()
 
         return enc_output
 
     @staticmethod
-    def backward(ctx: CKKSActivationFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None, None]:
+    def backward(ctx: CKKSActivationFunctionWrapper, enc_grad_output: CKKSWrapper) -> Tuple[Optional[CKKSWrapper], None]:
         # Get the saved tensors
-        enc_input = ctx.enc_input
-        deriv_coeffs = ctx.deriv_coeffs
+        enc_output = ctx.enc_output
 
         # Get the needs_input_grad
-        result = typing.cast(Tuple[bool, bool, bool], ctx.needs_input_grad)
+        result = typing.cast(Tuple[bool, bool], ctx.needs_input_grad)
 
         # Initialize the gradients
-        grad_input = None
+        enc_grad_input = None
 
         if result[0]:
-            # Do the backward operation
-            enc_backward_output = enc_input.ckks_encrypted_polynomial(
-                deriv_coeffs
-            )
-
-            # Compute the gradients
+            # Compute the gradients (grad_output * (1 - output.pow(2)))
             enc_grad_input = enc_grad_output.ckks_encrypted_apply_mask(
-                enc_backward_output
+                torchseal.ckks_ones(enc_output.shape, do_encryption=True).ckks_encrypted_addition(
+                    enc_output.ckks_encrypted_square().ckks_encrypted_negation()
+                )
             )
 
-        return grad_input, None, None
+        return enc_grad_input, None

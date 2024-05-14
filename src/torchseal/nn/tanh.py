@@ -21,14 +21,11 @@ class Tanh(torch.nn.Module):
             x, y, degree
         ).convert(kind=Polynomial).coef if approximation_type == "least-squares" else Chebyshev.fit(x, y, degree).convert(kind=Polynomial).coef
 
-        # Differentiate the polynomial approximation
-        self.deriv_coeffs = Polynomial(self.coeffs).deriv().coef
-
     def forward(self, enc_x: CKKSWrapper) -> CKKSWrapper:
         enc_output = typing.cast(
             CKKSWrapper,
             TanhFunction.apply(
-                enc_x, self.coeffs, self.deriv_coeffs
+                enc_x, self.coeffs
             )
         )
 

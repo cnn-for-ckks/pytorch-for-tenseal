@@ -1,6 +1,8 @@
+from torchseal.wrapper import CKKSWrapper
 from torchseal.nn import Tanh as EncryptedTanh
 from torch.nn import Tanh as PlainTanh
 
+import typing
 import torch
 import numpy as np
 import random
@@ -39,7 +41,7 @@ def test_tanh():
     start = -3
     stop = 3
     num_of_sample = 100
-    degree = 5
+    degree = 15
     approximation_type = "minimax"
 
     # Declare input dimensions
@@ -47,12 +49,13 @@ def test_tanh():
     batch_size = 1
 
     # Create the input tensor
-    input_tensor = torch.randn(batch_size, input_length)
+    input_tensor = torch.randn(batch_size, input_length, requires_grad=True)
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
-        input_tensor.view(batch_size, -1), do_encryption=True
+        input_tensor, do_encryption=True
     )
+    enc_input_tensor.requires_grad_(True)
 
     # Create the plaintext tanh layer
     tanh = PlainTanh()
@@ -71,11 +74,37 @@ def test_tanh():
     enc_output = enc_tanh.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.decrypt()
+    dec_output = enc_output.decrypt().plaintext_data.clone()
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         output, dec_output, atol=5e-2, rtol=0
     ), "Tanh layer failed!"
 
-    # TODO: Do backward pass and check the correctness of the input gradients
+    # Create random grad_output
+    grad_output = torch.randn_like(output)
+
+    # Encrypt the grad_output
+    enc_grad_output = torchseal.ckks_wrapper(
+        grad_output.clone(), do_encryption=True
+    )
+
+    # Do backward pass
+    output.backward(grad_output)
+    enc_output.backward(enc_grad_output)
+
+    # Check the correctness of input gradients (with a tolerance of 5e-2)
+    assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
+
+    # Decrypt the input gradients
+    dec_input_grad = typing.cast(
+        CKKSWrapper,
+        enc_input_tensor.grad
+    ).decrypt().plaintext_data.clone()
+
+    assert torch.allclose(
+        dec_input_grad,
+        input_tensor.grad,
+        atol=5e-2,
+        rtol=0
+    ), "Input gradients are incorrect!"

@@ -36,3 +36,15 @@ def ckks_zeros(shape: Union[int, Sequence[int]], do_encryption: bool = False) ->
 
     # Else, return the instance without encryption
     return instance
+
+
+def ckks_ones(shape: Union[int, Sequence[int]], do_encryption: bool = False) -> CKKSWrapper:
+    # Create the ckks wrapper
+    instance = CKKSWrapper(torch.ones(shape))
+
+    # If encryption is enabled, encrypt the data
+    if do_encryption:
+        return instance.encrypt()
+
+    # Else, return the instance without encryption
+    return instance

@@ -39,6 +39,7 @@ def test_conv2d_train():
     torchseal.set_context(context)
 
     # Declare parameters
+    # NOTE: High number of padding will cause the test to fail (due to the added noise by generating near-zero values)
     out_channels = 2
     in_channels = 2
     kernel_height = 3
@@ -71,13 +72,14 @@ def test_conv2d_train():
 
     # Create the input tensor
     input_tensor = torch.randn(
-        batch_size, in_channels, input_height, input_width
+        batch_size, in_channels, input_height, input_width, requires_grad=True
     )
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
         input_tensor.view(batch_size, -1), do_encryption=True
     )
+    enc_input_tensor.requires_grad_(True)
 
     # Create the plaintext convolution layer
     conv2d = PlainConv2d(
@@ -153,7 +155,24 @@ def test_conv2d_train():
     output.backward(grad_output)
     enc_output.backward(enc_grad_output)
 
-    # TODO: Check the correctness of input gradients
+    # Check the correctness of input gradients (with a tolerance of 5e-2)
+    assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
+
+    conv2d_input_grad_expanded = input_tensor.grad.view(
+        batch_size, -1
+    )
+
+    enc_conv2d_input_grad = typing.cast(
+        CKKSWrapper,
+        enc_input_tensor.grad
+    ).decrypt().plaintext_data.clone()
+
+    assert torch.allclose(
+        enc_conv2d_input_grad,
+        conv2d_input_grad_expanded,
+        atol=5e-2,
+        rtol=0
+    ), "Input gradient failed!"
 
     # Check the correctness of weight gradients (with a tolerance of 5e-2)
     assert enc_conv2d.weight.grad is not None and conv2d.weight.grad is not None, "Weight gradients are None!"
