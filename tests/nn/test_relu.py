@@ -77,11 +77,6 @@ def test_relu():
     # Decrypt the output
     dec_output = enc_output.decrypt().plaintext_data.clone()
 
-    diff = torch.abs(output - dec_output)
-    max_diff = torch.max(diff)
-
-    print(f"Max difference: {max_diff}")
-
     # Check the correctness of the convolution (with a tolerance of 0.25)
     assert torch.allclose(
         output, dec_output, atol=0.25, rtol=0
@@ -107,11 +102,6 @@ def test_relu():
         CKKSWrapper,
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
-
-    grad_diff = torch.abs(input_tensor.grad - dec_input_grad)
-    grad_max_diff = torch.max(grad_diff)
-
-    print(f"Max gradient difference: {grad_max_diff}")
 
     assert torch.allclose(
         dec_input_grad,
