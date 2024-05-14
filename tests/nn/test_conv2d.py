@@ -106,14 +106,14 @@ def test_conv2d_train():
                 stride=stride,
                 padding=padding
             ),
-            do_encryption=False
+            do_encryption=True
         ),
         bias=torchseal.ckks_wrapper(
             torch.repeat_interleave(
                 bias,
                 output_height * output_width
             ),
-            do_encryption=False
+            do_encryption=True
         ),
     )
 

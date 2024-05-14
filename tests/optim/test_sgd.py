@@ -66,10 +66,10 @@ def test_sgd():
         in_features=in_features,
         out_features=out_features,
         weight=torchseal.ckks_wrapper(
-            weight.clone(), do_encryption=False
+            weight.clone(), do_encryption=True
         ),
         bias=torchseal.ckks_wrapper(
-            bias.clone(), do_encryption=False
+            bias.clone(), do_encryption=True
         )
     )
 

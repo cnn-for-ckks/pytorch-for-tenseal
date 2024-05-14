@@ -40,7 +40,7 @@ class Conv2d(torch.nn.Module):
                         stride=stride,
                         padding=padding
                     ),
-                    do_encryption=False
+                    do_encryption=True
                 ) if weight is None else weight
             )
         )
@@ -53,7 +53,7 @@ class Conv2d(torch.nn.Module):
                         torch.randn(out_channels),
                         output_height * output_width
                     ),
-                    do_encryption=False
+                    do_encryption=True
                 ) if bias is None else bias
             )
         )

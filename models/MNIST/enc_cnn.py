@@ -35,13 +35,13 @@ class EncConvNet(torch.nn.Module):
                     stride=3,
                     padding=0
                 ),
-                do_encryption=False
+                do_encryption=True
             ),
             bias=torchseal.ckks_wrapper(
                 torch.repeat_interleave(
                     torch_nn.conv1.bias.data, 8 * 8
                 ),
-                do_encryption=False
+                do_encryption=True
             ) if torch_nn.conv1.bias is not None else None,
         )
 
@@ -60,11 +60,11 @@ class EncConvNet(torch.nn.Module):
             out_features=torch_nn.fc1.out_features,
             weight=torchseal.ckks_wrapper(
                 torch_nn.fc1.weight.data,
-                do_encryption=False
+                do_encryption=True
             ),
             bias=torchseal.ckks_wrapper(
                 torch_nn.fc1.bias.data,
-                do_encryption=False
+                do_encryption=True
             ),
         )
 
@@ -75,11 +75,11 @@ class EncConvNet(torch.nn.Module):
             out_features=torch_nn.fc2.out_features,
             weight=torchseal.ckks_wrapper(
                 torch_nn.fc2.weight.data,
-                do_encryption=False
+                do_encryption=True
             ),
             bias=torchseal.ckks_wrapper(
                 torch_nn.fc2.bias.data,
-                do_encryption=False
+                do_encryption=True
             ),
         )
 

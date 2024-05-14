@@ -22,11 +22,11 @@ class EncLogisticRegression(torch.nn.Module):
             out_features=torch_nn.linear.out_features,
             weight=torchseal.ckks_wrapper(
                 torch_nn.linear.weight,
-                do_encryption=False
+                do_encryption=True
             ),
             bias=torchseal.ckks_wrapper(
                 torch_nn.linear.bias,
-                do_encryption=False
+                do_encryption=True
             )
         )
 

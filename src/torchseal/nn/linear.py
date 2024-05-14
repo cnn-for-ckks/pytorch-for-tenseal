@@ -16,7 +16,7 @@ class Linear(torch.nn.Module):
             torch.nn.Parameter(
                 torchseal.ckks_wrapper(
                     torch.rand(out_features, in_features),
-                    do_encryption=False
+                    do_encryption=True
                 ) if weight is None else weight
             )
         )
@@ -26,7 +26,7 @@ class Linear(torch.nn.Module):
             torch.nn.Parameter(
                 torchseal.ckks_wrapper(
                     torch.rand(out_features),
-                    do_encryption=False
+                    do_encryption=True
                 ) if bias is None else bias
             )
         )
