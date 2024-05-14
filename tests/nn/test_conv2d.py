@@ -126,7 +126,7 @@ def test_conv2d_train():
     enc_output = enc_conv2d.forward(enc_input_tensor)
 
     # Decrypt the output
-    dec_output = enc_output.decrypt()
+    dec_output = enc_output.decrypt().plaintext_data.clone()
 
     # Resized the output
     output_resized = output.view(
@@ -134,7 +134,6 @@ def test_conv2d_train():
     )
 
     # Check the correctness of the convolution (with a tolerance of 5e-2)
-    # TODO: Output is not equal to the expected output
     assert torch.allclose(
         dec_output,
         output_resized,
