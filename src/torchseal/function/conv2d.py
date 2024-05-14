@@ -1,6 +1,4 @@
 from typing import Tuple, Optional
-
-from tenseal import plain_tensor
 from torchseal.wrapper import CKKSWrapper, CKKSLinearFunctionWrapper
 
 import typing

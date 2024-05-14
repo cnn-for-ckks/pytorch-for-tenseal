@@ -1,5 +1,5 @@
 from typing import Tuple
-from torchseal.utils import approximate_toeplitz_multiple_channels, generate_near_zeros
+from torchseal.utils import approximate_toeplitz_multiple_channels, precise_toeplitz_multiple_channels, generate_near_zeros
 
 import numpy as np
 import torch
@@ -27,7 +27,9 @@ def create_conv2d_weight_mask(input_size_with_channel: Tuple[int, int, int], ker
     binary_tensor = torch.stack([
         torch.tensor(
             np.vectorize(
-                lambda x: 1. if x == i else generate_near_zeros((1, 1)).item()
+                lambda x: 1.000 if np.isclose(x, i, atol=1e-3, rtol=0) else generate_near_zeros(
+                    (1, 1)
+                ).item()
             )(index_tensor)
         )
         for i in range(1, index_length + 1)
