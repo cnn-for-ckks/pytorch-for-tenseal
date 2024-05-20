@@ -116,12 +116,9 @@ def test_cross_entropy():
         dec_loss, loss, atol=0.5, rtol=0
     ), "Cross entropy loss layer failed!"
 
-    # NOTE: The enc_loss needed to be supplied with encrypted ones, because torch.ones() is not yet supported in CKKSWrapper
-    enc_grad_output = torchseal.ckks_ones(enc_loss.shape, do_encryption=True)
-
     # Do backward pass
     loss.backward()
-    enc_loss.backward(enc_grad_output)
+    enc_loss.backward()
 
     # Check the correctness of input gradients (with a tolerance of 0.5)
     assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"

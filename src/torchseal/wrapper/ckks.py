@@ -8,6 +8,7 @@ import typing
 import numpy as np
 import torch
 import tenseal as ts
+import torchseal
 
 
 # CKKS Wrapper
@@ -64,51 +65,30 @@ class CKKSWrapper(torch.Tensor):
         return f"{self.__class__.__name__}(ENCRYPTED)" if self.is_encrypted() else f"{self.__class__.__name__}(plaintext_data={self.plaintext_data})"
 
     # Special methods
-    # NOTE: This method is called when the tuple of encrypted gradients is passed from backward method into .grad attribute
+    # TODO: For improvement, integrate ckks_* function into this method
     @classmethod
     def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
         # Get the full function name
-        # TODO: Delete this line after the implementation of the detach method
         full_func_name = f"{func.__module__}.{func.__name__}"
-        print(f"Full function name: {full_func_name}")
 
-        # Assert that only detach method is allowed
-        # TODO: Implement torch.detach function for loss backward pass
-        # TODO: Implement torch.ones_like function for loss backward pass
+        # Detach function implementation for CKKSWrapper
+        if full_func_name == "torch._ops.aten.detach.default" and isinstance(args[0], CKKSWrapper):
+            return args[0].detach()
 
-        # Helper functions
-        # NOTE: This function always deserialize the CKKSWrapper by decrypting it
-        # TODO: Think of a better way of deserialize the CKKSWrapper without decrypting it
-        def unwrap(obj: Any) -> Any:
-            # If the obj is CKKSWrapper, then deserialize it
-            if isinstance(obj, CKKSWrapper):
-                # Assert that the wrapper must be encrypted
-                assert obj.is_encrypted(), "CKKSWrapper must be encrypted!"
+        # Ones like function implementation for CKKSWrapper
+        if full_func_name == "torch._ops.aten.ones_like.default" and isinstance(args[0], CKKSWrapper):
+            return torchseal.ckks_ones(args[0].shape, do_encryption=args[0].is_encrypted())
 
-                return obj.decrypt().plaintext_data
-
-            return obj
-
-        # Helper functions
-        # NOTE: This function always serialize the tensor by encrypting it
-        # TODO: Think of a better way of serialize the tensor without encrypting it
-        def wrap(obj: Any) -> Any:
-            # If the obj is tensor, then encrypt it
-            if isinstance(obj, torch.Tensor):
-                return CKKSWrapper(obj).encrypt()
-
-            return obj
-
-        return tree_map(wrap, func(*tree_map(unwrap, args), **tree_map(unwrap, kwargs)))
+        # Else, raise an error
+        raise NotImplementedError(
+            f"Function {full_func_name} is not implemented for CKKSWrapper"
+        )
 
     # Overridden methods
-    # NOTE: This method is called by torch.nn.Parameter
+    # NOTE: Not creating a new memory for the tensor
     def detach(self) -> "CKKSWrapper":
         # Clone the ckks_data
-        ckks_data = typing.cast(
-            ts.CKKSTensor,
-            self.ckks_data.copy()
-        ) if self.is_encrypted() else None
+        ckks_data = self.ckks_data
 
         # Clone the plaintext data
         plaintext_data = self.plaintext_data.detach()
@@ -125,6 +105,7 @@ class CKKSWrapper(torch.Tensor):
         return instance
 
     # Overridden methods
+    # NOTE: Creating a new memory for the tensor
     def clone(self) -> "CKKSWrapper":
         # Clone the ckks_data
         ckks_data = typing.cast(
