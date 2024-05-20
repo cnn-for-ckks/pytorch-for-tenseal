@@ -1,5 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type
-from torch.utils._pytree import tree_map, PyTree
+from typing import Callable, Dict, Iterable, Optional, Tuple, Type
 from torchseal.state import CKKSState
 from torchseal.utils import create_empty_tensors
 
@@ -67,7 +66,7 @@ class CKKSWrapper(torch.Tensor):
     # Special methods
     # TODO: For improvement, integrate ckks_* function into this method
     @classmethod
-    def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
+    def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> "CKKSWrapper":
         # Get the full function name
         full_func_name = f"{func.__module__}.{func.__name__}"
 
