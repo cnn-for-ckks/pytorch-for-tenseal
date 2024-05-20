@@ -4,6 +4,8 @@ from threading import Lock
 import tenseal as ts
 
 
+# Source: https://refactoring.guru/design-patterns/singleton/python/example#example-1
+# More about metaclasses: https://realpython.com/python-metaclasses/
 class CKKSStateMeta(type):
     _instances: Dict["CKKSStateMeta", "CKKSState"] = {}
     _lock: Lock = Lock()
@@ -29,6 +31,7 @@ class CKKSStateMeta(type):
         return self._instances[self]
 
 
+# Source: https://refactoring.guru/design-patterns/singleton/python/example#example-1
 class CKKSState(metaclass=CKKSStateMeta):
     __context: Optional[ts.Context] = None
 
