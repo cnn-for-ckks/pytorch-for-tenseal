@@ -1,10 +1,8 @@
-from torchseal.nn import CrossEntropyLoss as EncryptedCrossEntropyLoss
-from torchseal.utils import get_sparse_target
+from torchseal.nn import MSELoss as EncryptedMSELoss
 from torchseal.wrapper import CKKSWrapper
-from torch.nn import CrossEntropyLoss as PlainCrossEntropyLoss
+from torch.nn import MSELoss as PlainMSELoss
 
 import typing
-import math
 import random
 import numpy as np
 import torch
@@ -12,7 +10,7 @@ import tenseal as ts
 import torchseal
 
 
-def test_cross_entropy():
+def test_mse():
     # Set the seed for reproducibility
     torch.manual_seed(73)
     np.random.seed(73)
@@ -24,9 +22,9 @@ def test_cross_entropy():
     # Create TenSEAL context
     context = ts.context(
         ts.SCHEME_TYPE.CKKS,
-        poly_modulus_degree=32768,
+        poly_modulus_degree=8192,
         coeff_mod_bit_sizes=[
-            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
+            31, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, bits_scale, 31
         ]
     )
 
@@ -38,26 +36,6 @@ def test_cross_entropy():
 
     # Set the context
     torchseal.set_context(context)
-
-    # Declare parameters
-    exp_start = -3
-    exp_stop = 3
-    exp_num_of_sample = 100
-    exp_degree = 4
-    exp_approximation_type = "minimax"
-
-    inverse_start = 2.5
-    inverse_stop = 7.5
-    inverse_num_of_sample = 100
-    inverse_degree = 2
-    inverse_approximation_type = "minimax"
-    inverse_iterations = 3
-
-    log_start = math.exp(-4)
-    log_stop = 1
-    log_num_of_sample = 100
-    log_degree = 4
-    log_approximation_type = "minimax"
 
     # Declare input dimensions
     batch_size = 2
@@ -71,38 +49,18 @@ def test_cross_entropy():
     enc_input_tensor.requires_grad_(True)
 
     # Create the target tensor
-    target = torch.randint(
-        high=num_classes,
-        size=(batch_size, ),
-    )
+    target = torch.randn(batch_size, num_classes)
 
     # Sparse and encrypt the target tensor
     enc_target = torchseal.ckks_wrapper(
-        get_sparse_target(target, batch_size, num_classes), do_encryption=True
+        target.clone(), do_encryption=True
     )
 
     # Create the plaintext loss layer
-    criterion = PlainCrossEntropyLoss()
+    criterion = PlainMSELoss()
 
     # Create the encrypted loss layer
-    enc_criterion = EncryptedCrossEntropyLoss(
-        exp_start,
-        exp_stop,
-        exp_num_of_sample,
-        exp_degree,
-        exp_approximation_type,
-        inverse_start,
-        inverse_stop,
-        inverse_num_of_sample,
-        inverse_degree,
-        inverse_approximation_type,
-        inverse_iterations,
-        log_start,
-        log_stop,
-        log_num_of_sample,
-        log_degree,
-        log_approximation_type
-    )
+    enc_criterion = EncryptedMSELoss()
 
     # Calculate the output
     loss = criterion.forward(input_tensor, target)
@@ -111,10 +69,10 @@ def test_cross_entropy():
     # Decrypt the output
     dec_loss = enc_loss.decrypt().plaintext_data.clone()
 
-    # Check the correctness of the results (with a tolerance of 0.5, because the log function will expand the error)
+    # Check the correctness of the results (with a tolerance of 5e-2)
     assert torch.allclose(
-        dec_loss, loss, atol=0.5, rtol=0
-    ), "Cross entropy loss layer failed!"
+        dec_loss, loss, atol=5e-2, rtol=0
+    ), "Mean squared error loss layer failed!"
 
     # NOTE: The enc_loss needed to be supplied with encrypted ones, because torch.ones() is not yet supported in CKKSWrapper
     enc_grad_output = torchseal.ckks_ones(enc_loss.shape, do_encryption=True)

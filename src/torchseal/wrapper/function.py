@@ -35,6 +35,31 @@ class CKKSPoolingFunctionWrapper(NestedIOFunction):
 
 
 class CKKSLossFunctionWrapper(NestedIOFunction):
+    __enc_input: Optional[CKKSWrapper] = None
+    __enc_target: Optional[CKKSWrapper] = None
+
+    @property
+    def enc_input(self) -> CKKSWrapper:
+        assert self.__enc_input is not None, "enc_input is not set"
+
+        return self.__enc_input
+
+    @enc_input.setter
+    def enc_input(self, enc_input: CKKSWrapper) -> None:
+        self.__enc_input = enc_input
+
+    @property
+    def enc_target(self) -> CKKSWrapper:
+        assert self.__enc_target is not None, "enc_target is not set"
+
+        return self.__enc_target
+
+    @enc_target.setter
+    def enc_target(self, enc_target: CKKSWrapper) -> None:
+        self.__enc_target = enc_target
+
+
+class CKKSLossFunctionWithOutputWrapper(NestedIOFunction):
     __enc_output: Optional[CKKSWrapper] = None
     __enc_target: Optional[CKKSWrapper] = None
 

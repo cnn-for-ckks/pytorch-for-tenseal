@@ -1,6 +1,7 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type
 from torch.utils._pytree import tree_map, PyTree
 from torchseal.state import CKKSState
+from torchseal.utils import create_empty_tensors
 
 
 import typing
@@ -67,11 +68,13 @@ class CKKSWrapper(torch.Tensor):
     @classmethod
     def __torch_dispatch__(cls, func: Callable, _: Iterable[Type], args: Tuple = (), kwargs: Dict = {}) -> PyTree:
         # Get the full function name
+        # TODO: Delete this line after the implementation of the detach method
         full_func_name = f"{func.__module__}.{func.__name__}"
+        print(f"Full function name: {full_func_name}")
 
         # Assert that only detach method is allowed
+        # TODO: Implement torch.detach function for loss backward pass
         # TODO: Implement torch.ones_like function for loss backward pass
-        assert full_func_name == "torch._ops.aten.detach.default", "Only detach method is allowed!"
 
         # Helper functions
         # NOTE: This function always deserialize the CKKSWrapper by decrypting it
@@ -171,7 +174,7 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = self.ckks_data.mm(other.tolist())
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -190,7 +193,7 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = self.ckks_data.mm(other.ckks_data)
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -209,7 +212,7 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = self.ckks_data.dot(transformation.tolist())
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -231,7 +234,7 @@ class CKKSWrapper(torch.Tensor):
         )
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -253,7 +256,7 @@ class CKKSWrapper(torch.Tensor):
         )
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -528,7 +531,7 @@ class CKKSWrapper(torch.Tensor):
         ).mul(-1 / batch_size)
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -552,7 +555,7 @@ class CKKSWrapper(torch.Tensor):
             )
 
             # Create an empty plaintext data tensor
-            plaintext_data = torch.zeros(ckks_data.shape)
+            plaintext_data = create_empty_tensors(ckks_data.shape)
 
             # Create the new instance
             instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)
@@ -572,7 +575,7 @@ class CKKSWrapper(torch.Tensor):
         ckks_data = ts.ckks_tensor(state.context, self.plaintext_data.tolist())
 
         # Create an empty plaintext data tensor
-        plaintext_data = torch.zeros(ckks_data.shape)
+        plaintext_data = create_empty_tensors(ckks_data.shape)
 
         # Create the new instance
         instance = CKKSWrapper.__new__(CKKSWrapper, plaintext_data)

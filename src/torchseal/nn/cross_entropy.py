@@ -77,9 +77,11 @@ class CrossEntropyLoss(torch.nn.Module):
         ).convert(kind=Polynomial).coef if log_approximation_type == "least-squares" else Chebyshev.fit(log_x, log_y, log_degree).convert(kind=Polynomial).coef
 
     def forward(self, enc_input: CKKSWrapper, enc_target: CKKSWrapper) -> CKKSWrapper:
-        return typing.cast(
+        enc_loss = typing.cast(
             CKKSWrapper,
             CrossEntropyLossFunction.apply(
                 enc_input, enc_target, self.exp_coeffs, self.inverse_coeffs, self.inverse_iterations, self.log_coeffs
             )
         )
+
+        return enc_loss

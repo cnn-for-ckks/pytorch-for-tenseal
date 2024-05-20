@@ -5,3 +5,4 @@ from .toeplitz import precise_toeplitz_multiple_channels, approximate_toeplitz_m
 from .average2d import create_average_kernel
 from .conv2d import create_conv2d_weight_mask, create_conv2d_bias_transformation
 from .padding import create_padding_transformation_matrix, create_inverse_padding_transformation_matrix
+from .handle_batch_size import create_empty_tensors

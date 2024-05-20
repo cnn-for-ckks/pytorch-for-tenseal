@@ -1,5 +1,6 @@
 from torchseal.nn import Conv2d as EncryptedConv2d
 from torchseal.utils import approximate_toeplitz_multiple_channels, precise_toeplitz_multiple_channels
+from torchseal.wrapper.ckks import CKKSWrapper
 from torch.nn import Conv2d as PlainConv2d
 
 import typing
@@ -8,7 +9,6 @@ import numpy as np
 import random
 import tenseal as ts
 import torchseal
-from torchseal.wrapper.ckks import CKKSWrapper
 
 
 def test_conv2d_train():
