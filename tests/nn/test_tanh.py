@@ -42,7 +42,7 @@ def test_tanh():
     start = -5
     stop = 5
     num_of_sample = 100
-    degree = 5
+    degree = 10
     approximation_type = "minimax"
 
     # Declare input dimensions
@@ -77,9 +77,9 @@ def test_tanh():
     # Decrypt the output
     dec_output = enc_output.decrypt().plaintext_data.clone()
 
-    # Check the correctness of the convolution (with a tolerance of 0.25)
+    # Check the correctness of the convolution (with a tolerance of 0.20)
     assert torch.allclose(
-        output, dec_output, atol=0.25, rtol=0
+        output, dec_output, atol=0.20, rtol=0
     ), "Tanh layer failed!"
 
     # Create random grad_output
@@ -94,7 +94,7 @@ def test_tanh():
     output.backward(grad_output)
     enc_output.backward(enc_grad_output)
 
-    # Check the correctness of input gradients (with a tolerance of 0.25)
+    # Check the correctness of input gradients (with a tolerance of 0.20)
     assert enc_input_tensor.grad is not None and input_tensor.grad is not None, "Input gradients are None!"
 
     # Decrypt the input gradients
@@ -106,6 +106,6 @@ def test_tanh():
     assert torch.allclose(
         dec_input_grad,
         input_tensor.grad,
-        atol=0.25,
+        atol=0.20,
         rtol=0
     ), "Input gradients are incorrect!"

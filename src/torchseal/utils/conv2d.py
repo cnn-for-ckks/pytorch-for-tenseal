@@ -1,5 +1,5 @@
 from typing import Tuple
-from torchseal.utils import approximate_toeplitz_multiple_channels, precise_toeplitz_multiple_channels, generate_near_zeros
+from torchseal.utils import approximate_toeplitz_multiple_channels, generate_near_zeros
 
 import numpy as np
 import torch
