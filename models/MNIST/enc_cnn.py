@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from torchseal.utils import approximate_toeplitz_multiple_channels
 from torchseal.wrapper import CKKSWrapper
-from torchseal.nn import Conv2d, AvgPool2d, Linear, Square
+from torchseal.nn import Conv2d, Linear, Square
 from cnn import ConvNet
 from utils import seed_worker
 
@@ -45,14 +45,6 @@ class EncConvNet(torch.nn.Module):
             ) if torch_nn.conv1.bias is not None else None,
         )
 
-        self.avg_pool = AvgPool2d(
-            n_channels=torch_nn.conv1.out_channels,
-            input_size=(8, 8),
-            kernel_size=(2, 2),
-            stride=2,
-            padding=0
-        )
-
         self.act1 = Square()
 
         self.fc1 = Linear(
@@ -87,11 +79,8 @@ class EncConvNet(torch.nn.Module):
         # Convolutional layer
         first_result = self.conv1.forward(enc_input)
 
-        # Average pooling layer
-        first_result_averaged = self.avg_pool.forward(first_result)
-
         # Square activation function
-        first_result_squared = self.act1.forward(first_result_averaged)
+        first_result_squared = self.act1.forward(first_result)
 
         # Fully connected layer
         second_result = self.fc1.forward(first_result_squared)
@@ -124,7 +113,7 @@ def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn
         enc_output = enc_model.forward(enc_data_wrapper)
 
         # Decryption of result using client secret key
-        output = enc_output.decrypt()
+        output = enc_output.decrypt().plaintext_data.clone()
 
         # Compute loss
         loss = criterion.forward(output, raw_target)
@@ -204,17 +193,8 @@ if __name__ == "__main__":
         "data", train=False, download=True, transform=transforms.ToTensor()
     )
 
-    # Subset the data
-    # NOTE: Remove subset to use the entire dataset
-    subset_test_data = Subset(test_data, list(range(20)))
-
     # Set the batch size
     batch_size = 2
-
-    # Create the data loaders
-    subset_test_loader = DataLoader(
-        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
-    )
 
     # Create the original model
     trained_model = ConvNet()
@@ -224,20 +204,23 @@ if __name__ == "__main__":
         )
     )
 
+    # Subset the data
+    # NOTE: Remove subset to use the entire dataset
+    subset_test_data = Subset(test_data, list(range(20)))
+
     # Create the encrypted data loaders
-    enc_subset_test_loader = DataLoader(
+    enc_test_loader = DataLoader(
         subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer
     enc_model = EncConvNet(torch_nn=trained_model)
     enc_criterion = torch.nn.CrossEntropyLoss()
-    enc_optimizer = torch.optim.Adam(enc_model.parameters(), lr=0.001)
 
     # Encrypted evaluation
     enc_test(
         enc_model,
-        enc_subset_test_loader,
+        enc_test_loader,
         enc_criterion,
         batch_size
     )

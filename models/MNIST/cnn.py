@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from utils import seed_worker
 
@@ -8,23 +8,19 @@ import random
 
 
 class ConvNet(torch.nn.Module):
-    def __init__(self, hidden=16, output=10) -> None:
+    def __init__(self, hidden=64, output=10) -> None:
         super(ConvNet, self).__init__()
 
         self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(7, 7), stride=3)
-        self.avg_pool = torch.nn.AvgPool2d(kernel_size=(2, 2), stride=2)
-        self.fc1 = torch.nn.Linear(16, hidden)
+        self.fc1 = torch.nn.Linear(64, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply the convolutional layer
         x = self.conv1.forward(x)
 
-        # Apply the average pooling layer
-        x = self.avg_pool.forward(x)
-
         # Flatten the data
-        x = x.view(-1, 16)
+        x = x.view(-1, 64)
 
         # Apply the activation function
         x = x * x
@@ -141,12 +137,16 @@ if __name__ == "__main__":
     # Set the batch size
     batch_size = 2
 
+    # Subset the data
+    # NOTE: Remove subset to use the entire dataset
+    subset_test_data = Subset(test_data, list(range(20)))
+
     # Create the data loaders
     train_loader = DataLoader(
         train_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
     test_loader = DataLoader(
-        test_data, batch_size=batch_size, worker_init_fn=seed_worker
+        subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer
@@ -154,13 +154,24 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    # Train the model
-    model = train(
-        model, train_loader, criterion, optimizer, n_epochs=10
+    # # Train the model
+    # trained_model = train(
+    #     model, train_loader, criterion, optimizer, n_epochs=10
+    # )
+
+    # # Save the model
+    # torch.save(
+    #     trained_model.state_dict(),
+    #     "./parameters/MNIST/trained-model.pth"
+    # )
+
+    # Load the model and test the model
+    trained_model = ConvNet()
+    trained_model.load_state_dict(
+        torch.load(
+            "./parameters/MNIST/trained-model.pth"
+        )
     )
 
     # Test the model
-    test(model, test_loader, criterion)
-
-    # Save the model
-    torch.save(model.state_dict(), "./parameters/MNIST/trained-model.pth")
+    test(trained_model, test_loader, criterion)
