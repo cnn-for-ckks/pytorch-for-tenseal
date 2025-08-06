@@ -70,10 +70,9 @@ class Conv2dFunction(torch.autograd.Function):
 
             # Apply the inverse padding transformation to the gradient input
             # NOTE: This is useless if padding is 0 (we can skip this step if that's the case)
-            enc_grad_input = enc_padded_grad_input
-            # .ckks_matrix_multiplication(
-            #     conv2d_inverse_padding_transformation
-            # )
+            enc_grad_input = enc_padded_grad_input.ckks_matrix_multiplication(
+                conv2d_inverse_padding_transformation
+            )
 
         if result[1]:
             # Create the fully connected gradient weight tensor (this will be encrypted)
