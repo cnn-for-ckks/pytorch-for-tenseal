@@ -42,7 +42,7 @@ def test_sigmoid():
     stop = 3
     num_of_sample = 100
     degree = 3
-    approximation_type = "minimax"
+    approximation_type = "least-squares"
 
     # Declare input dimensions
     input_length = 10
@@ -50,6 +50,9 @@ def test_sigmoid():
 
     # Create the input tensor
     input_tensor = torch.randn(batch_size, input_length, requires_grad=True)
+
+    print()
+    print("Input tensor:", input_tensor)
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
@@ -76,6 +79,13 @@ def test_sigmoid():
     # Decrypt the output
     dec_output = enc_output.decrypt().plaintext_data.clone()
 
+    print()
+    print("Output:", output)
+    print("Decrypted output:", dec_output)
+    print(f"Max difference: {torch.max(torch.abs(output - dec_output)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(output - dec_output)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(output - dec_output)).item():.4f}")
+
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         output, dec_output, atol=5e-2, rtol=0
@@ -101,6 +111,13 @@ def test_sigmoid():
         CKKSWrapper,
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted input gradient:", dec_input_grad)
+    print("Plaintext input gradient:", input_tensor.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
 
     assert torch.allclose(
         dec_input_grad,

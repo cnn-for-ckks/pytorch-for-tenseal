@@ -44,20 +44,20 @@ def test_cross_entropy():
     exp_stop = 3
     exp_num_of_sample = 100
     exp_degree = 4
-    exp_approximation_type = "minimax"
+    exp_approximation_type = "least-squares"
 
     inverse_start = 2.5
     inverse_stop = 7.5
     inverse_num_of_sample = 100
     inverse_degree = 2
-    inverse_approximation_type = "minimax"
+    inverse_approximation_type = "least-squares"
     inverse_iterations = 3
 
     log_start = math.exp(-4)
     log_stop = 1
     log_num_of_sample = 100
     log_degree = 4
-    log_approximation_type = "minimax"
+    log_approximation_type = "least-squares"
 
     # Declare input dimensions
     batch_size = 2
@@ -65,6 +65,9 @@ def test_cross_entropy():
 
     # Create the input tensors
     input_tensor = torch.randn(batch_size, num_classes, requires_grad=True)
+
+    print()
+    print("Input tensor:", input_tensor)
 
     # Encrypt the value
     enc_input_tensor = torchseal.ckks_wrapper(input_tensor, do_encryption=True)
@@ -75,6 +78,9 @@ def test_cross_entropy():
         high=num_classes,
         size=(batch_size, ),
     )
+
+    print()
+    print("Target tensor:", target)
 
     # Sparse and encrypt the target tensor
     enc_target = torchseal.ckks_wrapper(
@@ -111,6 +117,11 @@ def test_cross_entropy():
     # Decrypt the output
     dec_loss = enc_loss.decrypt().plaintext_data.clone()
 
+    print()
+    print("Loss:", loss)
+    print("Decrypted loss:", dec_loss)
+    print(f"Difference: {torch.abs(loss - dec_loss).item():.4f}")
+
     # Check the correctness of the results (with a tolerance of 0.5, because the log function will expand the error)
     assert torch.allclose(
         dec_loss, loss, atol=0.5, rtol=0
@@ -128,6 +139,13 @@ def test_cross_entropy():
         CKKSWrapper,
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted input gradient:", dec_input_grad)
+    print("Plaintext input gradient:", input_tensor.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
 
     assert torch.allclose(
         dec_input_grad,

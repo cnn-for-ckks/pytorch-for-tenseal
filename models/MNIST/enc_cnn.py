@@ -22,8 +22,8 @@ class EncConvNet(torch.nn.Module):
             # Required parameters
             in_channels=torch_nn.conv1.in_channels,
             out_channels=torch_nn.conv1.out_channels,
-            kernel_size=(7, 7),
-            input_size=(28, 28),
+            kernel_size=(5, 5),
+            input_size=(14, 14),
             stride=3,
             padding=0,
 
@@ -31,7 +31,7 @@ class EncConvNet(torch.nn.Module):
             weight=torchseal.ckks_wrapper(
                 approximate_toeplitz_multiple_channels(
                     torch_nn.conv1.weight.data,
-                    (torch_nn.conv1.in_channels, 28, 28),
+                    (torch_nn.conv1.in_channels, 14, 14),
                     stride=3,
                     padding=0
                 ),
@@ -39,7 +39,7 @@ class EncConvNet(torch.nn.Module):
             ),
             bias=torchseal.ckks_wrapper(
                 torch.repeat_interleave(
-                    torch_nn.conv1.bias.data, 8 * 8
+                    torch_nn.conv1.bias.data, 4 * 4
                 ),
                 do_encryption=True
             ) if torch_nn.conv1.bias is not None else None,
@@ -103,7 +103,7 @@ def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn
     # Model in evaluation mode
     enc_model.eval()
 
-    for raw_data, raw_target in test_loader:
+    for index, (raw_data, raw_target) in enumerate(test_loader):
         # Encoding and encryption
         enc_data_wrapper = torchseal.ckks_wrapper(
             raw_data.view(batch_size, -1), do_encryption=True
@@ -138,22 +138,23 @@ def enc_test(enc_model: EncConvNet, test_loader: DataLoader, criterion: torch.nn
             class_correct[label] += correct.item()
             class_total[label] += 1
 
-        print(f"Current Test Loss (Ciphertext): {loss.item():.6f}")
+        print(f"Current Test Loss (Ciphertext) [{index + 1}]: {loss.item():.6f}")
 
     # Calculate and print avg test loss
     average_test_loss = 0 if sum(
         class_total
     ) == 0 else test_loss / sum(class_total)
-    print(f"Average Test Loss (Ciphertext): {average_test_loss:.6f}\n")
+
+    print(f"\nAverage Test Loss (Ciphertext): {average_test_loss:.6f}\n")
 
     for label in range(10):
         print(
-            f"Test Accuracy of {label}: {0 if class_total[label] == 0 else int(100 * class_correct[label] / class_total[label])}% "
+            f"Test Accuracy of {label}: {100 if class_total[label] == 0 else int(100 * class_correct[label] / class_total[label])}% "
             f"({int(class_correct[label])}/{int(class_total[label])})"
         )
 
     print(
-        f"\nTest Accuracy for Encrypted Data (Overall): {0 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
+        f"\nTest Accuracy for Encrypted Data (Overall): {100 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
         f"({int(np.sum(class_correct))}/{int(np.sum(class_total))})"
     )
 
@@ -187,14 +188,20 @@ if __name__ == "__main__":
 
     # Load the data
     train_data = datasets.MNIST(
-        "data", train=True, download=True, transform=transforms.ToTensor()
+        "data", train=True, download=True, transform=transforms.Compose([
+            transforms.Resize((14, 14)),  # Make it half size
+            transforms.ToTensor()
+        ])
     )
     test_data = datasets.MNIST(
-        "data", train=False, download=True, transform=transforms.ToTensor()
+        "data", train=False, download=True, transform=transforms.Compose([
+            transforms.Resize((14, 14)),  # Make it half size
+            transforms.ToTensor()
+        ])
     )
 
     # Set the batch size
-    batch_size = 2
+    batch_size = 1
 
     # Create the original model
     trained_model = ConvNet()
@@ -206,7 +213,7 @@ if __name__ == "__main__":
 
     # Subset the data
     # NOTE: Remove subset to use the entire dataset
-    subset_test_data = Subset(test_data, list(range(20)))
+    subset_test_data = Subset(test_data, list(range(50)))
 
     # Create the encrypted data loaders
     enc_test_loader = DataLoader(

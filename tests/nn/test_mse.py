@@ -44,12 +44,18 @@ def test_mse():
     # Create the input tensors
     input_tensor = torch.randn(batch_size, num_classes, requires_grad=True)
 
+    print()
+    print("Input tensor:", input_tensor)
+
     # Encrypt the value
     enc_input_tensor = torchseal.ckks_wrapper(input_tensor, do_encryption=True)
     enc_input_tensor.requires_grad_(True)
 
     # Create the target tensor
     target = torch.randn(batch_size, num_classes)
+
+    print()
+    print("Target tensor:", target)
 
     # Sparse and encrypt the target tensor
     enc_target = torchseal.ckks_wrapper(
@@ -69,6 +75,11 @@ def test_mse():
     # Decrypt the output
     dec_loss = enc_loss.decrypt().plaintext_data.clone()
 
+    print()
+    print("Loss:", loss)
+    print("Decrypted loss:", dec_loss)
+    print(f"Difference: {torch.abs(loss - dec_loss).item():.4f}")
+
     # Check the correctness of the results (with a tolerance of 5e-2)
     assert torch.allclose(
         dec_loss, loss, atol=5e-2, rtol=0
@@ -86,6 +97,13 @@ def test_mse():
         CKKSWrapper,
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted input gradient:", dec_input_grad)
+    print("Plaintext input gradient:", input_tensor.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_input_grad - input_tensor.grad)).item():.4f}")
 
     assert torch.allclose(
         dec_input_grad,

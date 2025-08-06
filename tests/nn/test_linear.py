@@ -48,8 +48,15 @@ def test_linear_train():
     weight = torch.randn(out_features, in_features, requires_grad=True)
     bias = torch.randn(out_features, requires_grad=True)
 
+    print()
+    print("Weight:", weight)
+    print("Bias:", bias)
+
     # Create the input tensor
     input_tensor = torch.randn(batch_size, in_features, requires_grad=True)
+
+    print()
+    print("Input tensor:", input_tensor)
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
@@ -85,6 +92,13 @@ def test_linear_train():
     # Decrypt the output
     dec_output = enc_output.decrypt().plaintext_data.clone()
 
+    print()
+    print("Output:", output)
+    print("Decrypted output:", dec_output)
+    print(f"Max difference: {torch.max(torch.abs(output - dec_output)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(output - dec_output)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(output - dec_output)).item():.4f}")
+
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         output, dec_output, atol=5e-2, rtol=0
@@ -110,6 +124,13 @@ def test_linear_train():
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
 
+    print()
+    print("Encrypted input gradient:", dec_linear_input_grad)
+    print("Plaintext input gradient:", input_tensor.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_linear_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_linear_input_grad - input_tensor.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_linear_input_grad - input_tensor.grad)).item():.4f}")
+
     assert torch.allclose(
         dec_linear_input_grad,
         input_tensor.grad,
@@ -125,6 +146,13 @@ def test_linear_train():
         enc_linear.weight.grad
     ).decrypt().plaintext_data.clone()
 
+    print()
+    print("Encrypted weight gradient:", dec_linear_weight_grad)
+    print("Plaintext weight gradient:", linear.weight.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_linear_weight_grad - linear.weight.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_linear_weight_grad - linear.weight.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_linear_weight_grad - linear.weight.grad)).item():.4f}")
+
     assert torch.allclose(
         dec_linear_weight_grad,
         linear.weight.grad,
@@ -139,6 +167,13 @@ def test_linear_train():
         CKKSWrapper,
         enc_linear.bias.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted bias gradient:", dec_linear_bias_grad)
+    print("Plaintext bias gradient:", linear.bias.grad)
+    print(f"Max difference: {torch.max(torch.abs(dec_linear_bias_grad - linear.bias.grad)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_linear_bias_grad - linear.bias.grad)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_linear_bias_grad - linear.bias.grad)).item():.4f}")
 
     assert torch.allclose(
         dec_linear_bias_grad,

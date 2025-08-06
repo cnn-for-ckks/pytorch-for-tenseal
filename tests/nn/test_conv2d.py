@@ -70,10 +70,17 @@ def test_conv2d_train():
     )
     bias = torch.randn(out_channels, requires_grad=True)
 
+    print()
+    print("Kernel:", kernel)
+    print("Bias:", bias)
+
     # Create the input tensor
     input_tensor = torch.randn(
         batch_size, in_channels, input_height, input_width, requires_grad=True
     )
+
+    print()
+    print("Input tensor:", input_tensor)
 
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
@@ -135,6 +142,13 @@ def test_conv2d_train():
         batch_size, -1
     )
 
+    print()
+    print("Encrypted output:", dec_output)
+    print("Plaintext output:", output_resized)
+    print(f"Max difference: {torch.max(torch.abs(dec_output - output_resized)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_output - output_resized)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_output - output_resized)).item():.4f}")
+
     # Check the correctness of the convolution (with a tolerance of 5e-2)
     assert torch.allclose(
         dec_output,
@@ -167,6 +181,13 @@ def test_conv2d_train():
         enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
 
+    print()
+    print("Encrypted input gradient:", enc_conv2d_input_grad)
+    print("Plaintext input gradient:", conv2d_input_grad_expanded)
+    print(f"Max difference: {torch.max(torch.abs(enc_conv2d_input_grad - conv2d_input_grad_expanded)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(enc_conv2d_input_grad - conv2d_input_grad_expanded)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(enc_conv2d_input_grad - conv2d_input_grad_expanded)).item():.4f}")
+
     assert torch.allclose(
         enc_conv2d_input_grad,
         conv2d_input_grad_expanded,
@@ -189,6 +210,13 @@ def test_conv2d_train():
         enc_conv2d.weight.grad
     ).decrypt().plaintext_data.clone()
 
+    print()
+    print("Encrypted weight gradient:", enc_conv2d_weight_grad)
+    print("Plaintext weight gradient:", conv2d_weight_grad_expanded)
+    print(f"Max difference: {torch.max(torch.abs(enc_conv2d_weight_grad - conv2d_weight_grad_expanded)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(enc_conv2d_weight_grad - conv2d_weight_grad_expanded)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(enc_conv2d_weight_grad - conv2d_weight_grad_expanded)).item():.4f}")
+
     assert torch.allclose(
         enc_conv2d_weight_grad, conv2d_weight_grad_expanded, atol=5e-2, rtol=0
     ), "Weight gradient failed!"
@@ -204,6 +232,13 @@ def test_conv2d_train():
         CKKSWrapper,
         enc_conv2d.bias.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted bias gradient:", enc_conv2d_bias_grad)
+    print("Plaintext bias gradient:", conv2d_bias_grad_expanded)
+    print(f"Max difference: {torch.max(torch.abs(enc_conv2d_bias_grad - conv2d_bias_grad_expanded)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(enc_conv2d_bias_grad - conv2d_bias_grad_expanded)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(enc_conv2d_bias_grad - conv2d_bias_grad_expanded)).item():.4f}")
 
     assert torch.allclose(
         enc_conv2d_bias_grad, conv2d_bias_grad_expanded, atol=5e-2, rtol=0

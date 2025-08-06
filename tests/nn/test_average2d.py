@@ -55,6 +55,9 @@ def test_avgpool2d():
         batch_size, n_channels, input_height, input_width, requires_grad=True
     )
 
+    print()
+    print("Input tensor:", input_tensor)
+
     # Encrypt the input tensor
     enc_input_tensor = torchseal.ckks_wrapper(
         input_tensor.view(batch_size, -1), do_encryption=True
@@ -89,6 +92,13 @@ def test_avgpool2d():
         batch_size, -1,
     )
 
+    print()
+    print("Encrypted output:", dec_output)
+    print("Plaintext output:", output_resized)
+    print(f"Max difference: {torch.max(torch.abs(dec_output - output_resized)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(dec_output - output_resized)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(dec_output - output_resized)).item():.4f}")
+
     # Compare the results (with a tolerance of 5e-2)
     assert torch.allclose(
         dec_output,
@@ -121,6 +131,13 @@ def test_avgpool2d():
     enc_input_grad = typing.cast(
         CKKSWrapper, enc_input_tensor.grad
     ).decrypt().plaintext_data.clone()
+
+    print()
+    print("Encrypted input gradient:", enc_input_grad)
+    print("Plaintext input gradient:", input_grad_expanded)
+    print(f"Max difference: {torch.max(torch.abs(enc_input_grad - input_grad_expanded)).item():.4f}")
+    print(f"Min difference: {torch.min(torch.abs(enc_input_grad - input_grad_expanded)).item():.4f}")
+    print(f"Avg difference: {torch.mean(torch.abs(enc_input_grad - input_grad_expanded)).item():.4f}")
 
     assert torch.allclose(
         enc_input_grad,

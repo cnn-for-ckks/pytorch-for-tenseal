@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-tenseal = {git = "git+https://github.com/OpenMined/TenSEAL.git"}
+tenseal = "*"
 torch = "*"
 torchseal = {file = "."}
 
@@ -18,4 +18,4 @@ build = "*"
 twine = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.13"

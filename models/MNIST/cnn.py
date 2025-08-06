@@ -8,11 +8,11 @@ import random
 
 
 class ConvNet(torch.nn.Module):
-    def __init__(self, hidden=64, output=10) -> None:
+    def __init__(self, hidden=16, output=10) -> None:
         super(ConvNet, self).__init__()
 
-        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(7, 7), stride=3)
-        self.fc1 = torch.nn.Linear(64, hidden)
+        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=(5, 5), stride=3)
+        self.fc1 = torch.nn.Linear(16, hidden)
         self.fc2 = torch.nn.Linear(hidden, output)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -20,16 +20,16 @@ class ConvNet(torch.nn.Module):
         x = self.conv1.forward(x)
 
         # Flatten the data
-        x = x.view(-1, 64)
+        x = x.view(-1, 16)
 
         # Apply the activation function
-        x = x * x
+        x = torch.square(x)
 
         # Apply the fully connected layers
         x = self.fc1.forward(x)
 
         # Apply the activation function
-        x = x * x
+        x = torch.square(x)
 
         # Apply the fully connected layers
         x = self.fc2.forward(x)
@@ -78,7 +78,7 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
     # Model in evaluation mode
     model.eval()
 
-    for data, target in test_loader:
+    for index, (data, target) in enumerate(test_loader):
         output = model.forward(data)
         loss = criterion.forward(output, target)
         test_loss += loss.item()
@@ -102,20 +102,22 @@ def test(model: ConvNet, test_loader: DataLoader, criterion: torch.nn.CrossEntro
             class_correct[label] += correct.item()
             class_total[label] += 1
 
+        print(f"Current Test Loss (Plaintext) [{index + 1}]: {loss.item():.6f}")
+
     # Calculate and print avg test loss
     average_test_loss = 0 if sum(
         class_total
     ) == 0 else test_loss / sum(class_total)
-    print(f"Average Test Loss (Plaintext): {average_test_loss:.6f}\n")
+    print(f"\nAverage Test Loss (Plaintext): {average_test_loss:.6f}\n")
 
     for label in range(10):
         print(
-            f"Test Accuracy of {label}: {0 if class_total[label] == 0 else int(100 * class_correct[label] / class_total[label])}% "
+            f"Test Accuracy of {label}: {100 if class_total[label] == 0 else int(100 * class_correct[label] / class_total[label])}% "
             f"({int(class_correct[label])}/{int(class_total[label])})"
         )
 
     print(
-        f"\nTest Accuracy (Overall): {0 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
+        f"\nTest Accuracy (Overall): {100 if np.sum(class_total) == 0 else int(100 * np.sum(class_correct) / np.sum(class_total))}% "
         f"({int(np.sum(class_correct))}/{int(np.sum(class_total))})"
     )
 
@@ -128,18 +130,24 @@ if __name__ == "__main__":
 
     # Load the data
     train_data = datasets.MNIST(
-        "data", train=True, download=True, transform=transforms.ToTensor()
+        "data", train=True, download=True, transform=transforms.Compose([
+            transforms.Resize((14, 14)),  # Make it half size
+            transforms.ToTensor()
+        ])
     )
     test_data = datasets.MNIST(
-        "data", train=False, download=True, transform=transforms.ToTensor()
+        "data", train=False, download=True, transform=transforms.Compose([
+            transforms.Resize((14, 14)),  # Make it half size
+            transforms.ToTensor()
+        ])
     )
 
     # Set the batch size
-    batch_size = 2
+    batch_size = 1
 
     # Subset the data
     # NOTE: Remove subset to use the entire dataset
-    subset_test_data = Subset(test_data, list(range(20)))
+    subset_test_data = Subset(test_data, list(range(50)))
 
     # Create the data loaders
     train_loader = DataLoader(
@@ -147,6 +155,7 @@ if __name__ == "__main__":
     )
     test_loader = DataLoader(
         subset_test_data, batch_size=batch_size, worker_init_fn=seed_worker
+        # test_data, batch_size=batch_size, worker_init_fn=seed_worker
     )
 
     # Create the model, criterion, and optimizer
