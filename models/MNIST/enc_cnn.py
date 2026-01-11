@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     # Subset the data
     # NOTE: Remove subset to use the entire dataset
-    subset_test_data = Subset(test_data, list(range(50)))
+    subset_test_data = Subset(test_data, list(range(10)))
 
     # Create the encrypted data loaders
     enc_test_loader = DataLoader(
